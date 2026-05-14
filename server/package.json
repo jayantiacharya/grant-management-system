@@ -13,6 +13,10 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "nodemonConfig": {
+    "watch": ["src"],
+    "ext": "ts,json"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
