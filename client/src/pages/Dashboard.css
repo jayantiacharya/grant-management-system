@@ -1,0 +1,81 @@
+.dashboard-page {
+  min-height: 100vh;
+  background: #f4f5f7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.dash-header {
+  background: #1a3a6b;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 60px;
+}
+
+.dash-brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
+.dash-logo {
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-user { display: flex; align-items: center; gap: 14px; font-size: 13px; opacity: 0.9; }
+
+.logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+.dash-main { max-width: 800px; margin: 0 auto; padding: 3rem 2rem; }
+.dash-welcome { margin-bottom: 2.5rem; }
+.dash-welcome h2 { font-size: 24px; font-weight: 600; color: #111827; margin: 0 0 4px; }
+.dash-welcome p { font-size: 14px; color: #6b7280; margin: 0; }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.dash-card {
+  background: white;
+  border: 1px solid #e2e4e9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dash-card:not(:disabled):hover {
+  border-color: #1a3a6b;
+  box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.08);
+}
+.dash-card:disabled { cursor: default; opacity: 0.75; }
+.dash-card-icon { font-size: 28px; }
+.dash-card-body h3 { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 4px; }
+.dash-card-body p { font-size: 13px; color: #6b7280; margin: 0; }
+.dash-card-badge {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
