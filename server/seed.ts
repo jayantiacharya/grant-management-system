@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { readDB, writeDB } from './src/db.js';  // This is correct if seed.ts is in server root
 
+
 const ADMIN_EMAIL = 'admin@4760weber.edu';
 const ADMIN_PASSWORD = 'admin123';  // Changed from 'Admin1234!' to match your index.ts
 
@@ -18,7 +19,6 @@ async function seed() {
     id: Date.now().toString(),  // Changed from '1' to dynamic ID
     email: ADMIN_EMAIL,
     password: passwordHash,
-    full_name: 'System Administrator',  // Added full_name
     role: 'admin',
     createdAt: new Date().toISOString(),
   });

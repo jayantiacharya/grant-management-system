@@ -23,13 +23,11 @@ export default function Dashboard() {
           <button onClick={handleLogout} className="logout-btn">Sign out</button>
         </div>
       </header>
-
       <main className="dash-main">
         <div className="dash-welcome">
           <h2>Welcome back</h2>
           <p>Weber State University — Grant Management System</p>
         </div>
-
         <div className="dash-grid">
           <button className="dash-card" disabled>
             <div className="dash-card-icon">🏛️</div>
@@ -39,7 +37,6 @@ export default function Dashboard() {
             </div>
             <span className="dash-card-badge">Coming soon</span>
           </button>
-
           <button className="dash-card" disabled>
             <div className="dash-card-icon">🏢</div>
             <div className="dash-card-body">

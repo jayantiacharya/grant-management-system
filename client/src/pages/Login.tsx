@@ -20,7 +20,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post('/api/auth/login', form);
+      const { data } = await axios.post('http://localhost:5000/api/auth/login', form);
       login(data.user, data.token);
       navigate('/dashboard');
     } catch (err: any) {
