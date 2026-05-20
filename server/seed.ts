@@ -3,7 +3,7 @@ import { readDB, writeDB } from './src/db.js';  // This is correct if seed.ts is
 
 
 const ADMIN_EMAIL = 'admin@4760weber.edu';
-const ADMIN_PASSWORD = 'admin123';  // Changed from 'Admin1234!' to match your index.ts
+const ADMIN_PASSWORD = 'Admin1234!';  // Changed from 'Admin1234!' to match your index.ts
 
 async function seed() {
   const db = readDB();

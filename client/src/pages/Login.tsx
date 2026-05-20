@@ -22,7 +22,13 @@ export default function Login() {
     try {
       const { data } = await axios.post('http://localhost:5000/api/auth/login', form);
       login(data.user, data.token);
-      navigate('/dashboard');
+      console.log(data);
+      console.log(data.user.role === 'admin');
+      if(data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {

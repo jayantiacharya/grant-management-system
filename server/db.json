@@ -1,11 +1,64 @@
 {
   "users": [
     {
-      "id": "1",
+      "id": "1779304657234",
       "email": "admin@4760weber.edu",
-      "password": "$2a$12$/FLFeFovv5qrSQXhVD6mquBtq3BszXsoUKsDzT/mocAFbFP6WeNgq",
+      "password": "$2a$10$hmF9qF4vo1hbdiUqvfCw8uDnF.Yb36HvwkRI48AoscZaHIBFrp9jy",
       "role": "admin",
-      "createdAt": "2026-05-18T03:51:02.061Z"
+      "createdAt": "2026-05-20T19:17:37.234Z"
+    },
+    {
+      "id": "1779296638356",
+      "email": "tester1@4760weber.edu",
+      "password": "$2a$12$GfOXdnKy5yNiuv4Imk63mOO0NqTwIsSH61gQ8NzJGT17V8WXNCK4G",
+      "role": "user",
+      "createdAt": "2026-05-20T17:03:58.356Z"
+    },
+    {
+      "id": "1779305159753",
+      "email": "tester2@4760weber.edu",
+      "password": "$2a$12$0FdSb7BPjL1JAs0Lo9Aj5ufVvQqfoFi1wLkVvWfQ5lClkgUHwBDhK",
+      "role": "user",
+      "createdAt": "2026-05-20T19:25:59.753Z"
+    },
+    {
+      "id": "1779305184175",
+      "email": "tester3@4760weber.edu",
+      "password": "$2a$12$gaYlN99LFXbpnzob8BJ8I.FV3Iz1Gh2KjnjZ0oH1kpewnePpwSec6",
+      "role": "user",
+      "createdAt": "2026-05-20T19:26:24.175Z"
+    }
+  ],
+  "grants": [
+    {
+      "id": "2ayqv5wl4hrfyxog1x6owq",
+      "title": "test grant 1",
+      "description": "test grant 1",
+      "submittedEmail": "tester1@4760weber.edu"
+    }
+  ],
+  "colleges": [
+    {
+      "id": "susfwobu9iqtno501khly",
+      "name": "Weber",
+      "dean": "admin@4760weber.edu"
+    },
+    {
+      "id": "umaixoey1rbqq1uoudehl",
+      "name": "Salt Lake Community College",
+      "dean": "tester1@4760weber.edu"
+    }
+  ],
+  "departments": [
+    {
+      "id": "1nh1xp2gcqskckr3ht0lqh",
+      "name": "School of Computing",
+      "college": "Weber"
+    },
+    {
+      "id": "l7tc7rlrnsp7iynvf6lvnx",
+      "name": "School of Computing",
+      "college": "Salt Lake Community College"
     }
   ]
 }
