@@ -36,6 +36,7 @@ app.use("/api/admin", adminRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT;
+// console.log(process.env.ATLAS_URI);
 
 // app.listen(PORT, () => console.log("Server running on port " + PORT));
 app.listen(PORT, () => {
