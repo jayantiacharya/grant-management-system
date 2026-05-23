@@ -1,0 +1,29 @@
+# Auto-detect text files and normalize line endings to LF in the repo.
+* text=auto eol=lf
+
+# Explicit overrides for files that should always be LF, regardless of
+# autodetection or per-user core.autocrlf settings.
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.css       text eol=lf
+*.html      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+
+# Lockfiles are large auto-generated text; mark them as such so diffs/merges
+# treat them sensibly.
+package-lock.json   text eol=lf -diff
+
+# Binary files: never apply text/EOL conversion.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
