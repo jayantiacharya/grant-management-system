@@ -33,32 +33,31 @@ A grant management system for Weber State University that allows administrators 
    cd LinkUpGroupProject
    ```
 
-2. **Server Setup**
+2. **Install all dependencies** (root, client, server in one shot)
 
    ```bash
-   cd server
    npm install
+   ```
 
-   # Create the admin user (run once)
-   npx tsx src/seed.ts
+   The repo uses npm workspaces, so this single command installs dependencies for the root tooling (Prettier, Husky, lint-staged, concurrently) **and** both the `client` and `server` packages. It also activates the Git pre-commit hook that auto-formats staged files. Run it once per clone.
 
-   # Start the development server
+3. **Seed the admin user** (run once)
+
+   ```bash
+   npm run seed
+   ```
+
+4. **Start both dev servers**
+
+   ```bash
    npm run dev
    ```
 
-   Server runs on **http://localhost:5000**
+   This runs the client and server concurrently with prefixed, colored output:
+   - Server: **http://localhost:5000**
+   - Client: **http://localhost:5173**
 
-3. **Client Setup** (in a new terminal)
-
-   ```bash
-   cd client
-   npm install
-
-   # Start the development server
-   npm run dev
-   ```
-
-   Client runs on **http://localhost:5173**
+   To run them individually instead, use `npm run dev:server` or `npm run dev:client`.
 
 ---
 
