@@ -1,11 +1,12 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { readDB, writeDB } from "../db.js";
+import dbo from "../middleware/conn.js"; // Database connection
+// import { readDB, writeDB } from "../db.js";
 
 const router = Router();
 
-router.post("/register", async (req: Request, res: Response) => {
+router.route("/register").post(async (req: Request, res: Response) => {
   const { email, password, confirmPassword } = req.body;
   if (!email || !password || !confirmPassword) {
     res.status(400).json({ message: "All fields are required" });
@@ -19,8 +20,10 @@ router.post("/register", async (req: Request, res: Response) => {
     res.status(400).json({ message: "Password must be at least 6 characters" });
     return;
   }
-  const db = readDB();
-  const existing = db.users.find((u) => u.email === email.toLowerCase());
+  let db_connect = dbo.getDb();
+  const existing = await db_connect
+    .collection("user")
+    .findOne({ email: email.toLowerCase() });
   if (existing) {
     res.status(409).json({ message: "Email already in use" });
     return;
@@ -33,8 +36,7 @@ router.post("/register", async (req: Request, res: Response) => {
     role: "user" as const,
     createdAt: new Date().toISOString(),
   };
-  db.users.push(newUser);
-  writeDB(db);
+  await db_connect.collection("user").insertOne(newUser);
   const token = jwt.sign(
     { userId: newUser.id, email: newUser.email, role: newUser.role },
     process.env.JWT_SECRET as string,
@@ -46,14 +48,16 @@ router.post("/register", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/login", async (req: Request, res: Response) => {
+router.route("/login").post(async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ message: "Email and password are required" });
     return;
   }
-  const db = readDB();
-  const user = db.users.find((u) => u.email === email.toLowerCase());
+  let db_connect = dbo.getDb();
+  const user = await db_connect
+    .collection("user")
+    .findOne({ email: email.toLowerCase() });
   if (!user) {
     res.status(401).json({ message: "Invalid email or password" });
     return;
