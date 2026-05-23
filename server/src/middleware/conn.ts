@@ -1,3 +1,8 @@
+// Added two lines to set the DNS servers to Cloudflare and Google to avoid DNS resolution issues when connecting to MongoDB Atlas
+// I don't know if anyone else needs this but I needed these lines for it to work 
+import { setServers } from "node:dns/promises";
+setServers(["1.1.1.1", "8.8.8.8"]);
+
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 let _db;
