@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import NewGrant from "./pages/NewGrant";
 import Admin from "./pages/AdminDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/grants/new"
+            element={
+              <ProtectedRoute>
+                <NewGrant />
               </ProtectedRoute>
             }
           />

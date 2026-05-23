@@ -16,6 +16,8 @@ interface Grant {
   title: string;
   description: string;
   submittedEmail: string;
+  projectDirectorId: string;
+  studentsImpacted: number;
 }
 interface College {
   id: string;
