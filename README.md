@@ -20,48 +20,54 @@ A grant management system for Weber State University that allows administrators 
 ## Setup Instructions
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - npm
 
 ### Initial Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/TaylorChau/LinkUpGroupProject.git
    cd LinkUpGroupProject
    ```
 
 2. **Server Setup**
+
    ```bash
    cd server
    npm install
-   
+
    # Create the admin user (run once)
    npx tsx src/seed.ts
-   
+
    # Start the development server
    npm run dev
    ```
+
    Server runs on **http://localhost:5000**
 
 3. **Client Setup** (in a new terminal)
+
    ```bash
    cd client
    npm install
-   
+
    # Start the development server
    npm run dev
    ```
+
    Client runs on **http://localhost:5173**
 
 ---
 
 ## Default Admin Credentials
 
-| Field    | Value                     |
-|----------|---------------------------|
-| Email    | admin@4760weber.edu       |
-| Password | Admin1234!                |
+| Field    | Value               |
+| -------- | ------------------- |
+| Email    | admin@4760weber.edu |
+| Password | Admin1234!          |
 
 ⚠️ **Change this password after first login in production**
 
@@ -120,15 +126,16 @@ LinkUpGroupProject/
 
 ### Authentication
 
-| Method | Endpoint             | Description                      | Auth Required |
-|--------|----------------------|----------------------------------|---------------|
-| POST   | `/api/auth/register` | Create a new user account        | No            |
-| POST   | `/api/auth/login`    | Login and receive JWT token      | No            |
-| GET    | `/api/health`        | Server health check              | No            |
+| Method | Endpoint             | Description                 | Auth Required |
+| ------ | -------------------- | --------------------------- | ------------- |
+| POST   | `/api/auth/register` | Create a new user account   | No            |
+| POST   | `/api/auth/login`    | Login and receive JWT token | No            |
+| GET    | `/api/health`        | Server health check         | No            |
 
 ### Request/Response Examples
 
 **Register**
+
 ```json
 POST /api/auth/register
 {
@@ -149,6 +156,7 @@ Response: 201 Created
 ```
 
 **Login**
+
 ```json
 POST /api/auth/login
 {

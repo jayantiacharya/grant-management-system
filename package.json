@@ -1,0 +1,19 @@
+{
+  "name": "grant-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Weber State CS4760 grant management monorepo root (tooling only).",
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,css,json,md,html}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,css,json,md,html}\""
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,css,json,md,html}": "prettier --write"
+  }
+}
