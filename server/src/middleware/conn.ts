@@ -1,5 +1,5 @@
 // Added two lines to set the DNS servers to Cloudflare and Google to avoid DNS resolution issues when connecting to MongoDB Atlas
-// I don't know if anyone else needs this but I needed these lines for it to work 
+// I don't know if anyone else needs this but I needed these lines for it to work
 import { setServers } from "node:dns/promises";
 setServers(["1.1.1.1", "8.8.8.8"]);
 
@@ -26,7 +26,7 @@ export default {
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log(
-          "Pinged your deployment. You successfully connected to MongoDB!"
+          "Pinged your deployment. You successfully connected to MongoDB!",
         );
         _db = client.db("linkUpDatabase");
         console.log("Successfully connected to linkUpDatabase Collection");

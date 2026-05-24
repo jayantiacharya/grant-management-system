@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express from 'express';
-import cors from 'cors';
-import authRoutes from './routes/auth.js';
+import express from "express";
+import cors from "cors";
+import authRoutes from "./routes/auth.js";
 import grantRoutes from "./routes/grantSubmission.js";
 import adminRoutes from "./routes/admin.js";
-import MongoStore from 'connect-mongo';
-import session from 'express-session';
+import MongoStore from "connect-mongo";
+import session from "express-session";
 
 const app = express();
 
@@ -23,17 +23,17 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.ATLAS_URI,
     }),
-  })
+  }),
 );
 
 // const dbo = require("./db/conn");
 import dbo from "./middleware/conn.js";
 
-app.use('/api/auth', authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/grants", grantRoutes);
 app.use("/api/admin", adminRoutes);
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 const PORT = process.env.PORT;
 // console.log(process.env.ATLAS_URI);

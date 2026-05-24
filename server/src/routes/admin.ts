@@ -5,7 +5,6 @@ import dbo from "../middleware/conn.js"; // Database connection
 const router = Router();
 
 router.route("/colleges").get(async (req, res) => {
-
   // const db = readDB();
   let db_connect = dbo.getDb();
   const colleges = await db_connect.collection("college").find().toArray();
@@ -15,7 +14,10 @@ router.route("/colleges").get(async (req, res) => {
 router.route("/departments").get(async (req, res) => {
   // const db = readDB();
   let db_connect = dbo.getDb();
-  const departments = await db_connect.collection("department").find().toArray();
+  const departments = await db_connect
+    .collection("department")
+    .find()
+    .toArray();
   res.json(departments);
 });
 
@@ -40,7 +42,7 @@ router.route("/createCollege").post(async (req, res) => {
   // const db = readDB();
   let collegeObj = {
     name: name,
-    dean: dean
+    dean: dean,
   };
   await db_connect.collection("college").insertOne(collegeObj);
   status = "College created successfully";
@@ -54,7 +56,7 @@ router.route("/createCollege").post(async (req, res) => {
 });
 
 router.route("/createDepartment").post(async (req, res) => {
-    let status = "";
+  let status = "";
   let db_connect = dbo.getDb();
   const { name, college } = req.body;
 
@@ -67,7 +69,7 @@ router.route("/createDepartment").post(async (req, res) => {
   // const db = readDB();
   let departObj = {
     name: name,
-    college: college
+    college: college,
   };
 
   const department = {

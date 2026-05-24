@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+coverage
+.next
+.cache
+.vite
+
+client/package-lock.json
+server/package-lock.json
+package-lock.json
+
+server/db.json
+*.min.js
+*.min.css
