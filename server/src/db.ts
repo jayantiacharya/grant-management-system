@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
-const DB_PATH = path.join(process.cwd(), 'db.json');
+const DB_PATH = path.join(process.cwd(), "db.json");
 
 interface User {
   id: string;
   email: string;
   password: string;
-  role: 'admin' | 'user';
+  role: "admin" | "user";
   createdAt: string;
 }
 
