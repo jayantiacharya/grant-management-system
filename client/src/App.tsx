@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import NewGrant from "./pages/NewGrant";
 import Admin from "./pages/AdminDashboard";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
