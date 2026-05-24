@@ -22,6 +22,8 @@ type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
   studentsImpacted: string;
 };
 
+type GrantFormErrors = Partial<Record<keyof GrantFormState, string>>;
+
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,18 +34,31 @@ export default function NewGrant() {
     projectDirectorId: user?.id ?? "",
     studentsImpacted: "",
   });
+  const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     if (!token) return;
+    const controller = new AbortController();
     axios
       .get("http://localhost:5000/api/admin/user-options", {
         headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
       })
       .then((res) => setUsers(res.data))
-      .catch(() => setUsers([]));
+      .catch((err) => {
+        if (axios.isCancel(err)) return;
+        setUsers([]);
+        const fallback = "Failed to load project directors.";
+        if (axios.isAxiosError(err)) {
+          setMessage(err.response?.data?.message ?? fallback);
+        } else {
+          setMessage(fallback);
+        }
+      });
+    return () => controller.abort();
   }, [token]);
 
   const handleLogout = () => {
@@ -54,11 +69,31 @@ export default function NewGrant() {
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
   };
 
+  const validate = (data: GrantFormState): GrantFormErrors => {
+    const next: GrantFormErrors = {};
+    if (!data.title.trim()) next.title = "Title is required.";
+    if (!data.description.trim()) next.description = "Description is required.";
+    if (!data.projectDirectorId)
+      next.projectDirectorId = "Select a project director.";
+    const n = Number(data.studentsImpacted);
+    if (data.studentsImpacted === "" || !Number.isInteger(n) || n < 0) {
+      next.studentsImpacted =
+        "Students impacted must be a non-negative integer.";
+    }
+    return next;
+  };
+
   const submitGrant = async () => {
+    const validationErrors = validate(formData);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
     setLoading(true);
     setMessage("");
 
@@ -82,7 +117,8 @@ export default function NewGrant() {
         projectDirectorId: user?.id ?? "",
         studentsImpacted: "",
       });
-    } catch (error: unknown) {
+      setErrors({});
+    } catch (error) {
       const fallback = "Failed to submit proposal.";
       if (axios.isAxiosError(error)) {
         setMessage(error.response?.data?.message ?? fallback);
@@ -142,6 +178,9 @@ export default function NewGrant() {
                 placeholder="Enter grant title"
                 required
               />
+              {errors.title && (
+                <span className="field-error">{errors.title}</span>
+              )}
             </div>
 
             <div>
@@ -156,6 +195,9 @@ export default function NewGrant() {
                 placeholder="Enter a detailed grant description"
                 required
               />
+              {errors.description && (
+                <span className="field-error">{errors.description}</span>
+              )}
             </div>
 
             <div>
@@ -170,10 +212,7 @@ export default function NewGrant() {
                 onChange={handleChange}
                 required
               >
-                <option value="" disabled>
-                  Select project director
-                </option>
-                {users.length === 0 && user && (
+                {user && !users.some((u) => u.id === user.id) && (
                   <option value={user.id}>{user.email}</option>
                 )}
                 {users.map((u) => (
@@ -182,6 +221,9 @@ export default function NewGrant() {
                   </option>
                 ))}
               </select>
+              {errors.projectDirectorId && (
+                <span className="field-error">{errors.projectDirectorId}</span>
+              )}
             </div>
 
             <div>
@@ -200,6 +242,9 @@ export default function NewGrant() {
                 placeholder="0"
                 required
               />
+              {errors.studentsImpacted && (
+                <span className="field-error">{errors.studentsImpacted}</span>
+              )}
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>
