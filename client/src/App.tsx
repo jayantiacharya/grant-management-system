@@ -7,8 +7,8 @@ import NewGrant from "./pages/NewGrant";
 import Admin from "./pages/AdminDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+  const { token, user } = useAuth();
+  return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {

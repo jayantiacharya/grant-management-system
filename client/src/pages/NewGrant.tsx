@@ -12,7 +12,7 @@ interface UserOption {
 }
 
 export default function NewGrant() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -26,17 +26,14 @@ export default function NewGrant() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (!token) return;
     axios
-      .get("http://localhost:5000/api/admin/users")
+      .get("http://localhost:5000/api/admin/user-options", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((res) => setUsers(res.data))
       .catch(() => setUsers([]));
-  }, []);
-
-  useEffect(() => {
-    if (user?.id && !formData.projectDirectorId) {
-      setFormData((prev) => ({ ...prev, projectDirectorId: user.id }));
-    }
-  }, [user?.id]);
+  }, [token]);
 
   const handleLogout = () => {
     logout();
@@ -59,13 +56,16 @@ export default function NewGrant() {
     setMessage("");
 
     try {
-      await axios.post("http://localhost:5000/api/grants/submit", {
-        title: formData.title,
-        description: formData.description,
-        submittedEmail: user?.email,
-        projectDirectorId: formData.projectDirectorId,
-        studentsImpacted: Number(formData.studentsImpacted) || 0,
-      });
+      await axios.post(
+        "http://localhost:5000/api/grants/submit",
+        {
+          title: formData.title,
+          description: formData.description,
+          projectDirectorId: formData.projectDirectorId,
+          studentsImpacted: Number(formData.studentsImpacted),
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
       setMessage("Grant proposal submitted successfully.");
 
@@ -152,6 +152,9 @@ export default function NewGrant() {
                 onChange={handleChange}
                 required
               >
+                <option value="" disabled>
+                  Select project director
+                </option>
                 {users.length === 0 && user && (
                   <option value={user.id}>{user.email}</option>
                 )}
@@ -173,6 +176,7 @@ export default function NewGrant() {
                 id="studentsImpacted"
                 name="studentsImpacted"
                 min={0}
+                step={1}
                 value={formData.studentsImpacted}
                 onChange={handleChange}
                 placeholder="0"
