@@ -1,29 +1,40 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 
 import "./Dashboard.css";
 
-interface UserOption {
+export type UserOption = {
   id: string;
   email: string;
-}
+};
+
+export type GrantSubmission = {
+  title: string;
+  description: string;
+  projectDirectorId: string;
+  studentsImpacted: number;
+};
+
+type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
+  studentsImpacted: string;
+};
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<GrantFormState>({
     title: "",
     description: "",
     projectDirectorId: user?.id ?? "",
     studentsImpacted: "",
   });
   const [users, setUsers] = useState<UserOption[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     if (!token) return;
@@ -41,31 +52,27 @@ export default function NewGrant() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setMessage("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const submitGrant = async () => {
     setLoading(true);
     setMessage("");
 
+    const payload: GrantSubmission = {
+      title: formData.title,
+      description: formData.description,
+      projectDirectorId: formData.projectDirectorId,
+      studentsImpacted: Number(formData.studentsImpacted),
+    };
+
     try {
-      await axios.post(
-        "http://localhost:5000/api/grants/submit",
-        {
-          title: formData.title,
-          description: formData.description,
-          projectDirectorId: formData.projectDirectorId,
-          studentsImpacted: Number(formData.studentsImpacted),
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await axios.post("http://localhost:5000/api/grants/submit", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setMessage("Grant proposal submitted successfully.");
 
@@ -75,8 +82,13 @@ export default function NewGrant() {
         projectDirectorId: user?.id ?? "",
         studentsImpacted: "",
       });
-    } catch (error: any) {
-      setMessage(error.response?.data?.message || "Failed to submit proposal.");
+    } catch (error: unknown) {
+      const fallback = "Failed to submit proposal.";
+      if (axios.isAxiosError(error)) {
+        setMessage(error.response?.data?.message ?? fallback);
+      } else {
+        setMessage(fallback);
+      }
     } finally {
       setLoading(false);
     }
@@ -111,7 +123,13 @@ export default function NewGrant() {
             Submit a new grant proposal for university review and approval.
           </p>
 
-          <form className="grant-form" onSubmit={handleSubmit}>
+          <form
+            className="grant-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitGrant();
+            }}
+          >
             <div>
               <label htmlFor="title">Grant Title</label>
 
