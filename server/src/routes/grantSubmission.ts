@@ -5,6 +5,7 @@ import { verifyToken, AuthRequest } from "../middleware/auth.js";
 const router = Router();
 
 router.post("/submit", verifyToken, async (req: AuthRequest, res: Response) => {
+  const { email, userId } = req.user!;
   const { title, description, projectDirectorId, studentsImpacted } = req.body;
 
   if (!title || !description) {
@@ -14,26 +15,33 @@ router.post("/submit", verifyToken, async (req: AuthRequest, res: Response) => {
   }
 
   const parsedStudents = Number(studentsImpacted);
-  if (
-    !Number.isFinite(parsedStudents) ||
-    !Number.isInteger(parsedStudents) ||
-    parsedStudents < 0
-  ) {
+  if (!Number.isInteger(parsedStudents) || parsedStudents < 0) {
     return res.status(400).json({
       message: "studentsImpacted must be a non-negative integer",
+    });
+  }
+
+  const db_connect = dbo.getDb();
+
+  const resolvedDirectorId = projectDirectorId || userId;
+  const directorExists = await db_connect
+    .collection("user")
+    .findOne({ id: resolvedDirectorId }, { projection: { _id: 1 } });
+  if (!directorExists) {
+    return res.status(400).json({
+      message: "projectDirectorId does not match a known user",
     });
   }
 
   const newGrant = {
     title,
     description,
-    submittedEmail: req.user!.email,
-    projectDirectorId: projectDirectorId || req.user!.userId,
+    submittedEmail: email,
+    projectDirectorId: resolvedDirectorId,
     studentsImpacted: parsedStudents,
   };
 
   try {
-    const db_connect = dbo.getDb();
     await db_connect.collection("grant").insertOne(newGrant);
     return res.status(201).json(newGrant);
   } catch (err) {
