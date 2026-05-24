@@ -21,7 +21,7 @@ vi.mock("./pages/Dashboard", () => ({ default: () => <div>dashboard</div> }));
 vi.mock("./pages/NewGrant", () => ({ default: () => <div>new grant</div> }));
 vi.mock("./pages/AdminDashboard", () => ({ default: () => <div>admin</div> }));
 
-import { ProtectedRoute } from "./App";
+import { ProtectedRoute, PublicRoute } from "./App";
 
 const renderWithRoute = () =>
   render(
@@ -66,5 +66,55 @@ describe("ProtectedRoute", () => {
     renderWithRoute();
     expect(screen.getByText("login page")).toBeInTheDocument();
     expect(screen.queryByText("secret content")).not.toBeInTheDocument();
+  });
+});
+
+const renderPublic = () =>
+  render(
+    <MemoryRouter initialEntries={["/login"]}>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <div>public login</div>
+            </PublicRoute>
+          }
+        />
+        <Route path="/dashboard" element={<div>dashboard route</div>} />
+        <Route path="/admin" element={<div>admin route</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+describe("PublicRoute", () => {
+  it("renders children when no token", () => {
+    mockUseAuth.mockReturnValue({ token: null, user: null });
+    renderPublic();
+    expect(screen.getByText("public login")).toBeInTheDocument();
+  });
+
+  it("renders children when token present but user is null (avoids redirect loop)", () => {
+    mockUseAuth.mockReturnValue({ token: "tok", user: null });
+    renderPublic();
+    expect(screen.getByText("public login")).toBeInTheDocument();
+  });
+
+  it("redirects to /dashboard when authenticated as user", () => {
+    mockUseAuth.mockReturnValue({
+      token: "tok",
+      user: { id: "u1", email: "a@b.c", role: "user" },
+    });
+    renderPublic();
+    expect(screen.getByText("dashboard route")).toBeInTheDocument();
+  });
+
+  it("redirects to /admin when authenticated as admin", () => {
+    mockUseAuth.mockReturnValue({
+      token: "tok",
+      user: { id: "u1", email: "a@b.c", role: "admin" },
+    });
+    renderPublic();
+    expect(screen.getByText("admin route")).toBeInTheDocument();
   });
 });

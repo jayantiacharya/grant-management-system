@@ -11,15 +11,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
 
-  if (!token) {
+  if (!token || !user) {
     return <>{children}</>;
   }
 
   return (
-    <Navigate to={user?.role === "admin" ? "/admin" : "/dashboard"} replace />
+    <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />
   );
 }
 
