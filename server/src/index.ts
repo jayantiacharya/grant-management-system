@@ -41,7 +41,7 @@ const PORT = process.env.PORT;
 // app.listen(PORT, () => console.log("Server running on port " + PORT));
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);
-  dbo.connectToServer(function (err) {
+  dbo.connectToServer(function (err?: Error) {
     if (err) {
       console.error(err);
     }

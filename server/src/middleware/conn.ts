@@ -3,20 +3,26 @@
 import { setServers } from "node:dns/promises";
 setServers(["1.1.1.1", "8.8.8.8"]);
 
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient, ServerApiVersion, type Db } from "mongodb";
 
-let _db;
+type ConnectCallback = (err?: Error) => void;
+
+let _db: Db | null = null;
 
 export default {
-  connectToServer: function (callback) {
+  connectToServer: function (callback: ConnectCallback) {
     const uri = process.env.ATLAS_URI;
+    if (!uri) {
+      callback(new Error("ATLAS_URI is not set"));
+      return;
+    }
     console.log("Attempting to connect...");
     // Create a MongoClient with a MongoClientOptions object to set the Stable API Version
     const client = new MongoClient(uri, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
-        depricationErrors: true,
+        deprecationErrors: true,
       },
     });
     async function run() {
@@ -30,13 +36,16 @@ export default {
         );
         _db = client.db("linkUpDatabase");
         console.log("Successfully connected to linkUpDatabase Collection");
-      } finally {
+        callback();
+      } catch (err) {
+        callback(err instanceof Error ? err : new Error(String(err)));
       }
     }
-    run().catch(console.dir);
+    run();
   },
 
-  getDb: function () {
+  getDb: function (): Db {
+    if (!_db) throw new Error("Database not initialized");
     return _db;
   },
 };
