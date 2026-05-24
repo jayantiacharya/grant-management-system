@@ -50,12 +50,13 @@ beforeEach(() => {
 });
 
 describe("NewGrant", () => {
-  it("renders all form fields", () => {
+  it("renders all form fields", async () => {
     render(<NewGrant />);
     expect(screen.getByLabelText(/grant title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/project director/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/students impacted/i)).toBeInTheDocument();
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
   });
 
   it("fetches user-options with bearer token on mount", async () => {
@@ -70,12 +71,13 @@ describe("NewGrant", () => {
     });
   });
 
-  it("pre-selects current user as project director", () => {
+  it("pre-selects current user as project director", async () => {
     render(<NewGrant />);
     const select = screen.getByLabelText(
       /project director/i,
     ) as HTMLSelectElement;
     expect(select.value).toBe("u1");
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
   });
 
   it("shows field errors when submitting an empty form", async () => {
