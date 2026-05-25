@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import axios from "axios";
 
 import "./Dashboard.css";
@@ -8,11 +8,18 @@ import "./Dashboard.css";
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    affectsMultipleDepartments: "",
+    departmentCount: "",
+    usesSubjects: "",
+    irbApproved: "",
   });
+
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -22,23 +29,76 @@ export default function Dashboard() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setMessage("");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+
+    if (selectedFiles.length > 3) {
+      setMessage("You can upload a maximum of 3 files.");
+      e.target.value = "";
+      setFiles([]);
+      return;
+    }
+
+    setFiles(selectedFiles);
     setMessage("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const selectedFiles = Array.from(fileInputRef.current?.files || []);
+
+    if (
+      formData.affectsMultipleDepartments === "yes" &&
+      (!formData.departmentCount || Number(formData.departmentCount) < 2)
+    ) {
+      setMessage("Please enter how many departments are affected.");
+      return;
+    }
+
+    if (formData.usesSubjects === "yes" && formData.irbApproved !== "yes") {
+      setMessage("IRB approval is required for projects using human or animal subjects.");
+      return;
+    }
+
+    if (formData.usesSubjects === "yes" && selectedFiles.length === 0) {
+      setMessage("File upload is required when human or animal subjects are used.");
+      return;
+    }
+
+    if (selectedFiles.length > 3) {
+      setMessage("You can upload a maximum of 3 files.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
     try {
-      await axios.post("http://localhost:5000/api/grants/submit", {
-        title: formData.title,
-        description: formData.description,
-        submittedEmail: user?.email,
+      const submitData = new FormData();
+
+      submitData.append("title", formData.title);
+      submitData.append("description", formData.description);
+      submitData.append("submittedEmail", user?.email || "");
+      submitData.append("affectsMultipleDepartments", formData.affectsMultipleDepartments);
+      submitData.append("departmentCount", formData.departmentCount);
+      submitData.append("usesSubjects", formData.usesSubjects);
+      submitData.append("irbApproved", formData.irbApproved);
+
+      selectedFiles.forEach((file) => {
+        submitData.append("files", file);
+      });
+
+      await axios.post("http://localhost:5000/api/grants/submit", submitData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       setMessage("Grant proposal submitted successfully.");
@@ -46,7 +106,17 @@ export default function Dashboard() {
       setFormData({
         title: "",
         description: "",
+        affectsMultipleDepartments: "",
+        departmentCount: "",
+        usesSubjects: "",
+        irbApproved: "",
       });
+
+      setFiles([]);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error: any) {
       setMessage(error.response?.data?.message || "Failed to submit proposal.");
     } finally {
@@ -107,6 +177,99 @@ export default function Dashboard() {
                 required
               />
             </div>
+
+            <div>
+              <label htmlFor="affectsMultipleDepartments">
+                Does this grant affect more than one department?
+              </label>
+
+              <select
+                id="affectsMultipleDepartments"
+                name="affectsMultipleDepartments"
+                value={formData.affectsMultipleDepartments}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            {formData.affectsMultipleDepartments === "yes" && (
+              <div>
+                <label htmlFor="departmentCount">How many departments?</label>
+
+                <input
+                  type="number"
+                  id="departmentCount"
+                  name="departmentCount"
+                  value={formData.departmentCount}
+                  onChange={handleChange}
+                  placeholder="Enter number of departments"
+                  min="2"
+                  required
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="files">Upload Files</label>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="files"
+                name="files"
+                onChange={handleFileChange}
+                multiple
+                required={formData.usesSubjects === "yes"}
+              />
+
+              <small>Maximum 3 files allowed.</small>
+
+              {files.length > 0 && (
+                <small>{files.length} file selected.</small>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="usesSubjects">
+                Does this project use human or animal subjects?
+              </label>
+
+              <select
+                id="usesSubjects"
+                name="usesSubjects"
+                value={formData.usesSubjects}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            {formData.usesSubjects === "yes" && (
+              <div>
+                <label htmlFor="irbApproved">
+                  Has IRB approval been completed?
+                </label>
+
+                <select
+                  id="irbApproved"
+                  name="irbApproved"
+                  value={formData.irbApproved}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select an option</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            )}
 
             <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? "Submitting..." : "Submit Proposal"}
