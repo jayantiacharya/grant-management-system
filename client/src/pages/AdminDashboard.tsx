@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
@@ -106,6 +106,9 @@ export default function Dashboard() {
         <div className="dash-welcome">
           <h2>Welcome back</h2>
           <p>Weber State University — Grant Management System</p>
+          <Link to="/admin/arcc" className="submit-btn">
+            ARCC Committee
+          </Link>
         </div>
         <div className="dash-grid">
           <div className="grant-form-card">

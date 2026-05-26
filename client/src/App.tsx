@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import NewGrant from "./pages/NewGrant";
 import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
+import ArccCommittee from "./pages/ArccCommittee";
 import Profile from "./pages/Profile";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/arcc"
+            element={
+              <ProtectedRoute>
+                <ArccCommittee />
               </ProtectedRoute>
             }
           />
