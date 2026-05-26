@@ -4,7 +4,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NewGrant from "./pages/NewGrant";
+import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
+import Profile from "./pages/Profile";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -62,10 +64,26 @@ export default function App() {
             }
           />
           <Route
+            path="/grants/edit/:grantId"
+            element={
+              <ProtectedRoute>
+                <EditGrant />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin"
             element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

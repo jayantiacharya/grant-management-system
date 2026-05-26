@@ -78,4 +78,66 @@ router.route("/login").post(async (req: Request, res: Response) => {
   });
 });
 
+router.route("/get-user/:userId").get(async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+    let db_connect = dbo.getDb();
+    const user = await db_connect.collection("user").findOne({ id: userId });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    res.json({
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        department: user.department,
+        college: user.college,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch user data" });
+  }
+});
+
+router.route("/update-user").post(async (req: Request, res: Response) => {
+  const { userId, firstName, lastName, email, password, department, college } =
+    req.body;
+  if (!userId) {
+    res.status(400).json({ message: "User ID is required" });
+    return;
+  }
+  let db_connect = dbo.getDb();
+  const user = await db_connect.collection("user").findOne({ id: userId });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+  const updateData: any = {};
+  if (firstName) updateData.firstName = firstName;
+  if (lastName) updateData.lastName = lastName;
+  if (email) updateData.email = email.toLowerCase();
+  if (department) updateData.department = department;
+  if (college) updateData.college = college;
+  if (password) {
+    if (password.length < 6) {
+      res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+      return;
+    }
+    updateData.password = await bcrypt.hash(password, 12);
+  }
+  await db_connect
+    .collection("user")
+    .updateOne({ id: userId }, { $set: updateData });
+  res.json({ message: "User updated successfully" });
+});
+
 export default router;

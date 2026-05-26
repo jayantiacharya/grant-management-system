@@ -1,16 +1,31 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 import "./Dashboard.css";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [grants, setGrants] = useState([]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+  const fetchGrants = async () => {
+    const { data } = await axios.get(
+      `http://localhost:5000/api/grants/user-grants/${user?.email}`,
+    );
+    setGrants(Array.isArray(data) ? data : []);
+  };
+  useEffect(() => {
+    fetchGrants();
+  }, []);
 
   return (
     <div className="dashboard-page">
@@ -21,7 +36,9 @@ export default function Dashboard() {
         </div>
 
         <div className="dash-user">
-          <span>{user?.email}</span>
+          <button onClick={handleProfile} className="logout-btn">
+            {user?.email}
+          </button>
 
           <button onClick={handleLogout} className="logout-btn">
             Sign out
@@ -36,7 +53,25 @@ export default function Dashboard() {
           <p className="grant-description">
             Submit a new grant proposal or review your existing submissions.
           </p>
+          {grants.length > 0 && (
+            <div>
+              <h3>Your Grant Submissions:</h3>
+              <div>
+                {grants.map((grant: any) => (
+                  <div key={grant._id}>
+                    <strong>{grant.title}</strong>
 
+                    <button
+                      onClick={() => navigate(`/grants/edit/${grant._id}`)}
+                      className="edit-btn"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             type="button"
             className="submit-btn"
