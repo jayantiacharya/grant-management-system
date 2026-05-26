@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "outDir": "./dist",
     "rootDir": "./",
@@ -11,7 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["node", "express", "multer"],
+    "types": ["node", "express", "multer", "vitest/globals"],
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*", "*.ts"],

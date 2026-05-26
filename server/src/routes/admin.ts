@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import dbo from "../middleware/conn.js"; // Database connection
-// import { readDB, writeDB } from "../db.js";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -22,9 +22,20 @@ router.route("/departments").get(async (req, res) => {
 });
 
 router.route("/users").get(async (req, res) => {
-  // const db = readDB();
   let db_connect = dbo.getDb();
-  const users = await db_connect.collection("user").find().toArray();
+  const users = await db_connect
+    .collection("user")
+    .find({}, { projection: { password: 0 } })
+    .toArray();
+  res.json(users);
+});
+
+router.get("/user-options", verifyToken, async (_req, res) => {
+  const db_connect = dbo.getDb();
+  const users = await db_connect
+    .collection("user")
+    .find({}, { projection: { _id: 0, id: 1, email: 1 } })
+    .toArray();
   res.json(users);
 });
 

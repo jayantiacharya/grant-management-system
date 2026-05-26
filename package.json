@@ -16,7 +16,8 @@
     "dev:server": "npm run dev -w server",
     "build": "npm run build -w server && npm run build -w client",
     "seed": "npm run seed -w server",
-    "lint": "npm run lint -w client"
+    "lint": "npm run lint -w client",
+    "test": "npm run test:run -w client && npm run test:run -w server"
   },
   "devDependencies": {
     "concurrently": "^9.0.1",

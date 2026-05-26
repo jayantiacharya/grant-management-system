@@ -3,22 +3,23 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import NewGrant from "./pages/NewGrant";
 import Admin from "./pages/AdminDashboard";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { token, user } = useAuth();
+  return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
 
-  if (!token) {
+  if (!token || !user) {
     return <>{children}</>;
   }
 
   return (
-    <Navigate to={user?.role === "admin" ? "/admin" : "/dashboard"} replace />
+    <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />
   );
 }
 
@@ -49,6 +50,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/grants/new"
+            element={
+              <ProtectedRoute>
+                <NewGrant />
               </ProtectedRoute>
             }
           />

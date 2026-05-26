@@ -190,8 +190,18 @@
   cursor: not-allowed;
 }
 
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 500;
+}
 .form-message {
-  text-align: center;
-  font-weight: 600;
-  color: #1f4373;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 13px;
 }
