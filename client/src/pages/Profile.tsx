@@ -13,6 +13,15 @@ export default function Profile() {
   const [departments, setDepartments] = useState([]);
   const [userData, setUserData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    department: "",
+    college: "",
+  });
   const fetchColleges = async () => {
     const { data } = await axios.get(
       "http://localhost:5000/api/admin/colleges",
@@ -25,29 +34,30 @@ export default function Profile() {
     );
     setDepartments(data);
   };
-  const fetchUserData = async () => {
+  const fetchUserData = async (userId) => {
     const { data } = await axios.get(
-      `http://localhost:5000/api/auth/get-user/${user?.id}`,
+      `http://localhost:5000/api/auth/get-user/${userId}`,
     );
     setUserData(data.user);
-    console.log("Fetched user data:", data.user);
+    setUserFormData({
+      firstName: data.user.firstName || "",
+      lastName: data.user.lastName || "",
+      email: data.user.email || "",
+      password: "",
+      confirmPassword: "",
+      department: data.user.department || "",
+      college: data.user.college || "",
+    });
   };
-
-  const [userFormData, setUserFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    department: "",
-    college: "",
-  });
 
   useEffect(() => {
     fetchColleges();
     fetchDepartments();
-    fetchUserData();
   }, []);
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchUserData(user.id);
+  }, [user?.id]);
 
   const handleLogout = () => {
     logout();
@@ -80,6 +90,7 @@ export default function Profile() {
       userId: user?.id,
       ...userFormData,
     });
+    await fetchUserData(user.id);
     setIsEditing(false);
   };
 
@@ -129,7 +140,7 @@ export default function Profile() {
               type="text"
               name="firstName"
               placeholder="First Name"
-              value={userData.firstName}
+              value={userFormData.firstName}
               onChange={handleChange}
             />
 
@@ -137,7 +148,7 @@ export default function Profile() {
               type="text"
               name="lastName"
               placeholder="Last Name"
-              value={userData.lastName}
+              value={userFormData.lastName}
               onChange={handleChange}
             />
 
@@ -145,7 +156,7 @@ export default function Profile() {
               type="email"
               name="email"
               placeholder="Email"
-              value={userData.email}
+              value={userFormData.email}
               onChange={handleChange}
             />
 
@@ -166,7 +177,7 @@ export default function Profile() {
             />
             <select
               name="college"
-              value={userData.college}
+              value={userFormData.college}
               onChange={handleChange}
             >
               <option value="">Select College</option>
@@ -180,7 +191,7 @@ export default function Profile() {
 
             <select
               name="department"
-              value={userData.department}
+              value={userFormData.department}
               onChange={handleChange}
             >
               <option value="">Select Department</option>
