@@ -87,12 +87,19 @@ describe("NewGrant", () => {
     screen.getByLabelText(/grant title/i).removeAttribute("required");
     screen.getByLabelText(/description/i).removeAttribute("required");
     screen.getByLabelText(/students impacted/i).removeAttribute("required");
+    screen
+      .getByLabelText(/affect more than one department/i)
+      .removeAttribute("required");
+    screen
+      .getByLabelText(/human or animal subjects/i)
+      .removeAttribute("required");
 
     await user.click(screen.getByRole("button", { name: /submit proposal/i }));
 
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
     expect(screen.getByText(/description is required/i)).toBeInTheDocument();
     expect(screen.getByText(/non-negative integer/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/please select an option/i).length).toBe(2);
     expect(axios.post).not.toHaveBeenCalled();
   });
 
@@ -103,17 +110,27 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "AI for Good");
     await user.type(screen.getByLabelText(/description/i), "Build it");
     await user.type(screen.getByLabelText(/students impacted/i), "42");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "no",
+    );
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "no",
+    );
     await user.click(screen.getByRole("button", { name: /submit proposal/i }));
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
         "http://localhost:5000/api/grants/submit",
-        {
+        expect.objectContaining({
           title: "AI for Good",
           description: "Build it",
           projectDirectorId: "u1",
           studentsImpacted: 42,
-        },
+          affectsMultipleDepartments: "no",
+          usesSubjects: "no",
+        }),
         expect.objectContaining({
           headers: { Authorization: "Bearer tok123" },
         }),
@@ -135,6 +152,14 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
     await user.type(screen.getByLabelText(/students impacted/i), "1");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "no",
+    );
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "no",
+    );
     await user.click(screen.getByRole("button", { name: /submit proposal/i }));
 
     expect(
@@ -161,6 +186,12 @@ describe("NewGrant", () => {
     titleInput.removeAttribute("required");
     screen.getByLabelText(/description/i).removeAttribute("required");
     screen.getByLabelText(/students impacted/i).removeAttribute("required");
+    screen
+      .getByLabelText(/affect more than one department/i)
+      .removeAttribute("required");
+    screen
+      .getByLabelText(/human or animal subjects/i)
+      .removeAttribute("required");
 
     await user.click(screen.getByRole("button", { name: /submit proposal/i }));
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
@@ -180,10 +211,72 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
     await user.type(num, "-5");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "no",
+    );
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "no",
+    );
     await user.click(screen.getByRole("button", { name: /submit proposal/i }));
 
     expect(
       await screen.findByText(/non-negative integer/i),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("requires departmentCount >= 2 when affecting multiple departments", async () => {
+    const user = userEvent.setup();
+    render(<NewGrant />);
+
+    await user.type(screen.getByLabelText(/grant title/i), "x");
+    await user.type(screen.getByLabelText(/description/i), "y");
+    await user.type(screen.getByLabelText(/students impacted/i), "1");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "yes",
+    );
+    const dept = screen.getByLabelText(
+      /how many departments/i,
+    ) as HTMLInputElement;
+    dept.removeAttribute("min");
+    dept.removeAttribute("required");
+    await user.type(dept, "1");
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "no",
+    );
+    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+
+    expect(
+      await screen.findByText(/number of departments \(2 or more\)/i),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("requires IRB approval when human or animal subjects are used", async () => {
+    const user = userEvent.setup();
+    render(<NewGrant />);
+
+    await user.type(screen.getByLabelText(/grant title/i), "x");
+    await user.type(screen.getByLabelText(/description/i), "y");
+    await user.type(screen.getByLabelText(/students impacted/i), "1");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "no",
+    );
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "yes",
+    );
+    screen.getByLabelText(/upload files/i).removeAttribute("required");
+    await user.selectOptions(screen.getByLabelText(/irb approval/i), "no");
+    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+
+    expect(
+      await screen.findByText(/irb approval is required/i),
     ).toBeInTheDocument();
     expect(axios.post).not.toHaveBeenCalled();
   });

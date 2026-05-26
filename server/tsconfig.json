@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "express", "multer", "vitest/globals"],
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*", "*.ts"],
   "exclude": ["node_modules", "dist"]

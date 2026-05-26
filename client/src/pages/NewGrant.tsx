@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
@@ -11,29 +11,43 @@ export type UserOption = {
   email: string;
 };
 
+type YesNo = "" | "yes" | "no";
+
 export type GrantSubmission = {
   title: string;
   description: string;
   projectDirectorId: string;
   studentsImpacted: number;
+  affectsMultipleDepartments: YesNo;
+  departmentCount: string;
+  usesSubjects: YesNo;
+  irbApproved: YesNo;
 };
 
 type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
   studentsImpacted: string;
 };
 
-type GrantFormErrors = Partial<Record<keyof GrantFormState, string>>;
+type GrantFormErrors = Partial<Record<keyof GrantFormState | "files", string>>;
+
+const MAX_FILES = 3;
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState<GrantFormState>({
     title: "",
     description: "",
     projectDirectorId: user?.id ?? "",
     studentsImpacted: "",
+    affectsMultipleDepartments: "",
+    departmentCount: "",
+    usesSubjects: "",
+    irbApproved: "",
   });
+  const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -75,7 +89,26 @@ export default function NewGrant() {
     setMessage("");
   };
 
-  const validate = (data: GrantFormState): GrantFormErrors => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length > MAX_FILES) {
+      setErrors((prev) => ({
+        ...prev,
+        files: `Maximum ${MAX_FILES} files allowed.`,
+      }));
+      e.target.value = "";
+      setFiles([]);
+      return;
+    }
+    setFiles(selected);
+    setErrors((prev) => ({ ...prev, files: undefined }));
+    setMessage("");
+  };
+
+  const validate = (
+    data: GrantFormState,
+    selectedFiles: File[],
+  ): GrantFormErrors => {
     const next: GrantFormErrors = {};
     if (!data.title.trim()) next.title = "Title is required.";
     if (!data.description.trim()) next.description = "Description is required.";
@@ -86,29 +119,103 @@ export default function NewGrant() {
       next.studentsImpacted =
         "Students impacted must be a non-negative integer.";
     }
+    if (!data.affectsMultipleDepartments) {
+      next.affectsMultipleDepartments = "Please select an option.";
+    } else if (data.affectsMultipleDepartments === "yes") {
+      const d = Number(data.departmentCount);
+      if (data.departmentCount === "" || !Number.isInteger(d) || d < 2) {
+        next.departmentCount = "Enter a number of departments (2 or more).";
+      }
+    }
+    if (!data.usesSubjects) {
+      next.usesSubjects = "Please select an option.";
+    } else if (data.usesSubjects === "yes") {
+      if (data.irbApproved !== "yes") {
+        next.irbApproved =
+          "IRB approval is required when human or animal subjects are used.";
+      }
+      if (selectedFiles.length === 0) {
+        next.files =
+          "File upload is required when human or animal subjects are used.";
+      }
+    }
+    if (selectedFiles.length > MAX_FILES) {
+      next.files = `Maximum ${MAX_FILES} files allowed.`;
+    }
     return next;
   };
 
   const submitGrant = async () => {
-    const validationErrors = validate(formData);
+    const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
+    const validationErrors = validate(formData, selectedFiles);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
     setMessage("");
 
-    const payload: GrantSubmission = {
-      title: formData.title,
-      description: formData.description,
-      projectDirectorId: formData.projectDirectorId,
-      studentsImpacted: Number(formData.studentsImpacted),
-    };
-
     try {
-      await axios.post("http://localhost:5000/api/grants/submit", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const useMultipart = selectedFiles.length > 0;
 
+      let response;
+      if (useMultipart) {
+        const body = new FormData();
+        body.append("title", formData.title);
+        body.append("description", formData.description);
+        body.append("projectDirectorId", formData.projectDirectorId);
+        body.append(
+          "studentsImpacted",
+          String(Number(formData.studentsImpacted)),
+        );
+        body.append(
+          "affectsMultipleDepartments",
+          formData.affectsMultipleDepartments,
+        );
+        if (formData.affectsMultipleDepartments === "yes") {
+          body.append("departmentCount", formData.departmentCount);
+        }
+        body.append("usesSubjects", formData.usesSubjects);
+        if (formData.usesSubjects === "yes") {
+          body.append("irbApproved", formData.irbApproved);
+        }
+        selectedFiles.forEach((file) => body.append("files", file));
+
+        response = await axios.post(
+          "http://localhost:5000/api/grants/submit",
+          body,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          },
+        );
+      } else {
+        const payload = {
+          title: formData.title,
+          description: formData.description,
+          projectDirectorId: formData.projectDirectorId,
+          studentsImpacted: Number(formData.studentsImpacted),
+          affectsMultipleDepartments: formData.affectsMultipleDepartments,
+          departmentCount:
+            formData.affectsMultipleDepartments === "yes"
+              ? formData.departmentCount
+              : "",
+          usesSubjects: formData.usesSubjects,
+          irbApproved:
+            formData.usesSubjects === "yes" ? formData.irbApproved : "",
+        };
+
+        response = await axios.post(
+          "http://localhost:5000/api/grants/submit",
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+      }
+
+      void response;
       setMessage("Grant proposal submitted successfully.");
 
       setFormData({
@@ -116,7 +223,13 @@ export default function NewGrant() {
         description: "",
         projectDirectorId: user?.id ?? "",
         studentsImpacted: "",
+        affectsMultipleDepartments: "",
+        departmentCount: "",
+        usesSubjects: "",
+        irbApproved: "",
       });
+      setFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setErrors({});
     } catch (error) {
       const fallback = "Failed to submit proposal.";
@@ -244,6 +357,118 @@ export default function NewGrant() {
               />
               {errors.studentsImpacted && (
                 <span className="field-error">{errors.studentsImpacted}</span>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="affectsMultipleDepartments">
+                Does this grant affect more than one department?
+              </label>
+
+              <select
+                id="affectsMultipleDepartments"
+                name="affectsMultipleDepartments"
+                value={formData.affectsMultipleDepartments}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              {errors.affectsMultipleDepartments && (
+                <span className="field-error">
+                  {errors.affectsMultipleDepartments}
+                </span>
+              )}
+            </div>
+
+            {formData.affectsMultipleDepartments === "yes" && (
+              <div>
+                <label htmlFor="departmentCount">How many departments?</label>
+
+                <input
+                  type="number"
+                  id="departmentCount"
+                  name="departmentCount"
+                  min={2}
+                  step={1}
+                  value={formData.departmentCount}
+                  onChange={handleChange}
+                  placeholder="Enter number of departments"
+                  required
+                />
+                {errors.departmentCount && (
+                  <span className="field-error">{errors.departmentCount}</span>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="usesSubjects">
+                Does this project use human or animal subjects?
+              </label>
+
+              <select
+                id="usesSubjects"
+                name="usesSubjects"
+                value={formData.usesSubjects}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              {errors.usesSubjects && (
+                <span className="field-error">{errors.usesSubjects}</span>
+              )}
+            </div>
+
+            {formData.usesSubjects === "yes" && (
+              <div>
+                <label htmlFor="irbApproved">
+                  Has IRB approval been completed?
+                </label>
+
+                <select
+                  id="irbApproved"
+                  name="irbApproved"
+                  value={formData.irbApproved}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select an option</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+                {errors.irbApproved && (
+                  <span className="field-error">{errors.irbApproved}</span>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="files">Upload Files</label>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="files"
+                name="files"
+                onChange={handleFileChange}
+                multiple
+                required={formData.usesSubjects === "yes"}
+              />
+
+              <small>Maximum {MAX_FILES} files allowed.</small>
+
+              {files.length > 0 && (
+                <small>{files.length} file(s) selected.</small>
+              )}
+
+              {errors.files && (
+                <span className="field-error">{errors.files}</span>
               )}
             </div>
 
