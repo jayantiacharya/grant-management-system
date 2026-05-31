@@ -25,13 +25,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { files: 3 },
-});
+  limits: { files: 4 }, // 4 regular files + 1 IRB approval file
+}).fields([
+  { name: "files", maxCount: 3 },
+  { name: "irbApprovalFile", maxCount: 1 },
+]);
 
 router.post(
   "/submit",
   verifyToken,
-  upload.array("files", 3),
+  upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
     const {
@@ -78,13 +81,22 @@ router.post(
       });
     }
 
-    const uploadedFiles = (
-      (req.files as Express.Multer.File[] | undefined) ?? []
-    ).map((file) => ({
+    const filesRecord = req.files as
+      | Record<string, Express.Multer.File[]>
+      | undefined;
+    const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
       path: file.path,
     }));
+
+    const irbApprovalFile = filesRecord?.irbApprovalFile?.[0]
+      ? {
+          originalName: filesRecord.irbApprovalFile[0].originalname,
+          savedName: filesRecord.irbApprovalFile[0].filename,
+          path: filesRecord.irbApprovalFile[0].path,
+        }
+      : null;
 
     if (usesSubjects === "yes" && uploadedFiles.length === 0) {
       return res.status(400).json({
@@ -115,6 +127,7 @@ router.post(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
       files: uploadedFiles,
+      irbApprovalFile: irbApprovalFile,
       submittedAt: new Date(),
     };
 
@@ -155,7 +168,7 @@ router.get("/get-grant/:id", async (req, res) => {
 router.put(
   "/edit/:id",
   verifyToken,
-  upload.array("files", 3),
+  upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
     const {
@@ -202,13 +215,22 @@ router.put(
       });
     }
 
-    const uploadedFiles = (
-      (req.files as Express.Multer.File[] | undefined) ?? []
-    ).map((file) => ({
+    const filesRecord = req.files as
+      | Record<string, Express.Multer.File[]>
+      | undefined;
+    const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
       path: file.path,
     }));
+
+    const irbApprovalFile = filesRecord?.irbApprovalFile?.[0]
+      ? {
+          originalName: filesRecord.irbApprovalFile[0].originalname,
+          savedName: filesRecord.irbApprovalFile[0].filename,
+          path: filesRecord.irbApprovalFile[0].path,
+        }
+      : null;
 
     if (usesSubjects === "yes" && uploadedFiles.length === 0) {
       return res.status(400).json({
@@ -239,6 +261,7 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
       files: uploadedFiles,
+      irbApprovalFile: irbApprovalFile,
       submittedAt: new Date(),
     };
 
