@@ -7,6 +7,7 @@ import NewGrant from "./pages/NewGrant";
 import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
+import CriteriaManagement from "./pages/admin/CriteriaManagement";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -84,6 +85,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          {/* New route for Criteria Management - Admin only */}
+          <Route
+            path="/admin/criteria"
+            element={
+              <ProtectedRoute>
+                <CriteriaManagement />
               </ProtectedRoute>
             }
           />
