@@ -515,7 +515,7 @@ export default function NewGrant() {
 
                   <div>
                     <label htmlFor={`itemDescription-${index}`}>
-                      Item Description
+                      Budget Item Name
                     </label>
                     <input
                       type="text"
