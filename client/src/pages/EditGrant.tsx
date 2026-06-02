@@ -184,7 +184,9 @@ export default function NewGrant() {
     setMessage("");
 
     try {
-      const useMultipart = selectedFiles.length > 0;
+      const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
+
+      const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
       let response;
       if (useMultipart) {
@@ -208,6 +210,9 @@ export default function NewGrant() {
           body.append("irbApproved", formData.irbApproved);
         }
         selectedFiles.forEach((file) => body.append("files", file));
+        if (irbApprovalFile) {
+          body.append("irbApprovalFile", irbApprovalFile);
+        }
 
         response = await axios.put(
           `http://localhost:5000/api/grants/edit/${grantId}`,

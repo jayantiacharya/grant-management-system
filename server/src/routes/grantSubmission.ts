@@ -265,20 +265,6 @@ router.put(
     if (irbApprovalFile) {
       update.irbApprovalFile = irbApprovalFile;
     }
-    // const editedGrant = {
-    //   title,
-    //   description,
-    //   submittedEmail: email,
-    //   projectDirectorId: resolvedDirectorId,
-    //   studentsImpacted: parsedStudents,
-    //   affectsMultipleDepartments: affectsMultipleDepartments ?? null,
-    //   departmentCount: parsedDepartmentCount,
-    //   usesSubjects: usesSubjects ?? null,
-    //   irbApproved: usesSubjects === "yes" ? irbApproved : null,
-    //   files: uploadedFiles,
-    //   irbApprovalFile: irbApprovalFile,
-    //   submittedAt: new Date(),
-    // };
 
     try {
       await db_connect
