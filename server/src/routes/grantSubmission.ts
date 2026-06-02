@@ -232,11 +232,11 @@ router.put(
         }
       : null;
 
-    if (usesSubjects === "yes" && uploadedFiles.length === 0) {
-      return res.status(400).json({
-        message: "file upload is required when usesSubjects is yes",
-      });
-    }
+    // if (usesSubjects === "yes" && uploadedFiles.length === 0) {
+    //   return res.status(400).json({
+    //     message: "file upload is required when usesSubjects is yes",
+    //   });
+    // }
 
     const db_connect = dbo.getDb();
 
@@ -249,27 +249,42 @@ router.put(
         message: "projectDirectorId does not match a known user",
       });
     }
-
-    const editedGrant = {
+    const update: Record<string, any> = {
       title,
       description,
-      submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
-      files: uploadedFiles,
-      irbApprovalFile: irbApprovalFile,
-      submittedAt: new Date(),
     };
+    if (uploadedFiles.length > 0) {
+      update.files = uploadedFiles;
+    }
+    if (irbApprovalFile) {
+      update.irbApprovalFile = irbApprovalFile;
+    }
+    // const editedGrant = {
+    //   title,
+    //   description,
+    //   submittedEmail: email,
+    //   projectDirectorId: resolvedDirectorId,
+    //   studentsImpacted: parsedStudents,
+    //   affectsMultipleDepartments: affectsMultipleDepartments ?? null,
+    //   departmentCount: parsedDepartmentCount,
+    //   usesSubjects: usesSubjects ?? null,
+    //   irbApproved: usesSubjects === "yes" ? irbApproved : null,
+    //   files: uploadedFiles,
+    //   irbApprovalFile: irbApprovalFile,
+    //   submittedAt: new Date(),
+    // };
 
     try {
       await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: editedGrant });
-      return res.status(201).json(editedGrant);
+        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: update });
+      return res.status(201).json(update);
     } catch (err) {
       console.error("Failed to update grant:", err);
       return res.status(500).json({ message: "Failed to edit grant" });

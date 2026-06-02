@@ -28,7 +28,9 @@ type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
   studentsImpacted: string;
 };
 
-type GrantFormErrors = Partial<Record<keyof GrantFormState | "files", string>>;
+type GrantFormErrors = Partial<
+  Record<keyof GrantFormState | "files" | "irbApprovalFile", string>
+>;
 
 const MAX_FILES = 3;
 
@@ -36,6 +38,7 @@ export default function NewGrant() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState<GrantFormState>({
     title: "",
@@ -164,15 +167,6 @@ export default function NewGrant() {
     }
     if (!data.usesSubjects) {
       next.usesSubjects = "Please select an option.";
-    } else if (data.usesSubjects === "yes") {
-      if (data.irbApproved !== "yes") {
-        next.irbApproved =
-          "IRB approval is required when human or animal subjects are used.";
-      }
-      if (selectedFiles.length === 0) {
-        next.files =
-          "File upload is required when human or animal subjects are used.";
-      }
     }
     if (selectedFiles.length > MAX_FILES) {
       next.files = `Maximum ${MAX_FILES} files allowed.`;
@@ -482,6 +476,24 @@ export default function NewGrant() {
                 )}
               </div>
             )}
+            {formData.irbApproved === "yes" && (
+              <div>
+                <label htmlFor="irbApprovalFile">
+                  Upload IRB Approval Document
+                </label>
+
+                <input
+                  ref={irbApprovalFileRef}
+                  type="file"
+                  id="irbApprovalFile"
+                  name="irbApprovalFile"
+                />
+
+                {errors.irbApprovalFile && (
+                  <span className="field-error">{errors.irbApprovalFile}</span>
+                )}
+              </div>
+            )}
 
             <div>
               <label htmlFor="files">Upload Files</label>
@@ -493,7 +505,6 @@ export default function NewGrant() {
                 name="files"
                 onChange={handleFileChange}
                 multiple
-                required={formData.usesSubjects === "yes"}
               />
 
               <small>Maximum {MAX_FILES} files allowed.</small>
