@@ -17,12 +17,17 @@ router.route("/register").post(async (req: Request, res: Response) => {
     college,
   } = req.body;
 
+  // Trim and validate first name
+  const firstNameT = typeof firstName === "string" ? firstName.trim() : "";
+  const lastNameT = typeof lastName === "string" ? lastName.trim() : "";
+
+  // Validate required fields
   if (
     !email ||
     !password ||
     !confirmPassword ||
-    !firstName ||
-    !lastName ||
+    !firstNameT ||
+    !lastNameT ||
     !birthday ||
     !department ||
     !college
@@ -41,6 +46,19 @@ router.route("/register").post(async (req: Request, res: Response) => {
     return;
   }
 
+  // Validate birthday format and range
+  const dob = new Date(birthday);
+  const now = new Date();
+  if (
+    Number.isNaN(dob.getTime()) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(birthday) ||
+    dob > now ||
+    dob < new Date("1900-01-01")
+  ) {
+    res.status(400).json({ message: "Invalid birthday" });
+    return;
+  }
+
   let db_connect = dbo.getDb();
   const existing = await db_connect
     .collection("user")
@@ -56,9 +74,9 @@ router.route("/register").post(async (req: Request, res: Response) => {
     id: Date.now().toString(),
     email: email.toLowerCase(),
     password: passwordHash,
-    firstName,
-    lastName,
-    birthday,
+    firstName: firstNameT,
+    lastName: lastNameT,
+    birthday: new Date(birthday), // Store as Date object
     department,
     college,
     role: "user" as const,
@@ -73,9 +91,19 @@ router.route("/register").post(async (req: Request, res: Response) => {
     { expiresIn: "7d" },
   );
 
+  // Include all user fields in the response
   res.status(201).json({
     token,
-    user: { id: newUser.id, email: newUser.email, role: newUser.role },
+    user: {
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      birthday: newUser.birthday,
+      college: newUser.college,
+      department: newUser.department,
+    },
   });
 });
 
@@ -108,9 +136,19 @@ router.route("/login").post(async (req: Request, res: Response) => {
     { expiresIn: "7d" },
   );
 
+  // Include all user fields in login response too for consistency
   res.json({
     token,
-    user: { id: user.id, email: user.email, role: user.role },
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      birthday: user.birthday,
+      college: user.college,
+      department: user.department,
+    },
   });
 });
 
@@ -130,6 +168,7 @@ router.route("/get-user/:userId").get(async (req: Request, res: Response) => {
       return;
     }
 
+    // Return birthday as ISO string for consistent formatting
     res.json({
       user: {
         id: user.id,
@@ -138,6 +177,10 @@ router.route("/get-user/:userId").get(async (req: Request, res: Response) => {
         email: user.email,
         department: user.department,
         college: user.college,
+        birthday:
+          user.birthday instanceof Date
+            ? user.birthday.toISOString().split("T")[0]
+            : user.birthday,
       },
     });
   } catch (error) {
@@ -163,8 +206,16 @@ router.route("/update-user").post(async (req: Request, res: Response) => {
   }
 
   const updateData: any = {};
-  if (firstName) updateData.firstName = firstName;
-  if (lastName) updateData.lastName = lastName;
+
+  // Trim names when updating
+  if (firstName) {
+    const firstNameT = typeof firstName === "string" ? firstName.trim() : "";
+    if (firstNameT) updateData.firstName = firstNameT;
+  }
+  if (lastName) {
+    const lastNameT = typeof lastName === "string" ? lastName.trim() : "";
+    if (lastNameT) updateData.lastName = lastNameT;
+  }
   if (email) updateData.email = email.toLowerCase();
   if (department) updateData.department = department;
   if (college) updateData.college = college;

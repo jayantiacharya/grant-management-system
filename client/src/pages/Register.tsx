@@ -101,6 +101,9 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Get today's date in YYYY-MM-DD format for max attribute
+  const today = new Date().toISOString().slice(0, 10);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -117,6 +120,10 @@ export default function Register() {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters");
       return;
     }
     setLoading(true);
@@ -187,6 +194,8 @@ export default function Register() {
               type="date"
               value={form.birthday}
               onChange={handleChange}
+              min="1900-01-01"
+              max={today}
               required
             />
           </div>
