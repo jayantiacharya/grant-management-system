@@ -13,16 +13,6 @@ export type UserOption = {
 
 type YesNo = "" | "yes" | "no";
 
-type BudgetItem = {
-  itemDescription: string;
-  category: string;
-  amountRequested: string;
-  amountFromARCC: string;
-  amountFromCollege: string;
-  amountFromDepartment: string;
-  amountFromOtherSources: string;
-};
-
 export type GrantSubmission = {
   title: string;
   description: string;
@@ -42,16 +32,6 @@ type GrantFormErrors = Partial<Record<keyof GrantFormState | "files", string>>;
 
 const MAX_FILES = 3;
 
-const emptyBudgetItem: BudgetItem = {
-  itemDescription: "",
-  category: "",
-  amountRequested: "",
-  amountFromARCC: "",
-  amountFromCollege: "",
-  amountFromDepartment: "",
-  amountFromOtherSources: "",
-};
-
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
@@ -68,9 +48,6 @@ export default function NewGrant() {
     irbApproved: "",
   });
 
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
-    { ...emptyBudgetItem },
-  ]);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -111,35 +88,6 @@ export default function NewGrant() {
     setFormData({ ...formData, [name]: value });
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
-  };
-
-  const handleBudgetItemChange = (
-    index: number,
-    field: keyof BudgetItem,
-    value: string,
-  ) => {
-    const updatedItems = [...budgetItems];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      [field]: value,
-    };
-    setBudgetItems(updatedItems);
-    setMessage("");
-  };
-
-  const addBudgetItem = () => {
-    setBudgetItems([...budgetItems, { ...emptyBudgetItem }]);
-  };
-
-  const removeBudgetItem = (index: number) => {
-    if (budgetItems.length === 1) return;
-    setBudgetItems(budgetItems.filter((_, itemIndex) => itemIndex !== index));
-  };
-
-  const getBudgetTotal = (field: keyof BudgetItem) => {
-    return budgetItems.reduce((total, item) => {
-      return total + Number(item[field] || 0);
-    }, 0);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -232,8 +180,6 @@ export default function NewGrant() {
           body.append("irbApproved", formData.irbApproved);
         }
 
-        body.append("budgetItems", JSON.stringify(budgetItems));
-
         selectedFiles.forEach((file) => body.append("files", file));
 
         response = await axios.post(
@@ -260,7 +206,6 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
-          budgetItems,
         };
 
         response = await axios.post(
@@ -285,7 +230,6 @@ export default function NewGrant() {
         usesSubjects: "",
         irbApproved: "",
       });
-      setBudgetItems([{ ...emptyBudgetItem }]);
       setFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setErrors({});
@@ -506,178 +450,13 @@ export default function NewGrant() {
               </div>
             )}
 
-            <div className="budget-section">
-              <h3>Budget Worksheet</h3>
-
-              {budgetItems.map((item, index) => (
-                <div key={index} className="budget-item-card">
-                  <h4>Budget Item {index + 1}</h4>
-
-                  <div>
-                    <label htmlFor={`budgetItemName-${index}`}>
-                      Budget Item Name
-                    </label>
-                    <input
-                      type="text"
-                      id={`budgetItemName-${index}`}
-                      value={item.itemDescription}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "itemDescription",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Example: Laptop, software license, supplies"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`category-${index}`}>Category</label>
-                    <input
-                      type="text"
-                      id={`category-${index}`}
-                      value={item.category}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "category",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Example: Hardware or Software"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`amountRequested-${index}`}>
-                      Amount Requested
-                    </label>
-                    <input
-                      type="number"
-                      id={`amountRequested-${index}`}
-                      min={0}
-                      step="0.01"
-                      value={item.amountRequested}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountRequested",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`amountFromARCC-${index}`}>
-                      Amount from ARCC
-                    </label>
-                    <input
-                      type="number"
-                      id={`amountFromARCC-${index}`}
-                      min={0}
-                      step="0.01"
-                      value={item.amountFromARCC}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountFromARCC",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`amountFromCollege-${index}`}>
-                      Amount from College
-                    </label>
-                    <input
-                      type="number"
-                      id={`amountFromCollege-${index}`}
-                      min={0}
-                      step="0.01"
-                      value={item.amountFromCollege}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountFromCollege",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`amountFromDepartment-${index}`}>
-                      Amount from Department
-                    </label>
-                    <input
-                      type="number"
-                      id={`amountFromDepartment-${index}`}
-                      min={0}
-                      step="0.01"
-                      value={item.amountFromDepartment}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountFromDepartment",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor={`amountFromOtherSources-${index}`}>
-                      Amount from Other Sources
-                    </label>
-                    <input
-                      type="number"
-                      id={`amountFromOtherSources-${index}`}
-                      min={0}
-                      step="0.01"
-                      value={item.amountFromOtherSources}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountFromOtherSources",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  {budgetItems.length > 1 && (
-                    <button
-                      type="button"
-                      className="remove-budget-btn"
-                      onClick={() => removeBudgetItem(index)}
-                    >
-                      Remove Budget Item
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <button
-                type="button"
-                className="submit-btn"
-                onClick={addBudgetItem}
-              >
-                Add Budget Item
-              </button>
-
-              <small className="budget-total">
-                Total Requested: ${getBudgetTotal("amountRequested").toFixed(2)}
-              </small>
-            </div>
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/budget-worksheet")}
+            >
+              Open Budget Worksheet
+            </button>
 
             <div>
               <label htmlFor="files">Upload Files</label>

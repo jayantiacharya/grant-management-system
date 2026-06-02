@@ -7,9 +7,11 @@ import NewGrant from "./pages/NewGrant";
 import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
+import BudgetWorksheet from "./pages/BudgetWorksheet";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
+
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
@@ -31,6 +33,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
           <Route
             path="/login"
             element={
@@ -39,6 +42,7 @@ export default function App() {
               </PublicRoute>
             }
           />
+
           <Route
             path="/register"
             element={
@@ -47,6 +51,7 @@ export default function App() {
               </PublicRoute>
             }
           />
+
           <Route
             path="/dashboard"
             element={
@@ -55,6 +60,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/grants/new"
             element={
@@ -63,6 +69,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/grants/edit/:grantId"
             element={
@@ -71,6 +78,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/budget-worksheet"
+            element={
+              <ProtectedRoute>
+                <BudgetWorksheet />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/admin"
             element={
@@ -79,6 +96,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/profile"
             element={
