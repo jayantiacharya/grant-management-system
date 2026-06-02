@@ -514,12 +514,12 @@ export default function NewGrant() {
                   <h4>Budget Item {index + 1}</h4>
 
                   <div>
-                    <label htmlFor={`itemDescription-${index}`}>
+                    <label htmlFor={`budgetItemName-${index}`}>
                       Budget Item Name
                     </label>
                     <input
                       type="text"
-                      id={`itemDescription-${index}`}
+                      id={`budgetItemName-${index}`}
                       value={item.itemDescription}
                       onChange={(e) =>
                         handleBudgetItemChange(
