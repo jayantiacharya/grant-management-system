@@ -146,4 +146,38 @@ router.route("/updateDepartment").post(async (req, res) => {
   });
 });
 
+router.route("/arcc").get(async (req, res) => {
+  let db_connect = dbo.getDb();
+  const doc = await db_connect.collection("arcc").findOne({ key: "committee" });
+  res.json({
+    chairId: doc?.chairId ?? null,
+    memberIds: doc?.memberIds ?? [],
+  });
+});
+
+router.route("/updateArcc").post(async (req, res) => {
+  let status = "";
+  let db_connect = dbo.getDb();
+  const { chairId, memberIds } = req.body;
+
+  if (!Array.isArray(memberIds)) {
+    return res.status(400).json({
+      message: "memberIds must be an array",
+    });
+  }
+
+  await db_connect
+    .collection("arcc")
+    .updateOne(
+      { key: "committee" },
+      { $set: { chairId: chairId ?? null, memberIds: memberIds } },
+      { upsert: true },
+    );
+  status = "ARCC committee updated successfully";
+
+  res.status(201).json({
+    session: status,
+  });
+});
+
 export default router;

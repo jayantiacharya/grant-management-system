@@ -8,91 +8,105 @@ import "./ArccCommittee.css";
 export default function ArccCommittee() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [memberIds, setMemberIds] = useState([]);
+  const [chairId, setChairId] = useState(null);
   const [message, setMessage] = useState("");
+
+  const fetchUsers = async () => {
+    const { data: users } = await axios.get(
+      "http://localhost:5000/api/admin/users",
+    );
+    const mapped = (Array.isArray(users) ? users : [])
+      .filter((u) => u?.id && u?.email)
+      .map((u) => ({
+        id: String(u.id),
+        email: String(u.email),
+        department: u.department ? String(u.department) : "",
+      }));
+    setAllUsers(mapped);
+  };
+
+  const fetchArcc = async () => {
+    const { data: arcc } = await axios.get(
+      "http://localhost:5000/api/admin/arcc",
+    );
+    setChairId(arcc?.chairId ? String(arcc.chairId) : null);
+    setMemberIds(
+      Array.isArray(arcc?.memberIds) ? arcc.memberIds.map(String) : [],
+    );
+  };
 
   useEffect(() => {
     if (user?.role !== "admin") {
       navigate("/dashboard", { replace: true });
       return;
     }
-
-    axios
-      .get("http://localhost:5000/api/admin/users")
-      .then((res) => {
-        const users = Array.isArray(res.data) ? res.data : [];
-        const allUsers = users
-          .filter((u) => u?.id && u?.email)
-          .map((u) => ({
-            id: String(u.id),
-            email: String(u.email),
-            department: u.department ? String(u.department) : "",
-          }));
-
-        // set the first 2 users for mock data
-        const initialMembers = allUsers.slice(0, Math.min(2, allUsers.length));
-        const chairId = initialMembers[0]?.id ?? null;
-
-        setData({
-          chairId,
-          members: initialMembers,
-          allUsers,
-        });
-        setMessage("");
-      })
-      .catch((err) => {
-        if (axios.isCancel(err)) return;
-        setMessage("Failed to load ARCC committee data.");
-        setData({
-          chairId: null,
-          members: [],
-          allUsers: [],
-        });
-      });
+    fetchUsers();
+    fetchArcc();
   }, [user, navigate]);
+
+  const members = memberIds
+    .map((id) => allUsers.find((u) => u.id === id))
+    .filter(Boolean);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const addMember = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      if (prev.members.some((m) => m.id === userId)) return prev;
-      const newUser = prev.allUsers.find((u) => u.id === userId);
-      if (!newUser) return prev;
-      return { ...prev, members: [...prev.members, newUser] };
-    });
-    setMessage("");
+  const addMember = async (userId) => {
+    if (memberIds.includes(userId)) return;
+    const nextMemberIds = [...memberIds, userId];
+    setMemberIds(nextMemberIds);
+
+    try {
+      await axios.post("http://localhost:5000/api/admin/updateArcc", {
+        chairId,
+        memberIds: nextMemberIds,
+      });
+      setMessage("");
+    } catch {
+      setMessage("Failed to save committee.");
+    }
   };
 
-  const removeMember = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const nextMembers = prev.members.filter((m) => m.id !== userId);
-      return {
-        ...prev,
-        members: nextMembers,
-        chairId: prev.chairId === userId ? null : prev.chairId,
-      };
-    });
-    setMessage("");
+  const removeMember = async (userId) => {
+    const nextMemberIds = memberIds.filter((id) => id !== userId);
+    const nextChairId = chairId === userId ? null : chairId;
+    setMemberIds(nextMemberIds);
+    setChairId(nextChairId);
+
+    try {
+      await axios.post("http://localhost:5000/api/admin/updateArcc", {
+        chairId: nextChairId,
+        memberIds: nextMemberIds,
+      });
+      setMessage("");
+    } catch {
+      setMessage("Failed to save committee.");
+    }
   };
 
-  const setChair = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const isMember = prev.members.some((m) => m.id === userId);
-      const userToAdd = prev.allUsers.find((u) => u.id === userId);
-      const nextMembers =
-        !isMember && userToAdd ? [...prev.members, userToAdd] : prev.members;
-      return { ...prev, chairId: userId, members: nextMembers };
-    });
-    setMessage("");
+  const setChair = async (userId) => {
+    const nextMemberIds = memberIds.includes(userId)
+      ? memberIds
+      : [...memberIds, userId];
+    setChairId(userId);
+    setMemberIds(nextMemberIds);
+
+    try {
+      await axios.post("http://localhost:5000/api/admin/updateArcc", {
+        chairId: userId,
+        memberIds: nextMemberIds,
+      });
+      setMessage("");
+    } catch {
+      setMessage("Failed to save committee.");
+    }
   };
 
-  const memberIds = new Set(data?.members.map((m) => m.id) ?? []);
+  const memberIdSet = new Set(memberIds);
 
   return (
     <div className="dashboard-page">
@@ -124,14 +138,14 @@ export default function ArccCommittee() {
         <div className="arcc-grid">
           <div className="grant-form-card">
             <h2>Committee Members</h2>
-            {!data?.members.length ? (
+            {!members.length ? (
               <p>No committee members yet.</p>
             ) : (
               <ul className="list">
-                {data.members.map((member) => (
+                {members.map((member) => (
                   <li key={member.id} className="row">
                     <span>
-                      {data.chairId === member.id ? "(Chair) " : ""}
+                      {chairId === member.id ? "(Chair) " : ""}
                       {member.email}{" "}
                       {member.department ? `- ${member.department}` : ""}
                     </span>
@@ -140,7 +154,7 @@ export default function ArccCommittee() {
                         <input
                           type="radio"
                           name="chair"
-                          checked={data.chairId === member.id}
+                          checked={chairId === member.id}
                           onChange={() => setChair(member.id)}
                         />
                         Chair
@@ -161,12 +175,12 @@ export default function ArccCommittee() {
 
           <div className="grant-form-card">
             <h2>All Users</h2>
-            {!data?.allUsers.length ? (
+            {!allUsers.length ? (
               <p>No users found.</p>
             ) : (
               <ul className="list">
-                {data.allUsers.map((u) => {
-                  const isMember = memberIds.has(u.id);
+                {allUsers.map((u) => {
+                  const isMember = memberIdSet.has(u.id);
                   return (
                     <li key={u.id} className="row">
                       <span>
