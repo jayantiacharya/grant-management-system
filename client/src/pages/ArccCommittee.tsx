@@ -121,7 +121,7 @@ export default function ArccCommittee() {
           </button>
         </div>
         {message && <p className="form-message">{message}</p>}
-        <div className="dash-grid">
+        <div className="arcc-grid">
           <div className="grant-form-card">
             <h2>Committee Members</h2>
             {!data?.members.length ? (
