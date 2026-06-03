@@ -135,9 +135,7 @@ export default function CreateDepartment() {
                       type="button"
                       className="edit-btn"
                       onClick={() => {
-                        setEditingId(
-                          String(department.id ?? department._id ?? ""),
-                        );
+                        setEditingId(String(department.id ?? ""));
                         setDepartmentName(department.name);
                         setSelectedCollege(department.college ?? "");
                         setSelectedChair(department.chair ?? "");

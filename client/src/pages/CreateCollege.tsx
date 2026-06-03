@@ -119,7 +119,7 @@ export default function CreateCollege() {
                       type="button"
                       className="edit-btn"
                       onClick={() => {
-                        setEditingId(String(college.id ?? college._id ?? ""));
+                        setEditingId(String(college.id ?? ""));
                         setCollegeName(college.name);
                         setSelectedDean(college.dean ?? "");
                         setMessage("");

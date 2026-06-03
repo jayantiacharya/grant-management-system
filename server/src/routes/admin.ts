@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { ObjectId } from "mongodb";
 import dbo from "../middleware/conn.js"; // Database connection
 import { verifyToken } from "../middleware/auth.js";
 
@@ -8,7 +9,12 @@ router.route("/colleges").get(async (req, res) => {
   // const db = readDB();
   let db_connect = dbo.getDb();
   const colleges = await db_connect.collection("college").find().toArray();
-  res.json(colleges);
+  res.json(
+    colleges.map((college) => ({
+      ...college,
+      id: college._id.toString(),
+    })),
+  );
 });
 
 router.route("/departments").get(async (req, res) => {
@@ -18,7 +24,12 @@ router.route("/departments").get(async (req, res) => {
     .collection("department")
     .find()
     .toArray();
-  res.json(departments);
+  res.json(
+    departments.map((department) => ({
+      ...department,
+      id: department._id.toString(),
+    })),
+  );
 });
 
 router.route("/users").get(async (req, res) => {
@@ -66,6 +77,27 @@ router.route("/createCollege").post(async (req, res) => {
   });
 });
 
+router.route("/updateCollege").post(async (req, res) => {
+  let status = "";
+  let db_connect = dbo.getDb();
+  const { id, name, dean } = req.body;
+
+  if (!id || !name || !dean) {
+    return res.status(400).json({
+      message: "All fields required",
+    });
+  }
+
+  await db_connect
+    .collection("college")
+    .updateOne({ _id: new ObjectId(id) }, { $set: { name: name, dean: dean } });
+  status = "College updated successfully";
+
+  res.status(201).json({
+    session: status,
+  });
+});
+
 router.route("/createDepartment").post(async (req, res) => {
   let status = "";
   let db_connect = dbo.getDb();
@@ -77,27 +109,41 @@ router.route("/createDepartment").post(async (req, res) => {
     });
   }
 
-  // const db = readDB();
   let departObj = {
     name: name,
     college: college,
   };
 
-  const department = {
-    id:
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15),
-    name,
-    college,
-  };
-
   await db_connect.collection("department").insertOne(departObj);
   status = "Department created successfully";
-
-  // writeDB(db);
 
   res.status(201).json({
     session: status,
   });
 });
+
+router.route("/updateDepartment").post(async (req, res) => {
+  let status = "";
+  let db_connect = dbo.getDb();
+  const { id, name, college, chair } = req.body;
+
+  if (!id || !name || !college) {
+    return res.status(400).json({
+      message: "All fields required",
+    });
+  }
+
+  await db_connect
+    .collection("department")
+    .updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { name: name, college: college, chair: chair } },
+    );
+  status = "Department updated successfully";
+
+  res.status(201).json({
+    session: status,
+  });
+});
+
 export default router;
