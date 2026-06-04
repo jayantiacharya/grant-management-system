@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { GrantProvider } from "./context/GrantContext";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -30,83 +32,85 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <GrantProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
 
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/grants/new"
-            element={
-              <ProtectedRoute>
-                <NewGrant />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/grants/new"
+              element={
+                <ProtectedRoute>
+                  <NewGrant />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/grants/edit/:grantId"
-            element={
-              <ProtectedRoute>
-                <EditGrant />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/grants/edit/:grantId"
+              element={
+                <ProtectedRoute>
+                  <EditGrant />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/budget-worksheet"
-            element={
-              <ProtectedRoute>
-                <BudgetWorksheet />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/budget-worksheet"
+              element={
+                <ProtectedRoute>
+                  <BudgetWorksheet />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <Admin />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </GrantProvider>
     </AuthProvider>
   );
 }

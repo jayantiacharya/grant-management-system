@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useGrant } from "../context/GrantContext";
 import "./Dashboard.css";
 
 type BudgetItem = {
@@ -25,11 +25,8 @@ const emptyBudgetItem: BudgetItem = {
 
 export default function BudgetWorksheet() {
   const { user, logout } = useAuth();
+  const { budgetItems, setBudgetItems } = useGrant();
   const navigate = useNavigate();
-
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([
-    { ...emptyBudgetItem },
-  ]);
 
   const handleLogout = () => {
     logout();
@@ -61,6 +58,18 @@ export default function BudgetWorksheet() {
   const getBudgetTotal = (field: keyof BudgetItem) => {
     return budgetItems.reduce((total, item) => {
       return total + Number(item[field] || 0);
+    }, 0);
+  };
+
+  const getFundingSourceTotal = () => {
+    return budgetItems.reduce((total, item) => {
+      return (
+        total +
+        Number(item.amountFromARCC || 0) +
+        Number(item.amountFromCollege || 0) +
+        Number(item.amountFromDepartment || 0) +
+        Number(item.amountFromOtherSources || 0)
+      );
     }, 0);
   };
 
@@ -262,7 +271,7 @@ export default function BudgetWorksheet() {
               </button>
 
               <p className="budget-total">
-                Total Requested: ${getBudgetTotal("amountRequested").toFixed(2)}
+                Total Requested: ${getFundingSourceTotal().toFixed(2)}
               </p>
             </div>
           </div>
