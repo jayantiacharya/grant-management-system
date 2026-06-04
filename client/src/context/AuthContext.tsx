@@ -22,8 +22,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       return JSON.parse(saved);
     } catch {
-      // Corrupt storage should not crash the app; clear it and start logged out.
+      // Corrupt storage should not crash the app; clear both keys so we start
+      // fully logged out rather than with a stale token but no user.
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       return null;
     }
   });

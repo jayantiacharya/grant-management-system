@@ -94,7 +94,9 @@ describe("AuthContext", () => {
       ),
     ).not.toThrow();
     expect(screen.getByTestId("user").textContent).toBe("none");
+    expect(screen.getByTestId("token").textContent).toBe("none");
     expect(localStorage.getItem("user")).toBeNull();
+    expect(localStorage.getItem("token")).toBeNull();
   });
 
   it("useAuth throws when used outside AuthProvider", () => {
