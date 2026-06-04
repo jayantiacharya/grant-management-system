@@ -156,14 +156,22 @@ router.get("/user-grants/:email", async (req: AuthRequest, res: Response) => {
 });
 router.get("/get-grant/:id", async (req, res) => {
   const { id } = req.params;
-  const db_connect = dbo.getDb();
-  const grant = await db_connect
-    .collection("grant")
-    .findOne({ _id: new ObjectId(id) });
-  if (!grant) {
-    return res.status(404).json({ message: "Grant not found" });
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid grant id" });
   }
-  return res.json(grant);
+  const db_connect = dbo.getDb();
+  try {
+    const grant = await db_connect
+      .collection("grant")
+      .findOne({ _id: new ObjectId(id) });
+    if (!grant) {
+      return res.status(404).json({ message: "Grant not found" });
+    }
+    return res.json(grant);
+  } catch (err) {
+    console.error("Failed to fetch grant:", err);
+    return res.status(500).json({ message: "Failed to fetch grant" });
+  }
 });
 router.put(
   "/edit/:id",
