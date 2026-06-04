@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const { mockUseAuth, mockNavigate, mockLogout } = vi.hoisted(() => ({
@@ -24,6 +24,14 @@ import axios from "axios";
 import AdminDashboard from "./AdminDashboard";
 
 const adminUser = { id: "a1", email: "admin@wsu.edu", role: "admin" };
+
+// Scope queries to a specific form by its submit button, so the two forms'
+// controls can't be confused by position (e.g. if a new dropdown is added).
+function formFor(buttonName: RegExp) {
+  const form = screen.getByRole("button", { name: buttonName }).closest("form");
+  if (!form) throw new Error(`No form found for ${buttonName}`);
+  return within(form as HTMLElement);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -80,7 +88,7 @@ describe("AdminDashboard", () => {
       "College of Science",
     );
     await user.selectOptions(
-      screen.getAllByRole("combobox")[0],
+      formFor(/create college/i).getByRole("combobox"),
       "dean@wsu.edu",
     );
     await user.click(screen.getByRole("button", { name: /create college/i }));
@@ -114,7 +122,7 @@ describe("AdminDashboard", () => {
       "College of Science",
     );
     await user.selectOptions(
-      screen.getAllByRole("combobox")[0],
+      formFor(/create college/i).getByRole("combobox"),
       "dean@wsu.edu",
     );
     await user.click(screen.getByRole("button", { name: /create college/i }));
@@ -141,7 +149,7 @@ describe("AdminDashboard", () => {
       "Chemistry",
     );
     await user.selectOptions(
-      screen.getAllByRole("combobox")[1],
+      formFor(/create department/i).getByRole("combobox"),
       "College of Science",
     );
     await user.click(
