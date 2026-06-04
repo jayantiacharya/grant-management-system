@@ -29,7 +29,9 @@ type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
   studentsImpacted: string;
 };
 
-type GrantFormErrors = Partial<Record<keyof GrantFormState | "files", string>>;
+type GrantFormErrors = Partial<
+  Record<keyof GrantFormState | "files" | "irbApprovalFile", string>
+>;
 
 const MAX_FILES = 3;
 
@@ -38,6 +40,7 @@ export default function NewGrant() {
   const { formData, setFormData, budgetItems, clearGrantDraft } = useGrant();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
 
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
@@ -148,6 +151,13 @@ export default function NewGrant() {
     if (selectedFiles.length > MAX_FILES) {
       next.files = `Maximum ${MAX_FILES} files allowed.`;
     }
+    if (data.irbApproved === "yes") {
+      const irbFile = irbApprovalFileRef.current?.files?.[0];
+
+      if (!irbFile) {
+        next.irbApprovalFile = "IRB approval document is required.";
+      }
+    }
     return next;
   };
 
@@ -161,11 +171,14 @@ export default function NewGrant() {
     setMessage("");
 
     try {
-      const useMultipart = selectedFiles.length > 0;
+      const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
+
+      const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
       let response;
       if (useMultipart) {
         const body = new FormData();
+        const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
@@ -188,6 +201,9 @@ export default function NewGrant() {
         body.append("budgetItems", JSON.stringify(budgetItems));
 
         selectedFiles.forEach((file) => body.append("files", file));
+        if (irbApprovalFile) {
+          body.append("irbApprovalFile", irbApprovalFile);
+        }
 
         response = await axios.post(
           "http://localhost:5000/api/grants/submit",
@@ -231,6 +247,7 @@ export default function NewGrant() {
       clearGrantDraft();
       setFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (irbApprovalFileRef.current) irbApprovalFileRef.current.value = "";
       setErrors({});
     } catch (error) {
       const fallback = "Failed to submit proposal.";
@@ -448,6 +465,25 @@ export default function NewGrant() {
                 )}
               </div>
             )}
+            {formData.irbApproved === "yes" && (
+              <div>
+                <label htmlFor="irbApprovalFile">
+                  Upload IRB Approval Document
+                </label>
+
+                <input
+                  ref={irbApprovalFileRef}
+                  type="file"
+                  id="irbApprovalFile"
+                  name="irbApprovalFile"
+                  required
+                />
+
+                {errors.irbApprovalFile && (
+                  <span className="field-error">{errors.irbApprovalFile}</span>
+                )}
+              </div>
+            )}
 
             <button
               type="button"
@@ -467,7 +503,6 @@ export default function NewGrant() {
                 name="files"
                 onChange={handleFileChange}
                 multiple
-                required={formData.usesSubjects === "yes"}
               />
 
               <small>Maximum {MAX_FILES} files allowed.</small>

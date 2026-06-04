@@ -25,13 +25,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { files: 3 },
-});
+  limits: { files: 4 }, // 4 regular files + 1 IRB approval file
+}).fields([
+  { name: "files", maxCount: 3 },
+  { name: "irbApprovalFile", maxCount: 1 },
+]);
 
 router.post(
   "/submit",
   verifyToken,
-  upload.array("files", 3),
+  upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
 
@@ -83,13 +86,23 @@ router.post(
       });
     }
 
-    const uploadedFiles = (
-      (req.files as Express.Multer.File[] | undefined) ?? []
-    ).map((file) => ({
+    const filesRecord = req.files as
+      | Record<string, Express.Multer.File[]>
+      | undefined;
+
+    const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
       path: file.path,
     }));
+
+    const irbApprovalFile = filesRecord?.irbApprovalFile?.[0]
+      ? {
+          originalName: filesRecord.irbApprovalFile[0].originalname,
+          savedName: filesRecord.irbApprovalFile[0].filename,
+          path: filesRecord.irbApprovalFile[0].path,
+        }
+      : null;
 
     if (usesSubjects === "yes" && uploadedFiles.length === 0) {
       return res.status(400).json({
@@ -123,6 +136,7 @@ router.post(
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
       budgetItems: budgetItems ?? [],
       files: uploadedFiles,
+      irbApprovalFile: irbApprovalFile,
       submittedAt: new Date(),
     };
 
@@ -173,9 +187,9 @@ router.get("/get-grant/:id", async (req, res) => {
 router.put(
   "/edit/:id",
   verifyToken,
-  upload.array("files", 3),
+  upload,
   async (req: AuthRequest, res: Response) => {
-    const { email, userId } = req.user!;
+    const { userId } = req.user!;
 
     const {
       title,
@@ -225,19 +239,23 @@ router.put(
       });
     }
 
-    const uploadedFiles = (
-      (req.files as Express.Multer.File[] | undefined) ?? []
-    ).map((file) => ({
+    const filesRecord = req.files as
+      | Record<string, Express.Multer.File[]>
+      | undefined;
+
+    const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
       path: file.path,
     }));
 
-    if (usesSubjects === "yes" && uploadedFiles.length === 0) {
-      return res.status(400).json({
-        message: "file upload is required when usesSubjects is yes",
-      });
-    }
+    const irbApprovalFile = filesRecord?.irbApprovalFile?.[0]
+      ? {
+          originalName: filesRecord.irbApprovalFile[0].originalname,
+          savedName: filesRecord.irbApprovalFile[0].filename,
+          path: filesRecord.irbApprovalFile[0].path,
+        }
+      : null;
 
     const db_connect = dbo.getDb();
 
@@ -253,10 +271,9 @@ router.put(
       });
     }
 
-    const editedGrant = {
+    const update: Record<string, any> = {
       title,
       description,
-      submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
@@ -264,16 +281,22 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
       budgetItems: budgetItems ?? [],
-      files: uploadedFiles,
-      submittedAt: new Date(),
     };
+
+    if (uploadedFiles.length > 0) {
+      update.files = uploadedFiles;
+    }
+
+    if (irbApprovalFile) {
+      update.irbApprovalFile = irbApprovalFile;
+    }
 
     try {
       await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: editedGrant });
+        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: update });
 
-      return res.status(201).json(editedGrant);
+      return res.status(201).json(update);
     } catch (err) {
       console.error("Failed to update grant:", err);
       return res.status(500).json({ message: "Failed to edit grant" });
