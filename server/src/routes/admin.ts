@@ -88,9 +88,21 @@ router.route("/updateCollege").post(async (req, res) => {
     });
   }
 
-  await db_connect
-    .collection("college")
-    .updateOne({ _id: new ObjectId(id) }, { $set: { name: name, dean: dean } });
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid id" });
+  }
+
+  try {
+    await db_connect
+      .collection("college")
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { name: name, dean: dean } },
+      );
+  } catch (err) {
+    console.error("updateCollege failed:", err);
+    return res.status(500).json({ message: "Failed to update college" });
+  }
   status = "College updated successfully";
 
   res.status(201).json({
@@ -101,7 +113,7 @@ router.route("/updateCollege").post(async (req, res) => {
 router.route("/createDepartment").post(async (req, res) => {
   let status = "";
   let db_connect = dbo.getDb();
-  const { name, college } = req.body;
+  const { name, college, chair } = req.body;
 
   if (!name || !college) {
     return res.status(400).json({
@@ -112,6 +124,7 @@ router.route("/createDepartment").post(async (req, res) => {
   let departObj = {
     name: name,
     college: college,
+    chair: chair,
   };
 
   await db_connect.collection("department").insertOne(departObj);
@@ -133,12 +146,21 @@ router.route("/updateDepartment").post(async (req, res) => {
     });
   }
 
-  await db_connect
-    .collection("department")
-    .updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { name: name, college: college, chair: chair } },
-    );
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid id" });
+  }
+
+  try {
+    await db_connect
+      .collection("department")
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { name: name, college: college, chair: chair } },
+      );
+  } catch (err) {
+    console.error("updateDepartment failed:", err);
+    return res.status(500).json({ message: "Failed to update department" });
+  }
   status = "Department updated successfully";
 
   res.status(201).json({
