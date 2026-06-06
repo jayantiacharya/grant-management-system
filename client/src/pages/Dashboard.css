@@ -75,6 +75,20 @@
   margin: 0;
 }
 
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 1.25rem;
+}
+
+.admin-nav .submit-btn {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 0;
+}
+
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

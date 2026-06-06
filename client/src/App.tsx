@@ -6,6 +6,9 @@ import Dashboard from "./pages/Dashboard";
 import NewGrant from "./pages/NewGrant";
 import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
+import CreateCollege from "./pages/CreateCollege";
+import CreateDepartment from "./pages/CreateDepartment";
+import ArccCommittee from "./pages/ArccCommittee";
 import Profile from "./pages/Profile";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
 import BudgetManagement from "./pages/grants/BudgetManagement";
@@ -89,6 +92,30 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/college"
+            element={
+              <ProtectedRoute>
+                <CreateCollege />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/department"
+            element={
+              <ProtectedRoute>
+                <CreateDepartment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/arcc"
+            element={
+              <ProtectedRoute>
+                <ArccCommittee />
               </ProtectedRoute>
             }
           />
