@@ -32,6 +32,24 @@ router.route("/").post(async (req: Request, res: Response) => {
       return;
     }
 
+    // Each individual rating suggestion score must not exceed maxScore
+    if (ratingSuggestions && Array.isArray(ratingSuggestions)) {
+      for (const suggestion of ratingSuggestions) {
+        if (suggestion.score > parseInt(maxScore)) {
+          res.status(400).json({
+            message: `Rating suggestion score (${suggestion.score}) cannot exceed max score (${maxScore})`,
+          });
+          return;
+        }
+        if (suggestion.score < 0) {
+          res
+            .status(400)
+            .json({ message: "Rating suggestion scores cannot be negative" });
+          return;
+        }
+      }
+    }
+
     const db = dbo.getDb();
     const newCriteria = {
       id: Date.now().toString(),
@@ -57,10 +75,25 @@ router.route("/:id").put(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, description, maxScore, ratingSuggestions } = req.body;
 
+    if (maxScore && ratingSuggestions && Array.isArray(ratingSuggestions)) {
+      for (const suggestion of ratingSuggestions) {
+        if (suggestion.score > parseInt(maxScore)) {
+          res.status(400).json({
+            message: `Rating suggestion score (${suggestion.score}) cannot exceed max score (${maxScore})`,
+          });
+          return;
+        }
+        if (suggestion.score < 0) {
+          res
+            .status(400)
+            .json({ message: "Rating suggestion scores cannot be negative" });
+          return;
+        }
+      }
+    }
+
     const db = dbo.getDb();
-    const updateData: any = {
-      updatedAt: new Date().toISOString(),
-    };
+    const updateData: any = { updatedAt: new Date().toISOString() };
 
     if (name) updateData.name = name.trim();
     if (description) updateData.description = description.trim();

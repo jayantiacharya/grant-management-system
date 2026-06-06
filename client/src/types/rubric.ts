@@ -23,7 +23,32 @@ export interface Rubric {
   createdAt: string;
 }
 
-// Dummy data for initial development
+export const BUDGET_CATEGORIES = [
+  "Hardware",
+  "Software",
+  "Supplies",
+  "Travel",
+  "Personnel",
+  "Training",
+  "Other",
+] as const;
+
+export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
+
+export interface BudgetItem {
+  id: string;
+  grantId: string;
+  itemDescription: string;
+  amountRequested: number;
+  amountFromARCC: number;
+  amountFromCollege: number;
+  amountFromDepartment: number;
+  amountFromOther: number;
+  category: BudgetCategory;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const DUMMY_CRITERIA: Criteria[] = [
   {
     id: "1",
@@ -34,10 +59,12 @@ export const DUMMY_CRITERIA: Criteria[] = [
     ratingSuggestions: [
       {
         score: 35,
-        description: "Impacts a large number of students or several programs",
+        description:
+          "Impacts a large number of students or several programs/departments",
       },
       { score: 20, description: "Impacts many students in one program" },
       { score: 5, description: "Impacts a small number of students" },
+      { score: 0, description: "Criteria not met" },
     ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -52,6 +79,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
       { score: 25, description: "500+ students across 3+ departments" },
       { score: 15, description: "200-500 students in 1-2 departments" },
       { score: 5, description: "Less than 200 students" },
+      { score: 0, description: "Criteria not met" },
     ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -66,6 +94,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
       { score: 20, description: "Highly innovative - new to WSU" },
       { score: 10, description: "Moderately innovative - builds on existing" },
       { score: 5, description: "Low innovation - standard approach" },
+      { score: 0, description: "Criteria not met" },
     ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -86,6 +115,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
         score: 5,
         description: "Not sustainable - requires continuous funding",
       },
+      { score: 0, description: "Criteria not met" },
     ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

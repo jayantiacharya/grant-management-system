@@ -72,15 +72,12 @@ export default function CriteriaForm({
     if (formData.maxScore <= 0)
       newErrors.maxScore = "Max score must be greater than 0";
 
-    const totalSuggestionScore = formData.ratingSuggestions.reduce(
-      (sum, s) => sum + s.score,
-      0,
-    );
-    if (totalSuggestionScore > formData.maxScore) {
-      newErrors.ratingSuggestions = `Total suggestion scores (${totalSuggestionScore}) cannot exceed max score (${formData.maxScore})`;
-    }
-
+    // Each score is an independent option — check individually, not as a sum
     formData.ratingSuggestions.forEach((suggestion, idx) => {
+      if (suggestion.score > formData.maxScore) {
+        newErrors[`suggestion_${idx}_score`] =
+          `Score cannot exceed max score (${formData.maxScore})`;
+      }
       if (suggestion.score < 0) {
         newErrors[`suggestion_${idx}_score`] = "Score cannot be negative";
       }
@@ -95,9 +92,7 @@ export default function CriteriaForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmit(formData);
-    }
+    if (validate()) onSubmit(formData);
   };
 
   return (
@@ -151,6 +146,10 @@ export default function CriteriaForm({
 
       <div style={styles.formGroup}>
         <label>Rating Suggestions</label>
+        <p style={styles.hint}>
+          Define the score options reviewers can select from. Each score must
+          not exceed the maximum score.
+        </p>
         <div style={styles.suggestionsList}>
           {formData.ratingSuggestions.map((suggestion, idx) => (
             <div key={idx} style={styles.suggestionItem}>
@@ -204,9 +203,6 @@ export default function CriteriaForm({
         <button type="button" onClick={addSuggestion} style={styles.addButton}>
           + Add Rating Suggestion
         </button>
-        {errors.ratingSuggestions && (
-          <span style={styles.error}>{errors.ratingSuggestions}</span>
-        )}
       </div>
 
       <div style={styles.formActions}>
@@ -222,16 +218,13 @@ export default function CriteriaForm({
 }
 
 const styles = {
-  form: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "1.5rem",
-  },
+  form: { display: "flex", flexDirection: "column" as const, gap: "1.5rem" },
   formGroup: {
     display: "flex",
     flexDirection: "column" as const,
     gap: "0.5rem",
   },
+  hint: { fontSize: "0.85rem", color: "#777", margin: "0" },
   input: {
     padding: "0.75rem",
     border: "1px solid #ddd",
@@ -259,12 +252,8 @@ const styles = {
     background: "#f9f9f9",
     borderRadius: "6px",
   },
-  suggestionScore: {
-    flex: "0 0 120px",
-  },
-  suggestionDescription: {
-    flex: 1,
-  },
+  suggestionScore: { flex: "0 0 120px" },
+  suggestionDescription: { flex: 1 },
   removeButton: {
     background: "#fee",
     color: "#c0392b",
@@ -307,8 +296,5 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
   },
-  error: {
-    color: "#e74c3c",
-    fontSize: "0.875rem",
-  },
+  error: { color: "#e74c3c", fontSize: "0.875rem" },
 };

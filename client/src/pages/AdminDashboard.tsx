@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [grants, setGrants] = useState<any[]>([]);
 
   const [collegeName, setCollegeName] = useState("");
   const [selectedDean, setSelectedDean] = useState("");
@@ -37,20 +38,25 @@ export default function Dashboard() {
     );
     setDepartments(data);
   };
+  const fetchGrants = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/grants/all");
+      setGrants(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch grants:", error);
+    }
+  };
 
   const createCollege = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       await axios.post("http://localhost:5000/api/admin/createCollege", {
         name: collegeName,
         dean: selectedDean,
       });
-
       setCollegeName("");
       setSelectedDean("");
       setCollegeMessage("College created successfully!");
-
       fetchColleges();
     } catch (error) {
       setCollegeMessage("Failed to create college.");
@@ -60,27 +66,26 @@ export default function Dashboard() {
 
   const createDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       await axios.post("http://localhost:5000/api/admin/createDepartment", {
         name: departmentName,
         college: selectedCollege,
       });
-
       setDepartmentName("");
       setSelectedCollege("");
       setDepartmentMessage("Department created successfully.");
-
       fetchDepartments();
     } catch (error) {
       setDepartmentMessage("Failed to create department.");
       console.log(error);
     }
   };
+
   useEffect(() => {
     fetchUsers();
     fetchColleges();
     fetchDepartments();
+    fetchGrants();
   }, []);
 
   const handleLogout = () => {
@@ -107,13 +112,50 @@ export default function Dashboard() {
           <h2>Welcome back</h2>
           <p>Weber State University — Grant Management System</p>
         </div>
+
+        {/* Admin Quick Actions */}
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
+          <button
+            onClick={() => navigate("/admin/criteria")}
+            className="submit-btn"
+          >
+            📋 Manage Review Criteria
+          </button>
+        </div>
+
+        {/* Grant Applications with Budget links */}
+        {grants.length > 0 && (
+          <div className="grant-form-card" style={{ marginBottom: "2rem" }}>
+            <h2>Grant Applications</h2>
+            {grants.map((grant: any) => (
+              <div
+                key={grant._id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "0.75rem 0",
+                  borderBottom: "1px solid #eee",
+                }}
+              >
+                <strong>{grant.title}</strong>
+                <button
+                  onClick={() => navigate(`/grants/${grant._id}/budget`)}
+                  className="edit-btn"
+                >
+                  💰 Budget Worksheet
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="dash-grid">
           <div className="grant-form-card">
             <h2>Create College</h2>
             <form className="grant-form" onSubmit={createCollege}>
               <div>
                 <label>College Name</label>
-
                 <input
                   type="text"
                   value={collegeName}
@@ -122,17 +164,14 @@ export default function Dashboard() {
                   required
                 />
               </div>
-
               <div>
                 <label>Select Dean</label>
-
                 <select
                   value={selectedDean}
                   onChange={(e) => setSelectedDean(e.target.value)}
                   required
                 >
                   <option value="">Choose Dean</option>
-
                   {users.map((user: any) => (
                     <option key={user.id} value={user.email}>
                       {user.email}
@@ -140,7 +179,6 @@ export default function Dashboard() {
                   ))}
                 </select>
               </div>
-
               <button type="submit" className="submit-btn">
                 Create College
               </button>
@@ -150,11 +188,9 @@ export default function Dashboard() {
 
           <div className="grant-form-card">
             <h2>Create Department</h2>
-
             <form className="grant-form" onSubmit={createDepartment}>
               <div>
                 <label>Department Name</label>
-
                 <input
                   type="text"
                   value={departmentName}
@@ -163,17 +199,14 @@ export default function Dashboard() {
                   required
                 />
               </div>
-
               <div>
                 <label>Select College</label>
-
                 <select
                   value={selectedCollege}
                   onChange={(e) => setSelectedCollege(e.target.value)}
                   required
                 >
                   <option value="">Choose College</option>
-
                   {colleges.map((college: any) => (
                     <option key={college.id} value={college.name}>
                       {college.name}
@@ -181,7 +214,6 @@ export default function Dashboard() {
                   ))}
                 </select>
               </div>
-
               <button type="submit" className="submit-btn">
                 Create Department
               </button>

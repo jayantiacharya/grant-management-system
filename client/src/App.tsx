@@ -8,19 +8,23 @@ import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
+import BudgetManagement from "./pages/grants/BudgetManagement";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { token, user } = useAuth();
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
-
-  if (!token || !user) {
-    return <>{children}</>;
-  }
-
+  if (!token || !user) return <>{children}</>;
   return (
     <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />
   );
@@ -73,6 +77,14 @@ export default function App() {
             }
           />
           <Route
+            path="/grants/:grantId/budget"
+            element={
+              <ProtectedRoute>
+                <BudgetManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin"
             element={
               <ProtectedRoute>
@@ -88,13 +100,13 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* New route for Criteria Management - Admin only */}
+          {/* Admin-only: Criteria Management */}
           <Route
             path="/admin/criteria"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <CriteriaManagement />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
         </Routes>
