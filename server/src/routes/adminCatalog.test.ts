@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
+import { ObjectId } from "mongodb";
 
 const { findToArray, insertOne } = vi.hoisted(() => ({
   findToArray: vi.fn(),
@@ -28,20 +29,40 @@ beforeEach(() => {
 });
 
 describe("GET /api/admin/colleges", () => {
-  it("200 returns colleges from db", async () => {
-    findToArray.mockResolvedValueOnce([{ name: "Engineering", dean: "x" }]);
+  it("200 returns colleges from db with a string id", async () => {
+    const _id = new ObjectId();
+    findToArray.mockResolvedValueOnce([
+      { _id, name: "Engineering", dean: "x" },
+    ]);
     const res = await request(app).get("/api/admin/colleges");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ name: "Engineering", dean: "x" }]);
+    expect(res.body).toEqual([
+      {
+        _id: _id.toHexString(),
+        name: "Engineering",
+        dean: "x",
+        id: _id.toHexString(),
+      },
+    ]);
   });
 });
 
 describe("GET /api/admin/departments", () => {
-  it("200 returns departments from db", async () => {
-    findToArray.mockResolvedValueOnce([{ name: "CS", college: "Engineering" }]);
+  it("200 returns departments from db with a string id", async () => {
+    const _id = new ObjectId();
+    findToArray.mockResolvedValueOnce([
+      { _id, name: "CS", college: "Engineering" },
+    ]);
     const res = await request(app).get("/api/admin/departments");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ name: "CS", college: "Engineering" }]);
+    expect(res.body).toEqual([
+      {
+        _id: _id.toHexString(),
+        name: "CS",
+        college: "Engineering",
+        id: _id.toHexString(),
+      },
+    ]);
   });
 });
 
