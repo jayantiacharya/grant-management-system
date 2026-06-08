@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useGrant } from "../context/GrantContext";
 import "./Dashboard.css";
@@ -27,6 +27,9 @@ export default function BudgetWorksheet() {
   const { user, logout } = useAuth();
   const { budgetItems, setBudgetItems } = useGrant();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const returnTo = location.state?.returnTo ?? "/grants/new";
 
   const handleLogout = () => {
     logout();
@@ -39,10 +42,22 @@ export default function BudgetWorksheet() {
     value: string,
   ) => {
     const updatedItems = [...budgetItems];
+
     updatedItems[index] = {
       ...updatedItems[index],
       [field]: value,
     };
+
+    const item = updatedItems[index];
+
+    const amountRequested =
+      Number(item.amountFromARCC || 0) +
+      Number(item.amountFromCollege || 0) +
+      Number(item.amountFromDepartment || 0) +
+      Number(item.amountFromOtherSources || 0);
+
+    updatedItems[index].amountRequested = amountRequested.toFixed(2);
+
     setBudgetItems(updatedItems);
   };
 
@@ -84,10 +99,7 @@ export default function BudgetWorksheet() {
         <div className="dash-user">
           <span>{user?.email}</span>
 
-          <button
-            onClick={() => navigate("/grants/new")}
-            className="logout-btn"
-          >
+          <button onClick={() => navigate(returnTo)} className="logout-btn">
             Back to Grant Form
           </button>
 
@@ -145,7 +157,7 @@ export default function BudgetWorksheet() {
                 <div className="budget-grid">
                   <div className="budget-field">
                     <label htmlFor={`amountRequested-${index}`}>
-                      Amount Requested
+                      Total Amount Requested
                     </label>
                     <input
                       type="number"

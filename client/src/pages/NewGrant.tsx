@@ -488,7 +488,11 @@ export default function NewGrant() {
             <button
               type="button"
               className="submit-btn"
-              onClick={() => navigate("/budget-worksheet")}
+              onClick={() =>
+                navigate("/budget-worksheet", {
+                  state: { returnTo: "/grants/new" },
+                })
+              }
             >
               Open Budget Worksheet
             </button>
