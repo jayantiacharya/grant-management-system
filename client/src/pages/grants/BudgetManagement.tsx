@@ -21,7 +21,7 @@ export default function BudgetManagement() {
   const loadGrantTitle = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/grants/${grantId}`,
+        `http://localhost:5000/api/grants/get-grant/${grantId}`,
       );
       setGrantTitle(response.data.title || "Grant");
     } catch {

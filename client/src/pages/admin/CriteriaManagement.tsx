@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { type Criteria, DUMMY_CRITERIA } from "../../types/rubric";
+import { type Criteria } from "../../types/rubric";
 import CriteriaForm from "../../components/CriteriaForm";
+import axios from "axios";
 
 export default function CriteriaManagement() {
   const [criteria, setCriteria] = useState<Criteria[]>([]);
@@ -15,36 +16,22 @@ export default function CriteriaManagement() {
   const loadCriteria = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with API call when backend is ready
-      // const response = await axios.get("http://localhost:5000/api/criteria");
-      // setCriteria(response.data);
-
-      // Using dummy data for now
-      setTimeout(() => {
-        setCriteria(DUMMY_CRITERIA);
-        setLoading(false);
-      }, 500);
+      const response = await axios.get("http://localhost:5000/api/criteria");
+      setCriteria(response.data);
     } catch (error) {
       console.error("Failed to load criteria:", error);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleCreate = async (criteriaData: Partial<Criteria>) => {
     try {
-      // TODO: Replace with API call
-      // const response = await axios.post("http://localhost:5000/api/criteria", criteriaData);
-
-      const newCriteria: Criteria = {
-        id: Date.now().toString(),
-        name: criteriaData.name!,
-        description: criteriaData.description!,
-        maxScore: criteriaData.maxScore!,
-        ratingSuggestions: criteriaData.ratingSuggestions || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCriteria([...criteria, newCriteria]);
+      const response = await axios.post(
+        "http://localhost:5000/api/criteria",
+        criteriaData,
+      );
+      setCriteria([...criteria, response.data]);
       setShowForm(false);
     } catch (error) {
       console.error("Failed to create criteria:", error);
@@ -54,9 +41,7 @@ export default function CriteriaManagement() {
 
   const handleUpdate = async (id: string, criteriaData: Partial<Criteria>) => {
     try {
-      // TODO: Replace with API call
-      // await axios.put(`http://localhost:5000/api/criteria/${id}`, criteriaData);
-
+      await axios.put(`http://localhost:5000/api/criteria/${id}`, criteriaData);
       setCriteria(
         criteria.map((c) =>
           c.id === id
@@ -74,11 +59,8 @@ export default function CriteriaManagement() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this criteria?")) return;
-
     try {
-      // TODO: Replace with API call
-      // await axios.delete(`http://localhost:5000/api/criteria/${id}`);
-
+      await axios.delete(`http://localhost:5000/api/criteria/${id}`);
       setCriteria(criteria.filter((c) => c.id !== id));
     } catch (error) {
       console.error("Failed to delete criteria:", error);
@@ -135,6 +117,11 @@ export default function CriteriaManagement() {
         <div style={styles.loading}>Loading criteria...</div>
       ) : (
         <div style={styles.criteriaList}>
+          {criteria.length === 0 && (
+            <div style={styles.loading}>
+              No criteria yet. Click "+ Add New Criteria" to get started.
+            </div>
+          )}
           {criteria.map((criterion) => (
             <div key={criterion.id} style={styles.criteriaCard}>
               <div style={styles.criteriaHeader}>
