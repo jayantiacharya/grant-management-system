@@ -6,7 +6,7 @@ import axios from "axios";
 import "./Dashboard.css";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
 
@@ -17,15 +17,32 @@ export default function Dashboard() {
   const handleProfile = () => {
     navigate("/profile");
   };
+  const handleReview = () => {
+    navigate("/review");
+  };
   const fetchGrants = async () => {
     const { data } = await axios.get(
       `http://localhost:5000/api/grants/user-grants/${user?.email}`,
     );
     setGrants(Array.isArray(data) ? data : []);
   };
+
+  const checkArccMembership = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/admin/arcc");
+      const isArcc = data.memberIds?.includes(user?.id) || false;
+      updateUserArccStatus(isArcc);
+    } catch (error) {
+      console.error("Failed to check ARCC membership:", error);
+    }
+  };
+
   useEffect(() => {
     fetchGrants();
-  }, []);
+    if (user?.id) {
+      checkArccMembership();
+    }
+  }, [user?.id]);
 
   return (
     <div className="dashboard-page">
@@ -36,6 +53,11 @@ export default function Dashboard() {
         </div>
 
         <div className="dash-user">
+          {user?.isArcc && (
+            <button onClick={handleReview} className="logout-btn">
+              Review
+            </button>
+          )}
           <button onClick={handleProfile} className="logout-btn">
             {user?.email}
           </button>
