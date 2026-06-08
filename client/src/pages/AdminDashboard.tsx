@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
 import axios from "axios";
 
-export default function Dashboard() {
+export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -27,15 +27,11 @@ export default function Dashboard() {
     setUsers(data);
   };
   const fetchColleges = async () => {
-    const { data } = await axios.get(
-      "http://localhost:5000/api/admin/colleges",
-    );
+    const { data } = await axios.get("http://localhost:5000/api/admin/colleges");
     setColleges(data);
   };
   const fetchDepartments = async () => {
-    const { data } = await axios.get(
-      "http://localhost:5000/api/admin/departments",
-    );
+    const { data } = await axios.get("http://localhost:5000/api/admin/departments");
     setDepartments(data);
   };
   const fetchGrants = async () => {
@@ -87,6 +83,12 @@ export default function Dashboard() {
     fetchDepartments();
     fetchGrants();
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -220,6 +222,18 @@ export default function Dashboard() {
             </form>
             <p>{departmentMessage}</p>
           </div>
+
+          <nav className="admin-nav">
+            <Link to="/admin/college" className="submit-btn">
+              College Management
+            </Link>
+            <Link to="/admin/department" className="submit-btn">
+              Department Management
+            </Link>
+            <Link to="/admin/arcc" className="submit-btn">
+              ARCC Committee
+            </Link>
+          </nav>
         </div>
       </main>
     </div>
