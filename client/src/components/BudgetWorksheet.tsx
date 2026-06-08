@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type BudgetItem, BUDGET_CATEGORIES } from "../types/rubric";
 
 interface BudgetItemFormData {
@@ -40,6 +40,23 @@ export default function BudgetWorksheet({
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formData, setFormData] = useState<BudgetItemFormData>(emptyForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const calculatedAmount =
+      formData.amountFromARCC +
+      formData.amountFromCollege +
+      formData.amountFromDepartment +
+      formData.amountFromOther;
+    setFormData((prev) => ({
+      ...prev,
+      amountRequested: calculatedAmount,
+    }));
+  }, [
+    formData.amountFromARCC,
+    formData.amountFromCollege,
+    formData.amountFromDepartment,
+    formData.amountFromOther,
+  ]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -177,6 +194,7 @@ export default function BudgetWorksheet({
                   onChange={handleChange}
                   min="0"
                   step="0.01"
+                  disabled
                   style={styles.input}
                 />
                 {errors.amountRequested && (
