@@ -61,12 +61,16 @@ export default function Dashboard() {
                   <div key={grant._id}>
                     <strong>{grant.title}</strong>
 
-                    <button
-                      onClick={() => navigate(`/grants/edit/${grant._id}`)}
-                      className="edit-btn"
-                    >
-                      Edit
-                    </button>
+                    {grant.status === "submitted" ? (
+                      <span className="grant-status">Submitted</span>
+                    ) : (
+                      <button
+                        onClick={() => navigate(`/grants/edit/${grant._id}`)}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
