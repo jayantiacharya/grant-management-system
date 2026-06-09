@@ -142,7 +142,7 @@ router.delete(
       }
 
       const criteria = rubric.criteria as any[];
-      if (index < 0 || index >= criteria.length) {
+      if (!Number.isInteger(index) || index < 0 || index >= criteria.length) {
         res.status(400).json({ message: "Invalid criterion index." });
         return;
       }
