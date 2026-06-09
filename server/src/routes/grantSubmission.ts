@@ -202,23 +202,53 @@ router.put(
       departmentCount,
       usesSubjects,
       irbApproved,
+      status,
     } = req.body;
 
-    if (!title || !description) {
+    const db_connect = dbo.getDb();
+
+    const existing = await db_connect
+      .collection("grant")
+      .findOne({ _id: new ObjectId(req.params.id) });
+    if (!existing) {
+      return res.status(404).json({ message: "Grant not found" });
+    }
+    if (existing.status === "submitted") {
+      return res.status(403).json({
+        message:
+          "This proposal has been submitted and can no longer be edited.",
+      });
+    }
+
+    const isDraft = status === "draft";
+    const normalizedStatus = isDraft ? "draft" : "submitted";
+
+    if (!isDraft && (!title || !description)) {
       return res.status(400).json({
         message: "title and description are required",
       });
     }
 
-    const parsedStudents = Number(studentsImpacted);
-    if (!Number.isInteger(parsedStudents) || parsedStudents < 0) {
-      return res.status(400).json({
-        message: "studentsImpacted must be a non-negative integer",
-      });
+    const rawStudents = Number(studentsImpacted);
+    const parsedStudents = isDraft
+      ? Number.isInteger(rawStudents) && rawStudents >= 0
+        ? rawStudents
+        : null
+      : rawStudents;
+
+    if (!isDraft) {
+      if (
+        !Number.isInteger(parsedStudents as number) ||
+        (parsedStudents as number) < 0
+      ) {
+        return res.status(400).json({
+          message: "studentsImpacted must be a non-negative integer",
+        });
+      }
     }
 
     let parsedDepartmentCount: number | null = null;
-    if (affectsMultipleDepartments === "yes") {
+    if (!isDraft && affectsMultipleDepartments === "yes") {
       parsedDepartmentCount = Number(departmentCount);
       if (
         !Number.isInteger(parsedDepartmentCount) ||
@@ -229,9 +259,15 @@ router.put(
             "departmentCount must be an integer >= 2 when affectsMultipleDepartments is yes",
         });
       }
+    } else if (
+      affectsMultipleDepartments === "yes" &&
+      departmentCount !== "" &&
+      departmentCount != null
+    ) {
+      parsedDepartmentCount = Number(departmentCount);
     }
 
-    if (usesSubjects === "yes" && irbApproved !== "yes") {
+    if (!isDraft && usesSubjects === "yes" && irbApproved !== "yes") {
       return res.status(400).json({
         message: "irbApproved must be yes when usesSubjects is yes",
       });
@@ -260,8 +296,6 @@ router.put(
     //   });
     // }
 
-    const db_connect = dbo.getDb();
-
     const resolvedDirectorId = projectDirectorId || userId;
     const directorExists = await db_connect
       .collection("user")
@@ -272,15 +306,19 @@ router.put(
       });
     }
     const update: Record<string, any> = {
-      title,
-      description,
+      title: title ?? "",
+      description: description ?? "",
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
+      status: normalizedStatus,
     };
+    if (!isDraft) {
+      update.submittedAt = new Date();
+    }
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;
     }

@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
-const { findOne, insertOne } = vi.hoisted(() => ({
+const { findOne, insertOne, updateOne } = vi.hoisted(() => ({
   findOne: vi.fn(),
   insertOne: vi.fn(),
+  updateOne: vi.fn(),
 }));
 
 vi.mock("../middleware/conn.js", () => ({
@@ -13,6 +14,7 @@ vi.mock("../middleware/conn.js", () => ({
       collection: () => ({
         findOne,
         insertOne,
+        updateOne,
       }),
     }),
   },
@@ -38,6 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   findOne.mockResolvedValue({ _id: "mongo-id" });
   insertOne.mockResolvedValue({ insertedId: "grant-id" });
+  updateOne.mockResolvedValue({ matchedCount: 1 });
 });
 
 describe("POST /api/grants/submit", () => {
@@ -159,5 +162,43 @@ describe("POST /api/grants/submit", () => {
       .set("Authorization", `Bearer ${validToken}`)
       .send({ ...validBody, status: "submitted", title: "" });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("PUT /api/grants/edit/:id", () => {
+  it("403 when the grant is already submitted", async () => {
+    findOne.mockResolvedValueOnce({ _id: "g1", status: "submitted" });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(403);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("404 when the grant does not exist", async () => {
+    findOne.mockResolvedValueOnce(null);
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(404);
+  });
+
+  it("updates a draft and can transition it to submitted", async () => {
+    findOne
+      .mockResolvedValueOnce({ _id: "g1", status: "draft" })
+      .mockResolvedValueOnce({ _id: "mongo-id" });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted" });
+    expect(res.status).toBe(201);
+    expect(updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: "submitted" }),
+      }),
+    );
   });
 });
