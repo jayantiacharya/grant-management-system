@@ -55,6 +55,7 @@ export default function NewGrant() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+  const [isLocked, setIsLocked] = useState<boolean>(false);
 
   const { grantId } = useParams();
 
@@ -73,6 +74,8 @@ export default function NewGrant() {
 
       const grant = res.data;
       console.log("Fetched grant data:", grant);
+
+      setIsLocked(grant.status === "submitted");
 
       setFormData({
         title: grant.title || "",
@@ -174,11 +177,15 @@ export default function NewGrant() {
     return next;
   };
 
-  const submitGrant = async () => {
+  const submitGrant = async (status: "draft" | "submitted") => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
-    const validationErrors = validate(formData, selectedFiles);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    if (status === "submitted") {
+      const validationErrors = validate(formData, selectedFiles);
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
+    } else {
+      setErrors({});
+    }
 
     setLoading(true);
     setMessage("");
@@ -213,6 +220,7 @@ export default function NewGrant() {
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("status", status);
 
         response = await axios.put(
           `http://localhost:5000/api/grants/edit/${grantId}`,
@@ -238,6 +246,7 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          status,
         };
 
         response = await axios.put(
@@ -250,21 +259,13 @@ export default function NewGrant() {
       }
 
       void response;
-      setMessage("Grant proposal submitted successfully.");
+      setMessage(
+        status === "submitted"
+          ? "Grant proposal submitted successfully."
+          : "Draft saved.",
+      );
 
-      setFormData({
-        title: "",
-        description: "",
-        projectDirectorId: user?.id ?? "",
-        studentsImpacted: "",
-        affectsMultipleDepartments: "",
-        departmentCount: "",
-        usesSubjects: "",
-        irbApproved: "",
-      });
-      setFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setErrors({});
+      navigate("/dashboard");
     } catch (error) {
       const fallback = "Failed to submit proposal.";
       if (axios.isAxiosError(error)) {
@@ -306,169 +307,109 @@ export default function NewGrant() {
             Edit grant proposal for university review and approval.
           </p>
 
-          <form
-            className="grant-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              submitGrant();
-            }}
-          >
-            <div>
-              <label htmlFor="title">Grant Title</label>
-
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Enter grant title"
-                required
-              />
-              {errors.title && (
-                <span className="field-error">{errors.title}</span>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="description">Description</label>
-
-              <textarea
-                id="description"
-                name="description"
-                rows={12}
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Enter a detailed grant description"
-                required
-              />
-              {errors.description && (
-                <span className="field-error">{errors.description}</span>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="projectDirectorId">
-                Project Director / Principal Investigator
-              </label>
-
-              <select
-                id="projectDirectorId"
-                name="projectDirectorId"
-                value={formData.projectDirectorId}
-                onChange={handleChange}
-                required
-              >
-                {user && !users.some((u) => u.id === user.id) && (
-                  <option value={user.id}>{user.email}</option>
-                )}
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.email}
-                  </option>
-                ))}
-              </select>
-              {errors.projectDirectorId && (
-                <span className="field-error">{errors.projectDirectorId}</span>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="studentsImpacted">
-                Weber State University students impacted
-              </label>
-
-              <input
-                type="number"
-                id="studentsImpacted"
-                name="studentsImpacted"
-                min={0}
-                step={1}
-                value={formData.studentsImpacted}
-                onChange={handleChange}
-                placeholder="0"
-                required
-              />
-              {errors.studentsImpacted && (
-                <span className="field-error">{errors.studentsImpacted}</span>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="affectsMultipleDepartments">
-                Does this grant affect more than one department?
-              </label>
-
-              <select
-                id="affectsMultipleDepartments"
-                name="affectsMultipleDepartments"
-                value={formData.affectsMultipleDepartments}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select an option</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errors.affectsMultipleDepartments && (
-                <span className="field-error">
-                  {errors.affectsMultipleDepartments}
-                </span>
-              )}
-            </div>
-
-            {formData.affectsMultipleDepartments === "yes" && (
+          {isLocked ? (
+            <p className="form-message">
+              This proposal has been submitted and can no longer be edited.
+            </p>
+          ) : (
+            <form
+              className="grant-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
               <div>
-                <label htmlFor="departmentCount">How many departments?</label>
+                <label htmlFor="title">Grant Title</label>
 
                 <input
-                  type="number"
-                  id="departmentCount"
-                  name="departmentCount"
-                  min={2}
-                  step={1}
-                  value={formData.departmentCount}
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
                   onChange={handleChange}
-                  placeholder="Enter number of departments"
+                  placeholder="Enter grant title"
                   required
                 />
-                {errors.departmentCount && (
-                  <span className="field-error">{errors.departmentCount}</span>
+                {errors.title && (
+                  <span className="field-error">{errors.title}</span>
                 )}
               </div>
-            )}
 
-            <div>
-              <label htmlFor="usesSubjects">
-                Does this project use human or animal subjects?
-              </label>
-
-              <select
-                id="usesSubjects"
-                name="usesSubjects"
-                value={formData.usesSubjects}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select an option</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errors.usesSubjects && (
-                <span className="field-error">{errors.usesSubjects}</span>
-              )}
-            </div>
-
-            {formData.usesSubjects === "yes" && (
               <div>
-                <label htmlFor="irbApproved">
-                  Has IRB approval been completed?
+                <label htmlFor="description">Description</label>
+
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={12}
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter a detailed grant description"
+                  required
+                />
+                {errors.description && (
+                  <span className="field-error">{errors.description}</span>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="projectDirectorId">
+                  Project Director / Principal Investigator
                 </label>
 
                 <select
-                  id="irbApproved"
-                  name="irbApproved"
-                  value={formData.irbApproved}
+                  id="projectDirectorId"
+                  name="projectDirectorId"
+                  value={formData.projectDirectorId}
+                  onChange={handleChange}
+                  required
+                >
+                  {user && !users.some((u) => u.id === user.id) && (
+                    <option value={user.id}>{user.email}</option>
+                  )}
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.email}
+                    </option>
+                  ))}
+                </select>
+                {errors.projectDirectorId && (
+                  <span className="field-error">
+                    {errors.projectDirectorId}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="studentsImpacted">
+                  Weber State University students impacted
+                </label>
+
+                <input
+                  type="number"
+                  id="studentsImpacted"
+                  name="studentsImpacted"
+                  min={0}
+                  step={1}
+                  value={formData.studentsImpacted}
+                  onChange={handleChange}
+                  placeholder="0"
+                  required
+                />
+                {errors.studentsImpacted && (
+                  <span className="field-error">{errors.studentsImpacted}</span>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="affectsMultipleDepartments">
+                  Does this grant affect more than one department?
+                </label>
+
+                <select
+                  id="affectsMultipleDepartments"
+                  name="affectsMultipleDepartments"
+                  value={formData.affectsMultipleDepartments}
                   onChange={handleChange}
                   required
                 >
@@ -476,59 +417,154 @@ export default function NewGrant() {
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
                 </select>
-                {errors.irbApproved && (
-                  <span className="field-error">{errors.irbApproved}</span>
+                {errors.affectsMultipleDepartments && (
+                  <span className="field-error">
+                    {errors.affectsMultipleDepartments}
+                  </span>
                 )}
               </div>
-            )}
-            {formData.irbApproved === "yes" && (
+
+              {formData.affectsMultipleDepartments === "yes" && (
+                <div>
+                  <label htmlFor="departmentCount">How many departments?</label>
+
+                  <input
+                    type="number"
+                    id="departmentCount"
+                    name="departmentCount"
+                    min={2}
+                    step={1}
+                    value={formData.departmentCount}
+                    onChange={handleChange}
+                    placeholder="Enter number of departments"
+                    required
+                  />
+                  {errors.departmentCount && (
+                    <span className="field-error">
+                      {errors.departmentCount}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div>
-                <label htmlFor="irbApprovalFile">
-                  Upload IRB Approval Document
+                <label htmlFor="usesSubjects">
+                  Does this project use human or animal subjects?
                 </label>
 
-                <input
-                  ref={irbApprovalFileRef}
-                  type="file"
-                  id="irbApprovalFile"
-                  name="irbApprovalFile"
-                />
-
-                {errors.irbApprovalFile && (
-                  <span className="field-error">{errors.irbApprovalFile}</span>
+                <select
+                  id="usesSubjects"
+                  name="usesSubjects"
+                  value={formData.usesSubjects}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select an option</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+                {errors.usesSubjects && (
+                  <span className="field-error">{errors.usesSubjects}</span>
                 )}
               </div>
-            )}
 
-            <div>
-              <label htmlFor="files">Upload Files</label>
+              {formData.usesSubjects === "yes" && (
+                <div>
+                  <label htmlFor="irbApproved">
+                    Has IRB approval been completed?
+                  </label>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                id="files"
-                name="files"
-                onChange={handleFileChange}
-                multiple
-              />
+                  <select
+                    id="irbApproved"
+                    name="irbApproved"
+                    value={formData.irbApproved}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select an option</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                  {errors.irbApproved && (
+                    <span className="field-error">{errors.irbApproved}</span>
+                  )}
+                </div>
+              )}
+              {formData.irbApproved === "yes" && (
+                <div>
+                  <label htmlFor="irbApprovalFile">
+                    Upload IRB Approval Document
+                  </label>
 
-              <small>Maximum {MAX_FILES} files allowed.</small>
+                  <input
+                    ref={irbApprovalFileRef}
+                    type="file"
+                    id="irbApprovalFile"
+                    name="irbApprovalFile"
+                  />
 
-              {files.length > 0 && (
-                <small>{files.length} file(s) selected.</small>
+                  {errors.irbApprovalFile && (
+                    <span className="field-error">
+                      {errors.irbApprovalFile}
+                    </span>
+                  )}
+                </div>
               )}
 
-              {errors.files && (
-                <span className="field-error">{errors.files}</span>
-              )}
-            </div>
+              <div>
+                <label htmlFor="files">Upload Files</label>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Submitting..." : "Submit Proposal"}
-            </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="files"
+                  name="files"
+                  onChange={handleFileChange}
+                  multiple
+                />
 
-            {message && <p className="form-message">{message}</p>}
-          </form>
+                <small>Maximum {MAX_FILES} files allowed.</small>
+
+                {files.length > 0 && (
+                  <small>{files.length} file(s) selected.</small>
+                )}
+
+                {errors.files && (
+                  <span className="field-error">{errors.files}</span>
+                )}
+              </div>
+
+              <div className="grant-form-actions">
+                <button
+                  type="button"
+                  className="save-btn"
+                  disabled={loading}
+                  onClick={() => submitGrant("draft")}
+                >
+                  {loading ? "Saving..." : "Save Grant Proposal"}
+                </button>
+
+                <button
+                  type="button"
+                  className="submit-btn"
+                  disabled={loading}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Submitting locks this proposal and prevents further editing. Continue?",
+                      )
+                    ) {
+                      submitGrant("submitted");
+                    }
+                  }}
+                >
+                  {loading ? "Submitting..." : "Submit Grant Proposal"}
+                </button>
+              </div>
+
+              {message && <p className="form-message">{message}</p>}
+            </form>
+          )}
         </div>
       </main>
     </div>
