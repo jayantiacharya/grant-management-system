@@ -163,6 +163,26 @@ describe("POST /api/grants/submit", () => {
       .send({ ...validBody, status: "submitted", title: "" });
     expect(res.status).toBe(400);
   });
+
+  it("defaults an omitted status to submitted (full validation applies)", async () => {
+    // Backward-compat: a request with no status is treated as a submission, so
+    // the full validation runs. A valid body persists as submitted...
+    const ok = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send(validBody);
+    expect(ok.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "submitted" }),
+    );
+
+    // ...and an incomplete body is rejected rather than silently saved.
+    const bad = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, title: "" });
+    expect(bad.status).toBe(400);
+  });
 });
 
 describe("PUT /api/grants/edit/:id", () => {

@@ -315,10 +315,14 @@ export default function NewGrant() {
           ) : (
             <form
               className="grant-form"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
                 // Pressing Enter saves a draft (never submit-locks, which
                 // always requires an explicit Submit click + confirmation).
+                // noValidate keeps native required-field validation from
+                // blocking the save of a partial draft; full validation runs
+                // in JS on Submit.
                 submitGrant(GRANT_STATUS.DRAFT);
               }}
             >
