@@ -129,4 +129,35 @@ describe("POST /api/grants/submit", () => {
       .send(validBody);
     expect(res.status).toBe(500);
   });
+
+  it("201 draft skips required-field validation", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ status: "draft", title: "" });
+    expect(res.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "draft", submittedAt: null }),
+    );
+  });
+
+  it("submitted create still enforces validation and stamps submittedAt", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted" });
+    expect(res.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "submitted" }),
+    );
+    expect(insertOne.mock.calls[0][0].submittedAt).toBeInstanceOf(Date);
+  });
+
+  it("400 when submitted create is missing title", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted", title: "" });
+    expect(res.status).toBe(400);
+  });
 });

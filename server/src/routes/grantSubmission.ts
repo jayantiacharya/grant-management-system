@@ -46,23 +46,38 @@ router.post(
       departmentCount,
       usesSubjects,
       irbApproved,
+      status,
     } = req.body;
 
-    if (!title || !description) {
+    const isDraft = status === "draft";
+    const normalizedStatus = isDraft ? "draft" : "submitted";
+
+    if (!isDraft && (!title || !description)) {
       return res.status(400).json({
         message: "title and description are required",
       });
     }
 
-    const parsedStudents = Number(studentsImpacted);
-    if (!Number.isInteger(parsedStudents) || parsedStudents < 0) {
-      return res.status(400).json({
-        message: "studentsImpacted must be a non-negative integer",
-      });
+    const rawStudents = Number(studentsImpacted);
+    const parsedStudents = isDraft
+      ? Number.isInteger(rawStudents) && rawStudents >= 0
+        ? rawStudents
+        : null
+      : rawStudents;
+
+    if (!isDraft) {
+      if (
+        !Number.isInteger(parsedStudents as number) ||
+        (parsedStudents as number) < 0
+      ) {
+        return res.status(400).json({
+          message: "studentsImpacted must be a non-negative integer",
+        });
+      }
     }
 
     let parsedDepartmentCount: number | null = null;
-    if (affectsMultipleDepartments === "yes") {
+    if (!isDraft && affectsMultipleDepartments === "yes") {
       parsedDepartmentCount = Number(departmentCount);
       if (
         !Number.isInteger(parsedDepartmentCount) ||
@@ -73,9 +88,15 @@ router.post(
             "departmentCount must be an integer >= 2 when affectsMultipleDepartments is yes",
         });
       }
+    } else if (
+      affectsMultipleDepartments === "yes" &&
+      departmentCount !== "" &&
+      departmentCount != null
+    ) {
+      parsedDepartmentCount = Number(departmentCount);
     }
 
-    if (usesSubjects === "yes" && irbApproved !== "yes") {
+    if (!isDraft && usesSubjects === "yes" && irbApproved !== "yes") {
       return res.status(400).json({
         message: "irbApproved must be yes when usesSubjects is yes",
       });
@@ -98,7 +119,7 @@ router.post(
         }
       : null;
 
-    if (usesSubjects === "yes" && uploadedFiles.length === 0) {
+    if (!isDraft && usesSubjects === "yes" && uploadedFiles.length === 0) {
       return res.status(400).json({
         message: "file upload is required when usesSubjects is yes",
       });
@@ -117,8 +138,8 @@ router.post(
     }
 
     const newGrant = {
-      title,
-      description,
+      title: title ?? "",
+      description: description ?? "",
       submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
@@ -128,7 +149,8 @@ router.post(
       irbApproved: usesSubjects === "yes" ? irbApproved : null,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
-      submittedAt: new Date(),
+      status: normalizedStatus,
+      submittedAt: isDraft ? null : new Date(),
     };
 
     try {
