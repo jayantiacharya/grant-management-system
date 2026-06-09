@@ -3,6 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+import { GRANT_STATUS } from "../types/grant";
+
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -61,7 +63,7 @@ export default function Dashboard() {
                   <div key={grant._id}>
                     <strong>{grant.title}</strong>
 
-                    {grant.status === "submitted" ? (
+                    {grant.status === GRANT_STATUS.SUBMITTED ? (
                       <span className="grant-status">Submitted</span>
                     ) : (
                       <button

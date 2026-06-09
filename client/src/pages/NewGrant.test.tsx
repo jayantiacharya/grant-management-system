@@ -142,9 +142,9 @@ describe("NewGrant", () => {
         }),
       );
     });
-    expect(
-      await screen.findByText(/submitted successfully/i),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard"),
+    );
   });
 
   it("surfaces server error message on submit failure", async () => {

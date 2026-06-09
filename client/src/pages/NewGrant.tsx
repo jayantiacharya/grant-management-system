@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
+import { GRANT_STATUS, type GrantStatus } from "../types/grant";
 
 import "./Dashboard.css";
 
@@ -155,9 +156,9 @@ export default function NewGrant() {
     return next;
   };
 
-  const submitGrant = async (status: "draft" | "submitted") => {
+  const submitGrant = async (status: GrantStatus) => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
-    if (status === "submitted") {
+    if (status === GRANT_STATUS.SUBMITTED) {
       const validationErrors = validate(formData, selectedFiles);
       setErrors(validationErrors);
       if (Object.keys(validationErrors).length > 0) return;
@@ -173,17 +174,14 @@ export default function NewGrant() {
 
       const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
-      let response;
       if (useMultipart) {
         const body = new FormData();
-        const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
-        body.append(
-          "studentsImpacted",
-          String(Number(formData.studentsImpacted)),
-        );
+        if (formData.studentsImpacted !== "") {
+          body.append("studentsImpacted", formData.studentsImpacted);
+        }
         body.append(
           "affectsMultipleDepartments",
           formData.affectsMultipleDepartments,
@@ -201,22 +199,21 @@ export default function NewGrant() {
         }
         body.append("status", status);
 
-        response = await axios.post(
-          "http://localhost:5000/api/grants/submit",
-          body,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
+        await axios.post("http://localhost:5000/api/grants/submit", body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
-        );
+        });
       } else {
         const payload = {
           title: formData.title,
           description: formData.description,
           projectDirectorId: formData.projectDirectorId,
-          studentsImpacted: Number(formData.studentsImpacted),
+          studentsImpacted:
+            formData.studentsImpacted === ""
+              ? null
+              : Number(formData.studentsImpacted),
           affectsMultipleDepartments: formData.affectsMultipleDepartments,
           departmentCount:
             formData.affectsMultipleDepartments === "yes"
@@ -228,21 +225,10 @@ export default function NewGrant() {
           status,
         };
 
-        response = await axios.post(
-          "http://localhost:5000/api/grants/submit",
-          payload,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        await axios.post("http://localhost:5000/api/grants/submit", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
-
-      void response;
-      setMessage(
-        status === "submitted"
-          ? "Grant proposal submitted successfully."
-          : "Draft saved.",
-      );
 
       navigate("/dashboard");
     } catch (error) {
@@ -290,6 +276,9 @@ export default function NewGrant() {
             className="grant-form"
             onSubmit={(e) => {
               e.preventDefault();
+              // Pressing Enter saves a draft (never submit-locks, which always
+              // requires an explicit Submit click + confirmation).
+              submitGrant(GRANT_STATUS.DRAFT);
             }}
           >
             <div>
@@ -508,7 +497,7 @@ export default function NewGrant() {
                 type="button"
                 className="save-btn"
                 disabled={loading}
-                onClick={() => submitGrant("draft")}
+                onClick={() => submitGrant(GRANT_STATUS.DRAFT)}
               >
                 {loading ? "Saving..." : "Save Grant Proposal"}
               </button>
@@ -523,7 +512,7 @@ export default function NewGrant() {
                       "Submitting locks this proposal and prevents further editing. Continue?",
                     )
                   ) {
-                    submitGrant("submitted");
+                    submitGrant(GRANT_STATUS.SUBMITTED);
                   }
                 }}
               >

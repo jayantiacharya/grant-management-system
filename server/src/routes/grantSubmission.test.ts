@@ -167,12 +167,32 @@ describe("POST /api/grants/submit", () => {
 
 describe("PUT /api/grants/edit/:id", () => {
   it("403 when the grant is already submitted", async () => {
-    findOne.mockResolvedValueOnce({ _id: "g1", status: "submitted" });
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "submitted",
+      submittedEmail: "alice@wsu.edu",
+    });
     const res = await request(app)
       .put("/api/grants/edit/507f1f77bcf86cd799439011")
       .set("Authorization", `Bearer ${validToken}`)
       .send({ ...validBody, status: "draft" });
     expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/no longer be edited/);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("403 when the grant belongs to another user", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "draft",
+      submittedEmail: "someone-else@wsu.edu",
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/permission/);
     expect(updateOne).not.toHaveBeenCalled();
   });
 
@@ -187,7 +207,11 @@ describe("PUT /api/grants/edit/:id", () => {
 
   it("updates a draft and can transition it to submitted", async () => {
     findOne
-      .mockResolvedValueOnce({ _id: "g1", status: "draft" })
+      .mockResolvedValueOnce({
+        _id: "g1",
+        status: "draft",
+        submittedEmail: "alice@wsu.edu",
+      })
       .mockResolvedValueOnce({ _id: "mongo-id" });
     const res = await request(app)
       .put("/api/grants/edit/507f1f77bcf86cd799439011")
@@ -200,5 +224,26 @@ describe("PUT /api/grants/edit/:id", () => {
         $set: expect.objectContaining({ status: "submitted" }),
       }),
     );
+  });
+
+  it("400 when submitting via edit with subjects but no IRB file on the grant", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "draft",
+      submittedEmail: "alice@wsu.edu",
+      files: [],
+      irbApprovalFile: null,
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({
+        ...validBody,
+        status: "submitted",
+        usesSubjects: "yes",
+        irbApproved: "yes",
+      });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
   });
 });

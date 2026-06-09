@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
+import { GRANT_STATUS, type GrantStatus } from "../types/grant";
 
 import "./Dashboard.css";
 
@@ -75,15 +76,15 @@ export default function NewGrant() {
       const grant = res.data;
       console.log("Fetched grant data:", grant);
 
-      setIsLocked(grant.status === "submitted");
+      setIsLocked(grant.status === GRANT_STATUS.SUBMITTED);
 
       setFormData({
         title: grant.title || "",
         description: grant.description || "",
         projectDirectorId: grant.projectDirectorId || user?.id || "",
-        studentsImpacted: grant.studentsImpacted || "",
+        studentsImpacted: grant.studentsImpacted ?? "",
         affectsMultipleDepartments: grant.affectsMultipleDepartments || "",
-        departmentCount: grant.departmentCount || "",
+        departmentCount: grant.departmentCount ?? "",
         usesSubjects: grant.usesSubjects || "",
         irbApproved: grant.irbApproved || "",
       });
@@ -170,6 +171,12 @@ export default function NewGrant() {
     }
     if (!data.usesSubjects) {
       next.usesSubjects = "Please select an option.";
+    } else if (data.usesSubjects === "yes" && data.irbApproved !== "yes") {
+      // The file/document requirements are enforced server-side, which can see
+      // files already attached to the draft; the client only checks the IRB
+      // approval answer it actually holds in form state.
+      next.irbApproved =
+        "IRB approval is required when human or animal subjects are used.";
     }
     if (selectedFiles.length > MAX_FILES) {
       next.files = `Maximum ${MAX_FILES} files allowed.`;
@@ -177,9 +184,9 @@ export default function NewGrant() {
     return next;
   };
 
-  const submitGrant = async (status: "draft" | "submitted") => {
+  const submitGrant = async (status: GrantStatus) => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
-    if (status === "submitted") {
+    if (status === GRANT_STATUS.SUBMITTED) {
       const validationErrors = validate(formData, selectedFiles);
       setErrors(validationErrors);
       if (Object.keys(validationErrors).length > 0) return;
@@ -195,16 +202,14 @@ export default function NewGrant() {
 
       const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
-      let response;
       if (useMultipart) {
         const body = new FormData();
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
-        body.append(
-          "studentsImpacted",
-          String(Number(formData.studentsImpacted)),
-        );
+        if (formData.studentsImpacted !== "") {
+          body.append("studentsImpacted", formData.studentsImpacted);
+        }
         body.append(
           "affectsMultipleDepartments",
           formData.affectsMultipleDepartments,
@@ -222,7 +227,7 @@ export default function NewGrant() {
         }
         body.append("status", status);
 
-        response = await axios.put(
+        await axios.put(
           `http://localhost:5000/api/grants/edit/${grantId}`,
           body,
           {
@@ -237,7 +242,10 @@ export default function NewGrant() {
           title: formData.title,
           description: formData.description,
           projectDirectorId: formData.projectDirectorId,
-          studentsImpacted: Number(formData.studentsImpacted),
+          studentsImpacted:
+            formData.studentsImpacted === ""
+              ? null
+              : Number(formData.studentsImpacted),
           affectsMultipleDepartments: formData.affectsMultipleDepartments,
           departmentCount:
             formData.affectsMultipleDepartments === "yes"
@@ -249,7 +257,7 @@ export default function NewGrant() {
           status,
         };
 
-        response = await axios.put(
+        await axios.put(
           `http://localhost:5000/api/grants/edit/${grantId}`,
           payload,
           {
@@ -257,13 +265,6 @@ export default function NewGrant() {
           },
         );
       }
-
-      void response;
-      setMessage(
-        status === "submitted"
-          ? "Grant proposal submitted successfully."
-          : "Draft saved.",
-      );
 
       navigate("/dashboard");
     } catch (error) {
@@ -316,6 +317,9 @@ export default function NewGrant() {
               className="grant-form"
               onSubmit={(e) => {
                 e.preventDefault();
+                // Pressing Enter saves a draft (never submit-locks, which
+                // always requires an explicit Submit click + confirmation).
+                submitGrant(GRANT_STATUS.DRAFT);
               }}
             >
               <div>
@@ -539,7 +543,7 @@ export default function NewGrant() {
                   type="button"
                   className="save-btn"
                   disabled={loading}
-                  onClick={() => submitGrant("draft")}
+                  onClick={() => submitGrant(GRANT_STATUS.DRAFT)}
                 >
                   {loading ? "Saving..." : "Save Grant Proposal"}
                 </button>
@@ -554,7 +558,7 @@ export default function NewGrant() {
                         "Submitting locks this proposal and prevents further editing. Continue?",
                       )
                     ) {
-                      submitGrant("submitted");
+                      submitGrant(GRANT_STATUS.SUBMITTED);
                     }
                   }}
                 >
