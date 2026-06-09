@@ -47,6 +47,7 @@ beforeEach(() => {
   });
   vi.mocked(axios.get).mockResolvedValue({ data: [] });
   vi.mocked(axios.post).mockResolvedValue({ data: {} });
+  vi.spyOn(window, "confirm").mockReturnValue(true);
 });
 
 describe("NewGrant", () => {
@@ -94,7 +95,9 @@ describe("NewGrant", () => {
       .getByLabelText(/human or animal subjects/i)
       .removeAttribute("required");
 
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
     expect(screen.getByText(/description is required/i)).toBeInTheDocument();
@@ -118,7 +121,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
@@ -130,6 +135,7 @@ describe("NewGrant", () => {
           studentsImpacted: 42,
           affectsMultipleDepartments: "no",
           usesSubjects: "no",
+          status: "submitted",
         }),
         expect.objectContaining({
           headers: { Authorization: "Bearer tok123" },
@@ -160,7 +166,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText("Bad request from server"),
@@ -193,7 +201,9 @@ describe("NewGrant", () => {
       .getByLabelText(/human or animal subjects/i)
       .removeAttribute("required");
 
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
 
     await user.type(titleInput, "x");
@@ -219,7 +229,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/non-negative integer/i),
@@ -248,7 +260,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/number of departments \(2 or more\)/i),
@@ -273,11 +287,32 @@ describe("NewGrant", () => {
     );
     screen.getByLabelText(/upload files/i).removeAttribute("required");
     await user.selectOptions(screen.getByLabelText(/irb approval/i), "no");
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/irb approval is required/i),
     ).toBeInTheDocument();
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("Save sends a draft and skips required-field validation", async () => {
+    const user = userEvent.setup();
+    render(<NewGrant />);
+
+    await user.click(
+      screen.getByRole("button", { name: /save grant proposal/i }),
+    );
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "http://localhost:5000/api/grants/submit",
+        expect.objectContaining({ status: "draft" }),
+        expect.objectContaining({
+          headers: { Authorization: "Bearer tok123" },
+        }),
+      );
+    });
   });
 });

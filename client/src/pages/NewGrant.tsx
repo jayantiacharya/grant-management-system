@@ -155,11 +155,15 @@ export default function NewGrant() {
     return next;
   };
 
-  const submitGrant = async () => {
+  const submitGrant = async (status: "draft" | "submitted") => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
-    const validationErrors = validate(formData, selectedFiles);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    if (status === "submitted") {
+      const validationErrors = validate(formData, selectedFiles);
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
+    } else {
+      setErrors({});
+    }
 
     setLoading(true);
     setMessage("");
@@ -195,6 +199,7 @@ export default function NewGrant() {
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("status", status);
 
         response = await axios.post(
           "http://localhost:5000/api/grants/submit",
@@ -220,6 +225,7 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          status,
         };
 
         response = await axios.post(
@@ -232,22 +238,13 @@ export default function NewGrant() {
       }
 
       void response;
-      setMessage("Grant proposal submitted successfully.");
+      setMessage(
+        status === "submitted"
+          ? "Grant proposal submitted successfully."
+          : "Draft saved.",
+      );
 
-      setFormData({
-        title: "",
-        description: "",
-        projectDirectorId: user?.id ?? "",
-        studentsImpacted: "",
-        affectsMultipleDepartments: "",
-        departmentCount: "",
-        usesSubjects: "",
-        irbApproved: "",
-      });
-      setFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (irbApprovalFileRef.current) irbApprovalFileRef.current.value = "";
-      setErrors({});
+      navigate("/dashboard");
     } catch (error) {
       const fallback = "Failed to submit proposal.";
       if (axios.isAxiosError(error)) {
@@ -293,7 +290,6 @@ export default function NewGrant() {
             className="grant-form"
             onSubmit={(e) => {
               e.preventDefault();
-              submitGrant();
             }}
           >
             <div>
@@ -507,9 +503,33 @@ export default function NewGrant() {
               )}
             </div>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Submitting..." : "Submit Proposal"}
-            </button>
+            <div className="grant-form-actions">
+              <button
+                type="button"
+                className="save-btn"
+                disabled={loading}
+                onClick={() => submitGrant("draft")}
+              >
+                {loading ? "Saving..." : "Save Grant Proposal"}
+              </button>
+
+              <button
+                type="button"
+                className="submit-btn"
+                disabled={loading}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Submitting locks this proposal and prevents further editing. Continue?",
+                    )
+                  ) {
+                    submitGrant("submitted");
+                  }
+                }}
+              >
+                {loading ? "Submitting..." : "Submit Grant Proposal"}
+              </button>
+            </div>
 
             {message && <p className="form-message">{message}</p>}
           </form>
