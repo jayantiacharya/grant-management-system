@@ -31,6 +31,17 @@ const upload = multer({
   { name: "irbApprovalFile", maxCount: 1 },
 ]);
 
+async function isArccMember(userId: string): Promise<boolean> {
+  const db_connect = dbo.getDb();
+  const arcc = await db_connect
+    .collection("arcc")
+    .findOne({ key: "committee" });
+  const memberIds = Array.isArray(arcc?.memberIds)
+    ? arcc.memberIds.map(String)
+    : [];
+  return memberIds.includes(String(userId));
+}
+
 router.post(
   "/submit",
   verifyToken,
@@ -129,6 +140,7 @@ router.post(
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       submittedAt: new Date(),
+      reviewStatus: "pending",
     };
 
     try {
@@ -156,19 +168,13 @@ router.get("/user-grants/:email", async (req: AuthRequest, res: Response) => {
 });
 router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
   const { userId } = req.user!;
-  const db_connect = dbo.getDb();
 
   try {
-    const arcc = await db_connect
-      .collection("arcc")
-      .findOne({ key: "committee" });
-    const memberIds = Array.isArray(arcc?.memberIds)
-      ? arcc.memberIds.map(String)
-      : [];
-    if (!memberIds.includes(String(userId))) {
+    if (!(await isArccMember(userId))) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
+    const db_connect = dbo.getDb();
     const grants = await db_connect
       .collection("grant")
       .find({})
@@ -180,6 +186,119 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch grants" });
   }
 });
+
+router.get(
+  "/review/:id/files/:savedName",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { userId } = req.user!;
+    const { id, savedName } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
+
+    try {
+      if (!(await isArccMember(userId))) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const db_connect = dbo.getDb();
+      const grant = await db_connect
+        .collection("grant")
+        .findOne({ _id: new ObjectId(id) });
+      if (!grant) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+
+      const allFiles = [
+        ...(Array.isArray(grant.files) ? grant.files : []),
+        ...(grant.irbApprovalFile ? [grant.irbApprovalFile] : []),
+      ];
+      const file = allFiles.find((f) => f.savedName === savedName);
+      if (!file || !fs.existsSync(file.path)) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      return res.download(file.path, file.originalName);
+    } catch (err) {
+      console.error("Failed to download grant file:", err);
+      return res.status(500).json({ message: "Failed to download file" });
+    }
+  },
+);
+
+router.get(
+  "/review/:id",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { userId } = req.user!;
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
+
+    try {
+      if (!(await isArccMember(userId))) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const db_connect = dbo.getDb();
+      const grant = await db_connect
+        .collection("grant")
+        .findOne({ _id: new ObjectId(id) });
+      if (!grant) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+      return res.json(grant);
+    } catch (err) {
+      console.error("Failed to fetch grant for review:", err);
+      return res.status(500).json({ message: "Failed to fetch grant" });
+    }
+  },
+);
+
+router.put(
+  "/review/:id",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { userId } = req.user!;
+    const { id } = req.params;
+    const { reviewStatus } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
+
+    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
+      return res.status(400).json({
+        message: "reviewStatus must be approved or denied",
+      });
+    }
+
+    try {
+      if (!(await isArccMember(userId))) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const db_connect = dbo.getDb();
+      const result = await db_connect
+        .collection("grant")
+        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+      return res.json({ reviewStatus });
+    } catch (err) {
+      console.error("Failed to update review status:", err);
+      return res
+        .status(500)
+        .json({ message: "Failed to update review status" });
+    }
+  },
+);
+
 router.get("/get-grant/:id", async (req, res) => {
   const { id } = req.params;
   const db_connect = dbo.getDb();

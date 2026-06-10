@@ -3,7 +3,12 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
-import "./ArccCommittee.css";
+import "./Review.css";
+
+function formatStatus(status?: string) {
+  const value = status ?? "pending";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 export default function Review() {
   const { user, token, logout } = useAuth();
@@ -41,7 +46,7 @@ export default function Review() {
   };
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page review-page">
       <header className="dash-header">
         <div className="dash-brand">
           <span className="dash-logo">GMS</span>
@@ -54,28 +59,28 @@ export default function Review() {
           </button>
         </div>
       </header>
-      <main className="dash-main">
-        <div className="dash-welcome">
+      <main className="review-main">
+        <div className="review-welcome">
           <h2>Grant Review</h2>
           <p>Submitted grants awaiting review</p>
           <button
             type="button"
-            className="edit-btn"
+            className="review-btn review-btn-secondary"
             onClick={() => navigate("/dashboard")}
           >
             Back to Dashboard
           </button>
         </div>
-        {message && <p className="form-message">{message}</p>}
-        <div className="grant-form-card">
+        {message && <p className="review-message">{message}</p>}
+        <div className="review-card">
           <h2>Submitted Grants</h2>
           {!grants.length ? (
             <p>No submitted grants yet.</p>
           ) : (
-            <ul className="list">
+            <ul className="review-list">
               {grants.map((grant: any) => (
-                <li key={grant._id} className="row">
-                  <span>
+                <li key={grant._id} className="review-row">
+                  <span className="review-row-label">
                     <strong>{grant.title}</strong>
                     {" — "}
                     {grant.submittedEmail}
@@ -84,8 +89,15 @@ export default function Review() {
                       ? new Date(grant.submittedAt).toLocaleDateString()
                       : ""}
                   </span>
-                  <div className="actions">
-                    <span>Pending</span>
+                  <div className="review-row-actions">
+                    <span>{formatStatus(grant.reviewStatus)}</span>
+                    <button
+                      type="button"
+                      className="review-btn review-btn-secondary"
+                      onClick={() => navigate(`/review/${grant._id}`)}
+                    >
+                      View
+                    </button>
                   </div>
                 </li>
               ))}

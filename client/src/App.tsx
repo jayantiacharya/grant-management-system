@@ -11,6 +11,7 @@ import CreateDepartment from "./pages/CreateDepartment";
 import ArccCommittee from "./pages/ArccCommittee";
 import Profile from "./pages/Profile";
 import Review from "./pages/Review";
+import ReviewDetail from "./pages/ReviewDetail";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -120,6 +121,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Review />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/review/:grantId"
+            element={
+              <ProtectedRoute>
+                <ReviewDetail />
               </ProtectedRoute>
             }
           />

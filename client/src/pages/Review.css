@@ -1,0 +1,140 @@
+.review-page .review-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px;
+  text-align: left;
+}
+
+.review-page .review-welcome {
+  width: 100%;
+  max-width: 650px;
+  margin-bottom: 2.5rem;
+}
+
+.review-page .review-welcome h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px;
+}
+
+.review-page .review-welcome p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 12px;
+}
+
+.review-page .review-message {
+  width: 100%;
+  max-width: 650px;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 13px;
+}
+
+.review-page .review-loading {
+  width: 100%;
+  max-width: 650px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.review-page .review-card {
+  width: 100%;
+  max-width: 650px;
+  background: white;
+  padding: 34px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.review-page .review-card h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px;
+}
+
+.review-page .review-card p {
+  margin: 0 0 12px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.review-page .review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-page .review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.review-page .review-row-label {
+  min-width: 0;
+}
+
+.review-page .review-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.review-page .review-decision-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.review-page .review-btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.review-page .review-btn-secondary {
+  background: #3b82f6;
+  color: white;
+}
+
+.review-page .review-btn-secondary:hover {
+  background: #2960b8;
+}
+
+.review-page .review-btn-primary {
+  background: #1f4373;
+  color: white;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.review-page .review-btn-primary:hover {
+  background: #17345c;
+}
+
+.review-page .review-btn:disabled,
+.review-page .review-btn:disabled:hover {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
