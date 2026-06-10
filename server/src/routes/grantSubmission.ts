@@ -154,6 +154,32 @@ router.get("/user-grants/:email", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch grants" });
   }
 });
+router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
+  const { userId } = req.user!;
+  const db_connect = dbo.getDb();
+
+  try {
+    const arcc = await db_connect
+      .collection("arcc")
+      .findOne({ key: "committee" });
+    const memberIds = Array.isArray(arcc?.memberIds)
+      ? arcc.memberIds.map(String)
+      : [];
+    if (!memberIds.includes(String(userId))) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const grants = await db_connect
+      .collection("grant")
+      .find({})
+      .sort({ submittedAt: -1 })
+      .toArray();
+    return res.json(grants);
+  } catch (err) {
+    console.error("Failed to fetch grants for review:", err);
+    return res.status(500).json({ message: "Failed to fetch grants" });
+  }
+});
 router.get("/get-grant/:id", async (req, res) => {
   const { id } = req.params;
   const db_connect = dbo.getDb();

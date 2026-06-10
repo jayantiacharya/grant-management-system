@@ -1,0 +1,98 @@
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import "./Dashboard.css";
+import "./ArccCommittee.css";
+
+export default function Review() {
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
+  const [grants, setGrants] = useState([]);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchGrants = async () => {
+      try {
+        const { data } = await axios.get(
+          "http://localhost:5000/api/grants/review",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setGrants(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 403) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+        setMessage("Failed to load grants.");
+      }
+    };
+
+    fetchGrants();
+  }, [token, navigate]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  return (
+    <div className="dashboard-page">
+      <header className="dash-header">
+        <div className="dash-brand">
+          <span className="dash-logo">GMS</span>
+          <span>Grant Management</span>
+        </div>
+        <div className="dash-user">
+          <span>{user?.email}</span>
+          <button onClick={handleLogout} className="logout-btn">
+            Sign out
+          </button>
+        </div>
+      </header>
+      <main className="dash-main">
+        <div className="dash-welcome">
+          <h2>Grant Review</h2>
+          <p>Submitted grants awaiting review</p>
+          <button
+            type="button"
+            className="edit-btn"
+            onClick={() => navigate("/dashboard")}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+        {message && <p className="form-message">{message}</p>}
+        <div className="grant-form-card">
+          <h2>Submitted Grants</h2>
+          {!grants.length ? (
+            <p>No submitted grants yet.</p>
+          ) : (
+            <ul className="list">
+              {grants.map((grant: any) => (
+                <li key={grant._id} className="row">
+                  <span>
+                    <strong>{grant.title}</strong>
+                    {" — "}
+                    {grant.submittedEmail}
+                    {" — "}
+                    {grant.submittedAt
+                      ? new Date(grant.submittedAt).toLocaleDateString()
+                      : ""}
+                  </span>
+                  <div className="actions">
+                    <span>Pending</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
