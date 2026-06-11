@@ -36,7 +36,7 @@ type GrantFormErrors = Partial<
 
 const MAX_FILES = 3;
 
-export default function NewGrant() {
+export default function EditGrant() {
   const { user, token, logout } = useAuth();
   const { formData, setFormData, budgetItems, beginEditingGrant } = useGrant();
   const navigate = useNavigate();
@@ -66,7 +66,6 @@ export default function NewGrant() {
       );
 
       const grant = res.data;
-      console.log("Fetched grant data:", grant);
 
       setIsLocked(grant.status === GRANT_STATUS.SUBMITTED);
 

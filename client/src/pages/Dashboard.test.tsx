@@ -27,7 +27,12 @@ const fakeUser = { id: "u1", email: "alice@wsu.edu", role: "user" };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAuth.mockReturnValue({ user: fakeUser, logout: mockLogout });
+  mockUseAuth.mockReturnValue({
+    user: fakeUser,
+    token: "tok123",
+    logout: mockLogout,
+    updateUserArccStatus: vi.fn(),
+  });
   vi.mocked(axios.get).mockResolvedValue({ data: [] });
 });
 
@@ -38,6 +43,9 @@ describe("Dashboard", () => {
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
         "http://localhost:5000/api/grants/user-grants/alice@wsu.edu",
+        expect.objectContaining({
+          headers: { Authorization: "Bearer tok123" },
+        }),
       );
     });
   });

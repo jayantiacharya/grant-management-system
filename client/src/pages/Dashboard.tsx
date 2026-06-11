@@ -8,7 +8,7 @@ import { GRANT_STATUS } from "../types/grant";
 import "./Dashboard.css";
 
 export default function Dashboard() {
-  const { user, logout, updateUserArccStatus } = useAuth();
+  const { user, token, logout, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
 
@@ -24,10 +24,16 @@ export default function Dashboard() {
     navigate("/review");
   };
   const fetchGrants = async () => {
-    const { data } = await axios.get(
-      `http://localhost:5000/api/grants/user-grants/${user?.email}`,
-    );
-    setGrants(Array.isArray(data) ? data : []);
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/grants/user-grants/${user?.email}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setGrants(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch grants:", error);
+      setGrants([]);
+    }
   };
 
   const checkArccMembership = async () => {

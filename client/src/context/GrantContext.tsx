@@ -58,16 +58,27 @@ const emptyBudgetItem: BudgetItem = {
 
 const GrantContext = createContext<GrantContextType | null>(null);
 
-export function GrantProvider({ children }: { children: ReactNode }) {
-  const [formData, setFormDataState] = useState<GrantFormData>(() => {
-    const saved = localStorage.getItem("grantFormData");
-    return saved ? JSON.parse(saved) : emptyFormData;
-  });
+// Corrupt localStorage (manual edits, devtools) must not crash the initial
+// render; fall back to a clean draft and drop the bad value.
+function readStoredJson<T>(key: string, fallback: T): T {
+  const saved = localStorage.getItem(key);
+  if (!saved) return fallback;
+  try {
+    return JSON.parse(saved);
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
 
-  const [budgetItems, setBudgetItemsState] = useState<BudgetItem[]>(() => {
-    const saved = localStorage.getItem("budgetItems");
-    return saved ? JSON.parse(saved) : [{ ...emptyBudgetItem }];
-  });
+export function GrantProvider({ children }: { children: ReactNode }) {
+  const [formData, setFormDataState] = useState<GrantFormData>(() =>
+    readStoredJson("grantFormData", emptyFormData),
+  );
+
+  const [budgetItems, setBudgetItemsState] = useState<BudgetItem[]>(() =>
+    readStoredJson("budgetItems", [{ ...emptyBudgetItem }]),
+  );
 
   const [activeGrantId, setActiveGrantIdState] = useState<string | null>(() =>
     localStorage.getItem("activeGrantId"),

@@ -70,12 +70,6 @@ export default function BudgetWorksheet() {
     setBudgetItems(budgetItems.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  const getBudgetTotal = (field: keyof BudgetItem) => {
-    return budgetItems.reduce((total, item) => {
-      return total + Number(item[field] || 0);
-    }, 0);
-  };
-
   const getFundingSourceTotal = () => {
     return budgetItems.reduce((total, item) => {
       return (
@@ -159,19 +153,12 @@ export default function BudgetWorksheet() {
                     <label htmlFor={`amountRequested-${index}`}>
                       Total Amount Requested
                     </label>
+                    {/* Auto-computed from the funding source fields below. */}
                     <input
                       type="number"
                       id={`amountRequested-${index}`}
-                      min={0}
-                      step="0.01"
                       value={item.amountRequested}
-                      onChange={(e) =>
-                        handleBudgetItemChange(
-                          index,
-                          "amountRequested",
-                          e.target.value,
-                        )
-                      }
+                      readOnly
                       placeholder="0.00"
                     />
                   </div>
