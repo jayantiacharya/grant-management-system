@@ -4,7 +4,7 @@ import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
-import { useGrant } from "../context/GrantContext";
+import { useGrant, type GrantFormData } from "../context/GrantContext";
 
 import "./Dashboard.css";
 
@@ -13,25 +13,8 @@ export type UserOption = {
   email: string;
 };
 
-type YesNo = "" | "yes" | "no";
-
-export type GrantSubmission = {
-  title: string;
-  description: string;
-  projectDirectorId: string;
-  studentsImpacted: number;
-  affectsMultipleDepartments: YesNo;
-  departmentCount: string;
-  usesSubjects: YesNo;
-  irbApproved: YesNo;
-};
-
-type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
-  studentsImpacted: string;
-};
-
 type GrantFormErrors = Partial<
-  Record<keyof GrantFormState | "files" | "irbApprovalFile", string>
+  Record<keyof GrantFormData | "files" | "irbApprovalFile", string>
 >;
 
 const MAX_FILES = 3;
@@ -147,7 +130,7 @@ export default function EditGrant() {
   };
 
   const validate = (
-    data: GrantFormState,
+    data: GrantFormData,
     selectedFiles: File[],
   ): GrantFormErrors => {
     const next: GrantFormErrors = {};

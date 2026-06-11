@@ -1,14 +1,16 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
+export type YesNo = "" | "yes" | "no";
+
 export type GrantFormData = {
   title: string;
   description: string;
   projectDirectorId: string;
   studentsImpacted: string;
-  affectsMultipleDepartments: string;
+  affectsMultipleDepartments: YesNo;
   departmentCount: string;
-  usesSubjects: string;
-  irbApproved: string;
+  usesSubjects: YesNo;
+  irbApproved: YesNo;
 };
 
 export type BudgetItem = {
@@ -46,7 +48,7 @@ const emptyFormData: GrantFormData = {
   irbApproved: "",
 };
 
-const emptyBudgetItem: BudgetItem = {
+export const emptyBudgetItem: BudgetItem = {
   itemDescription: "",
   category: "",
   amountRequested: "",

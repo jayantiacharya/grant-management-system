@@ -1,27 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useGrant } from "../context/GrantContext";
+import {
+  useGrant,
+  emptyBudgetItem,
+  type BudgetItem,
+} from "../context/GrantContext";
 import "./Dashboard.css";
-
-type BudgetItem = {
-  itemDescription: string;
-  category: string;
-  amountRequested: string;
-  amountFromARCC: string;
-  amountFromCollege: string;
-  amountFromDepartment: string;
-  amountFromOtherSources: string;
-};
-
-const emptyBudgetItem: BudgetItem = {
-  itemDescription: "",
-  category: "",
-  amountRequested: "",
-  amountFromARCC: "",
-  amountFromCollege: "",
-  amountFromDepartment: "",
-  amountFromOtherSources: "",
-};
 
 export default function BudgetWorksheet() {
   const { user, logout } = useAuth();
