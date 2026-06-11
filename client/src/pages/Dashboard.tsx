@@ -3,6 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+import { GRANT_STATUS } from "../types/grant";
+
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -61,12 +63,16 @@ export default function Dashboard() {
                   <div key={grant._id}>
                     <strong>{grant.title}</strong>
 
-                    <button
-                      onClick={() => navigate(`/grants/edit/${grant._id}`)}
-                      className="edit-btn"
-                    >
-                      Edit
-                    </button>
+                    {grant.status === GRANT_STATUS.SUBMITTED ? (
+                      <span className="grant-status">Submitted</span>
+                    ) : (
+                      <button
+                        onClick={() => navigate(`/grants/edit/${grant._id}`)}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

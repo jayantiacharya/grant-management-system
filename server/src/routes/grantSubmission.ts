@@ -5,6 +5,7 @@ import fs from "fs";
 import dbo from "../middleware/conn.js"; // Database connection
 import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
+import { GRANT_STATUS, validateGrantPayload } from "./grantValidation.js";
 
 const router = Router();
 
@@ -37,49 +38,8 @@ router.post(
   upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
-    const {
-      title,
-      description,
-      projectDirectorId,
-      studentsImpacted,
-      affectsMultipleDepartments,
-      departmentCount,
-      usesSubjects,
-      irbApproved,
-    } = req.body;
-
-    if (!title || !description) {
-      return res.status(400).json({
-        message: "title and description are required",
-      });
-    }
-
-    const parsedStudents = Number(studentsImpacted);
-    if (!Number.isInteger(parsedStudents) || parsedStudents < 0) {
-      return res.status(400).json({
-        message: "studentsImpacted must be a non-negative integer",
-      });
-    }
-
-    let parsedDepartmentCount: number | null = null;
-    if (affectsMultipleDepartments === "yes") {
-      parsedDepartmentCount = Number(departmentCount);
-      if (
-        !Number.isInteger(parsedDepartmentCount) ||
-        parsedDepartmentCount < 2
-      ) {
-        return res.status(400).json({
-          message:
-            "departmentCount must be an integer >= 2 when affectsMultipleDepartments is yes",
-        });
-      }
-    }
-
-    if (usesSubjects === "yes" && irbApproved !== "yes") {
-      return res.status(400).json({
-        message: "irbApproved must be yes when usesSubjects is yes",
-      });
-    }
+    const { projectDirectorId, affectsMultipleDepartments, usesSubjects } =
+      req.body;
 
     const filesRecord = req.files as
       | Record<string, Express.Multer.File[]>
@@ -98,11 +58,18 @@ router.post(
         }
       : null;
 
-    if (usesSubjects === "yes" && uploadedFiles.length === 0) {
-      return res.status(400).json({
-        message: "file upload is required when usesSubjects is yes",
-      });
+    const validation = validateGrantPayload({
+      body: req.body,
+      uploadedFiles,
+      irbApprovalFile,
+    });
+    if (!validation.ok) {
+      return res
+        .status(validation.status)
+        .json({ message: validation.message });
     }
+    const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
+      validation;
 
     const db_connect = dbo.getDb();
 
@@ -117,18 +84,19 @@ router.post(
     }
 
     const newGrant = {
-      title,
-      description,
+      title: req.body.title ?? "",
+      description: req.body.description ?? "",
       submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
-      irbApproved: usesSubjects === "yes" ? irbApproved : null,
+      irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
-      submittedAt: new Date(),
+      status: normalizedStatus,
+      submittedAt: isDraft ? null : new Date(),
     };
 
     try {
@@ -171,47 +139,26 @@ router.put(
   upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
-    const {
-      title,
-      description,
-      projectDirectorId,
-      studentsImpacted,
-      affectsMultipleDepartments,
-      departmentCount,
-      usesSubjects,
-      irbApproved,
-    } = req.body;
+    const { projectDirectorId, affectsMultipleDepartments, usesSubjects } =
+      req.body;
 
-    if (!title || !description) {
-      return res.status(400).json({
-        message: "title and description are required",
+    const db_connect = dbo.getDb();
+
+    const existing = await db_connect
+      .collection("grant")
+      .findOne({ _id: new ObjectId(req.params.id) });
+    if (!existing) {
+      return res.status(404).json({ message: "Grant not found" });
+    }
+    if (existing.submittedEmail !== email) {
+      return res.status(403).json({
+        message: "You do not have permission to edit this proposal.",
       });
     }
-
-    const parsedStudents = Number(studentsImpacted);
-    if (!Number.isInteger(parsedStudents) || parsedStudents < 0) {
-      return res.status(400).json({
-        message: "studentsImpacted must be a non-negative integer",
-      });
-    }
-
-    let parsedDepartmentCount: number | null = null;
-    if (affectsMultipleDepartments === "yes") {
-      parsedDepartmentCount = Number(departmentCount);
-      if (
-        !Number.isInteger(parsedDepartmentCount) ||
-        parsedDepartmentCount < 2
-      ) {
-        return res.status(400).json({
-          message:
-            "departmentCount must be an integer >= 2 when affectsMultipleDepartments is yes",
-        });
-      }
-    }
-
-    if (usesSubjects === "yes" && irbApproved !== "yes") {
-      return res.status(400).json({
-        message: "irbApproved must be yes when usesSubjects is yes",
+    if (existing.status === GRANT_STATUS.SUBMITTED) {
+      return res.status(403).json({
+        message:
+          "This proposal has been submitted and can no longer be edited.",
       });
     }
 
@@ -232,13 +179,20 @@ router.put(
         }
       : null;
 
-    // if (usesSubjects === "yes" && uploadedFiles.length === 0) {
-    //   return res.status(400).json({
-    //     message: "file upload is required when usesSubjects is yes",
-    //   });
-    // }
-
-    const db_connect = dbo.getDb();
+    const validation = validateGrantPayload({
+      body: req.body,
+      uploadedFiles,
+      irbApprovalFile,
+      existingFiles: existing.files ?? [],
+      existingIrbApprovalFile: existing.irbApprovalFile ?? null,
+    });
+    if (!validation.ok) {
+      return res
+        .status(validation.status)
+        .json({ message: validation.message });
+    }
+    const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
+      validation;
 
     const resolvedDirectorId = projectDirectorId || userId;
     const directorExists = await db_connect
@@ -250,15 +204,19 @@ router.put(
       });
     }
     const update: Record<string, any> = {
-      title,
-      description,
+      title: req.body.title ?? "",
+      description: req.body.description ?? "",
       projectDirectorId: resolvedDirectorId,
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
-      irbApproved: usesSubjects === "yes" ? irbApproved : null,
+      irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
+      status: normalizedStatus,
     };
+    if (!isDraft) {
+      update.submittedAt = new Date();
+    }
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;
     }

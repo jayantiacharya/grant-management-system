@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
-const { findOne, insertOne } = vi.hoisted(() => ({
+const { findOne, insertOne, updateOne } = vi.hoisted(() => ({
   findOne: vi.fn(),
   insertOne: vi.fn(),
+  updateOne: vi.fn(),
 }));
 
 vi.mock("../middleware/conn.js", () => ({
@@ -13,6 +14,7 @@ vi.mock("../middleware/conn.js", () => ({
       collection: () => ({
         findOne,
         insertOne,
+        updateOne,
       }),
     }),
   },
@@ -38,6 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   findOne.mockResolvedValue({ _id: "mongo-id" });
   insertOne.mockResolvedValue({ insertedId: "grant-id" });
+  updateOne.mockResolvedValue({ matchedCount: 1 });
 });
 
 describe("POST /api/grants/submit", () => {
@@ -128,5 +131,139 @@ describe("POST /api/grants/submit", () => {
       .set("Authorization", `Bearer ${validToken}`)
       .send(validBody);
     expect(res.status).toBe(500);
+  });
+
+  it("201 draft skips required-field validation", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ status: "draft", title: "" });
+    expect(res.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "draft", submittedAt: null }),
+    );
+  });
+
+  it("submitted create still enforces validation and stamps submittedAt", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted" });
+    expect(res.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "submitted" }),
+    );
+    expect(insertOne.mock.calls[0][0].submittedAt).toBeInstanceOf(Date);
+  });
+
+  it("400 when submitted create is missing title", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted", title: "" });
+    expect(res.status).toBe(400);
+  });
+
+  it("defaults an omitted status to submitted (full validation applies)", async () => {
+    // Backward-compat: a request with no status is treated as a submission, so
+    // the full validation runs. A valid body persists as submitted...
+    const ok = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send(validBody);
+    expect(ok.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "submitted" }),
+    );
+
+    // ...and an incomplete body is rejected rather than silently saved.
+    const bad = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, title: "" });
+    expect(bad.status).toBe(400);
+  });
+});
+
+describe("PUT /api/grants/edit/:id", () => {
+  it("403 when the grant is already submitted", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "submitted",
+      submittedEmail: "alice@wsu.edu",
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/no longer be edited/);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("403 when the grant belongs to another user", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "draft",
+      submittedEmail: "someone-else@wsu.edu",
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/permission/);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("404 when the grant does not exist", async () => {
+    findOne.mockResolvedValueOnce(null);
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "draft" });
+    expect(res.status).toBe(404);
+  });
+
+  it("updates a draft and can transition it to submitted", async () => {
+    findOne
+      .mockResolvedValueOnce({
+        _id: "g1",
+        status: "draft",
+        submittedEmail: "alice@wsu.edu",
+      })
+      .mockResolvedValueOnce({ _id: "mongo-id" });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted" });
+    expect(res.status).toBe(201);
+    expect(updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: "submitted" }),
+      }),
+    );
+  });
+
+  it("400 when submitting via edit with subjects but no IRB file on the grant", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "draft",
+      submittedEmail: "alice@wsu.edu",
+      files: [],
+      irbApprovalFile: null,
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({
+        ...validBody,
+        status: "submitted",
+        usesSubjects: "yes",
+        irbApproved: "yes",
+      });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
   });
 });
