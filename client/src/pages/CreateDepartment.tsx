@@ -2,11 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import "./ArccCommittee.css";
 
 export default function CreateDepartment() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [colleges, setColleges] = useState<any[]>([]);
@@ -47,11 +48,6 @@ export default function CreateDepartment() {
     fetchUsers();
   }, [user, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
@@ -91,18 +87,7 @@ export default function CreateDepartment() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader />
       <main className="dash-main">
         <div className="dash-welcome">
           <h2>Department Management</h2>

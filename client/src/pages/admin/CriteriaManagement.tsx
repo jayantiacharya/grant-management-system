@@ -3,6 +3,8 @@ import { type Criteria } from "../../types/rubric";
 import CriteriaForm from "../../components/CriteriaForm";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import DashHeader from "../../components/DashHeader";
+import "../Dashboard.css";
 
 export default function CriteriaManagement() {
   const { token } = useAuth();
@@ -84,108 +86,113 @@ export default function CriteriaManagement() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1>Grant Review Criteria</h1>
-        <button
-          style={styles.primaryButton}
-          onClick={() => {
-            setEditingCriteria(null);
-            setShowForm(true);
-          }}
-        >
-          + Add New Criteria
-        </button>
-      </div>
+    <div className="dashboard-page">
+      <DashHeader back={{ label: "Back to Admin Dashboard", to: "/admin" }} />
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1>Grant Review Criteria</h1>
+          <button
+            style={styles.primaryButton}
+            onClick={() => {
+              setEditingCriteria(null);
+              setShowForm(true);
+            }}
+          >
+            + Add New Criteria
+          </button>
+        </div>
 
-      {showForm && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <button
-              style={styles.modalClose}
-              onClick={() => {
-                setShowForm(false);
-                setEditingCriteria(null);
-              }}
-            >
-              ×
-            </button>
-            <CriteriaForm
-              initialData={editingCriteria || undefined}
-              onSubmit={(data) => {
-                if (editingCriteria) {
-                  handleUpdate(editingCriteria._id, data);
-                } else {
-                  handleCreate(data);
-                }
-              }}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingCriteria(null);
-              }}
-            />
+        {showForm && (
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalContent}>
+              <button
+                style={styles.modalClose}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingCriteria(null);
+                }}
+              >
+                ×
+              </button>
+              <CriteriaForm
+                initialData={editingCriteria || undefined}
+                onSubmit={(data) => {
+                  if (editingCriteria) {
+                    handleUpdate(editingCriteria._id, data);
+                  } else {
+                    handleCreate(data);
+                  }
+                }}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingCriteria(null);
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {loading ? (
-        <div style={styles.loading}>Loading criteria...</div>
-      ) : (
-        <div style={styles.criteriaList}>
-          {criteria.length === 0 && (
-            <div style={styles.loading}>
-              No criteria yet. Click "+ Add New Criteria" to get started.
-            </div>
-          )}
-          {criteria.map((criterion) => (
-            <div key={criterion._id} style={styles.criteriaCard}>
-              <div style={styles.criteriaHeader}>
+        {loading ? (
+          <div style={styles.loading}>Loading criteria...</div>
+        ) : (
+          <div style={styles.criteriaList}>
+            {criteria.length === 0 && (
+              <div style={styles.loading}>
+                No criteria yet. Click "+ Add New Criteria" to get started.
+              </div>
+            )}
+            {criteria.map((criterion) => (
+              <div key={criterion._id} style={styles.criteriaCard}>
+                <div style={styles.criteriaHeader}>
+                  <div>
+                    <h3 style={styles.criteriaTitle}>{criterion.name}</h3>
+                    <span style={styles.maxScore}>
+                      Max Score: {criterion.maxScore}
+                    </span>
+                  </div>
+                  <div style={styles.criteriaActions}>
+                    <button
+                      style={styles.editButton}
+                      onClick={() => {
+                        setEditingCriteria(criterion);
+                        setShowForm(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      style={styles.deleteButton}
+                      onClick={() => handleDelete(criterion._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <p style={styles.criteriaDescription}>
+                  {criterion.description}
+                </p>
                 <div>
-                  <h3 style={styles.criteriaTitle}>{criterion.name}</h3>
-                  <span style={styles.maxScore}>
-                    Max Score: {criterion.maxScore}
-                  </span>
-                </div>
-                <div style={styles.criteriaActions}>
-                  <button
-                    style={styles.editButton}
-                    onClick={() => {
-                      setEditingCriteria(criterion);
-                      setShowForm(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    style={styles.deleteButton}
-                    onClick={() => handleDelete(criterion._id)}
-                  >
-                    Delete
-                  </button>
+                  <h4 style={styles.suggestionsTitle}>Rating Guidelines:</h4>
+                  <ul style={styles.suggestionsList}>
+                    {criterion.ratingSuggestions.map((suggestion, idx) => (
+                      <li key={idx} style={styles.suggestionItem}>
+                        <strong>{suggestion.score} points:</strong>{" "}
+                        {suggestion.description}
+                        {suggestion.example && (
+                          <span style={styles.example}>
+                            {" "}
+                            ({suggestion.example})
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-              <p style={styles.criteriaDescription}>{criterion.description}</p>
-              <div>
-                <h4 style={styles.suggestionsTitle}>Rating Guidelines:</h4>
-                <ul style={styles.suggestionsList}>
-                  {criterion.ratingSuggestions.map((suggestion, idx) => (
-                    <li key={idx} style={styles.suggestionItem}>
-                      <strong>{suggestion.score} points:</strong>{" "}
-                      {suggestion.description}
-                      {suggestion.example && (
-                        <span style={styles.example}>
-                          {" "}
-                          ({suggestion.example})
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

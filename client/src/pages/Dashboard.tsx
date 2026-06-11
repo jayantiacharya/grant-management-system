@@ -4,25 +4,15 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 import { GRANT_STATUS } from "../types/grant";
+import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
 
 export default function Dashboard() {
-  const { user, token, logout, updateUserArccStatus } = useAuth();
+  const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const handleProfile = () => {
-    navigate("/profile");
-  };
-  const handleReview = () => {
-    navigate("/review");
-  };
   const fetchGrants = async () => {
     try {
       const { data } = await axios.get(
@@ -55,25 +45,13 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          {user?.isArcc && (
-            <button onClick={handleReview} className="logout-btn">
-              Review
-            </button>
-          )}
-          <button onClick={handleProfile} className="logout-btn">
-            {user?.email}
+      <DashHeader>
+        {user?.isArcc && (
+          <button onClick={() => navigate("/review")} className="logout-btn">
+            Review
           </button>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+        )}
+      </DashHeader>
       <main className="dash-main">
         <div className="grant-form-card">
           <h2 className="grant-title">Welcome, {user?.email}</h2>

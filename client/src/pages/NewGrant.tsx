@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
 import { useGrant, type GrantFormData } from "../context/GrantContext";
+import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
 
@@ -20,7 +21,7 @@ type GrantFormErrors = Partial<
 const MAX_FILES = 3;
 
 export default function NewGrant() {
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
   const { formData, setFormData, budgetItems, activeGrantId, clearGrantDraft } =
     useGrant();
 
@@ -72,11 +73,6 @@ export default function NewGrant() {
       });
     return () => controller.abort();
   }, [token]);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -249,24 +245,7 @@ export default function NewGrant() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-
-        <div className="dash-user">
-          <span>{user?.email}</span>
-
-          <button onClick={() => navigate("/dashboard")} className="logout-btn">
-            Back to dashboard
-          </button>
-
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
 
       <main className="dash-main">
         <div className="grant-form-card">

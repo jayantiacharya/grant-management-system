@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import "./Review.css";
 
@@ -11,7 +12,7 @@ function formatStatus(status?: string) {
 }
 
 export default function Review() {
-  const { user, token, logout } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
   const [message, setMessage] = useState("");
@@ -40,25 +41,9 @@ export default function Review() {
     fetchGrants();
   }, [token, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="dashboard-page review-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
       <main className="review-main">
         <div className="review-welcome">
           <h2>Grant Review</h2>

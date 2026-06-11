@@ -1,24 +1,17 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useLocation } from "react-router-dom";
 import {
   useGrant,
   emptyBudgetItem,
   type BudgetItem,
 } from "../context/GrantContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 
 export default function BudgetWorksheet() {
-  const { user, logout } = useAuth();
   const { budgetItems, setBudgetItems } = useGrant();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const returnTo = location.state?.returnTo ?? "/grants/new";
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const handleBudgetItemChange = (
     index: number,
@@ -68,24 +61,7 @@ export default function BudgetWorksheet() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-
-        <div className="dash-user">
-          <span>{user?.email}</span>
-
-          <button onClick={() => navigate(returnTo)} className="logout-btn">
-            Back to Grant Form
-          </button>
-
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader back={{ label: "Back to Grant Form", to: returnTo }} />
 
       <main className="dash-main">
         <div className="grant-form-card">

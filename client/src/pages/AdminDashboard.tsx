@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import axios from "axios";
 
 export default function AdminDashboard() {
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
 
@@ -31,25 +32,13 @@ export default function AdminDashboard() {
     }
   }, [user, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader>
+        <button onClick={() => navigate("/dashboard")} className="logout-btn">
+          My Grants
+        </button>
+      </DashHeader>
       <main className="dash-main">
         <div className="dash-welcome">
           <h2>Welcome back</h2>

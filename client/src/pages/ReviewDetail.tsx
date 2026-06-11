@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import "./Review.css";
 
@@ -18,7 +19,7 @@ function formatYesNo(value?: string | null) {
 
 export default function ReviewDetail() {
   const { grantId } = useParams();
-  const { user, token, logout } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [grant, setGrant] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -51,11 +52,6 @@ export default function ReviewDetail() {
 
     fetchData();
   }, [token, grantId, navigate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const directorEmail =
     users.find((u) => u.id === grant?.projectDirectorId)?.email ??
@@ -110,18 +106,7 @@ export default function ReviewDetail() {
   if (!grant) {
     return (
       <div className="dashboard-page review-page">
-        <header className="dash-header">
-          <div className="dash-brand">
-            <span className="dash-logo">GMS</span>
-            <span>Grant Management</span>
-          </div>
-          <div className="dash-user">
-            <span>{user?.email}</span>
-            <button onClick={handleLogout} className="logout-btn">
-              Sign out
-            </button>
-          </div>
-        </header>
+        <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
         <main className="review-main">
           {message ? (
             <p className="review-message">{message}</p>
@@ -137,18 +122,7 @@ export default function ReviewDetail() {
 
   return (
     <div className="dashboard-page review-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
       <main className="review-main">
         <div className="review-welcome">
           <h2>{grant.title}</h2>
