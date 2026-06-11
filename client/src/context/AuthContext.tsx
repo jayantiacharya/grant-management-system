@@ -4,6 +4,7 @@ interface User {
   id: string;
   email: string;
   role: string;
+  isArcc?: boolean;
 }
 
 interface AuthContextType {
@@ -11,6 +12,7 @@ interface AuthContextType {
   token: string | null;
   login: (user: User, token: string) => void;
   logout: () => void;
+  updateUserArccStatus: (isArcc: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,6 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("token", jwt);
   };
 
+  const updateUserArccStatus = (isArcc: boolean) => {
+    if (user) {
+      const updatedUser = { ...user, isArcc };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -48,7 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, updateUserArccStatus }}
+    >
       {children}
     </AuthContext.Provider>
   );
