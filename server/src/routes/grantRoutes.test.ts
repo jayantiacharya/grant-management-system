@@ -40,7 +40,13 @@ const validBody = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findOne.mockResolvedValue({ _id: "mongo-id" });
+  // The edit route loads the grant first (ownership + lock check), then the
+  // director user; a draft owned by the token email satisfies both lookups.
+  findOne.mockResolvedValue({
+    _id: "mongo-id",
+    submittedEmail: "alice@wsu.edu",
+    status: "draft",
+  });
   updateOne.mockResolvedValue({ matchedCount: 1 });
   findToArray.mockResolvedValue([]);
 });
@@ -131,7 +137,14 @@ describe("PUT /api/grants/edit/:id", () => {
   });
 
   it("400 when projectDirectorId does not match a known user", async () => {
-    findOne.mockResolvedValueOnce(null);
+    // First findOne returns the grant; the second (user lookup) misses.
+    findOne
+      .mockResolvedValueOnce({
+        _id: "mongo-id",
+        submittedEmail: "alice@wsu.edu",
+        status: "draft",
+      })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .put(`/api/grants/edit/${OID}`)
       .set("Authorization", `Bearer ${validToken}`)
