@@ -31,6 +31,11 @@ vi.mock("axios", () => {
 
 import axios from "axios";
 import EditGrant from "./EditGrant";
+import { GrantProvider } from "../context/GrantContext";
+
+function renderEditGrant() {
+  return render(<EditGrant />, { wrapper: GrantProvider });
+}
 
 const fakeUser = { id: "u1", email: "alice@wsu.edu", role: "user" };
 
@@ -60,6 +65,7 @@ function mockGet(grant: Record<string, unknown> = existingGrant) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   vi.spyOn(window, "confirm").mockReturnValue(true);
   mockUseAuth.mockReturnValue({
     user: fakeUser,
@@ -72,7 +78,7 @@ beforeEach(() => {
 
 describe("EditGrant", () => {
   it("fetches the grant and user-options with bearer token on mount", async () => {
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
         "http://localhost:5000/api/grants/get-grant/g1",
@@ -90,7 +96,7 @@ describe("EditGrant", () => {
   });
 
   it("pre-fills the form with the fetched grant data", async () => {
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() => {
       expect(
         (screen.getByLabelText(/grant title/i) as HTMLInputElement).value,
@@ -106,7 +112,7 @@ describe("EditGrant", () => {
 
   it("preserves a studentsImpacted value of 0 when prefilling", async () => {
     mockGet({ ...existingGrant, studentsImpacted: 0 });
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() =>
       expect(
         (screen.getByLabelText(/students impacted/i) as HTMLInputElement).value,
@@ -116,7 +122,7 @@ describe("EditGrant", () => {
 
   it("submits an edited JSON payload via PUT and returns to the dashboard", async () => {
     const user = userEvent.setup();
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() =>
       expect(
         (screen.getByLabelText(/grant title/i) as HTMLInputElement).value,
@@ -150,7 +156,7 @@ describe("EditGrant", () => {
 
   it("Save sends a draft via PUT", async () => {
     const user = userEvent.setup();
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() =>
       expect(
         (screen.getByLabelText(/grant title/i) as HTMLInputElement).value,
@@ -172,7 +178,7 @@ describe("EditGrant", () => {
 
   it("blocks editing a submitted grant", async () => {
     mockGet({ ...existingGrant, status: "submitted" });
-    render(<EditGrant />);
+    renderEditGrant();
 
     expect(await screen.findByText(/has been submitted/i)).toBeInTheDocument();
     expect(
@@ -182,7 +188,7 @@ describe("EditGrant", () => {
 
   it("shows validation errors and does not submit when required fields are cleared", async () => {
     const user = userEvent.setup();
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() =>
       expect(
         (screen.getByLabelText(/grant title/i) as HTMLInputElement).value,
@@ -204,7 +210,7 @@ describe("EditGrant", () => {
       response: { data: { message: "Edit rejected" } },
     });
     const user = userEvent.setup();
-    render(<EditGrant />);
+    renderEditGrant();
     await waitFor(() =>
       expect(
         (screen.getByLabelText(/grant title/i) as HTMLInputElement).value,
@@ -224,7 +230,7 @@ describe("EditGrant", () => {
       }
       return Promise.resolve({ data: [] });
     });
-    render(<EditGrant />);
+    renderEditGrant();
     expect(
       await screen.findByText(/failed to load grant data/i),
     ).toBeInTheDocument();

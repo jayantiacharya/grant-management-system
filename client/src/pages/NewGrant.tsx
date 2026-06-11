@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
+import { useGrant } from "../context/GrantContext";
 
 import "./Dashboard.css";
 
@@ -37,25 +38,25 @@ const MAX_FILES = 3;
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
+  const { formData, setFormData, budgetItems, clearGrantDraft } = useGrant();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
 
-  const [formData, setFormData] = useState<GrantFormState>({
-    title: "",
-    description: "",
-    projectDirectorId: user?.id ?? "",
-    studentsImpacted: "",
-    affectsMultipleDepartments: "",
-    departmentCount: "",
-    usesSubjects: "",
-    irbApproved: "",
-  });
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id && !formData.projectDirectorId) {
+      setFormData((prev) => ({
+        ...prev,
+        projectDirectorId: user.id,
+      }));
+    }
+  }, [user, formData.projectDirectorId, setFormData]);
 
   useEffect(() => {
     if (!token) return;
@@ -88,7 +89,12 @@ export default function NewGrant() {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
   };
@@ -193,6 +199,9 @@ export default function NewGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
+
+        body.append("budgetItems", JSON.stringify(budgetItems));
+
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
@@ -222,6 +231,7 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          budgetItems,
           status,
         };
 
@@ -230,6 +240,7 @@ export default function NewGrant() {
         });
       }
 
+      clearGrantDraft();
       navigate("/dashboard");
     } catch (error) {
       const fallback = "Failed to submit proposal.";
@@ -471,6 +482,18 @@ export default function NewGrant() {
                 )}
               </div>
             )}
+
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() =>
+                navigate("/budget-worksheet", {
+                  state: { returnTo: "/grants/new" },
+                })
+              }
+            >
+              Open Budget Worksheet
+            </button>
 
             <div>
               <label htmlFor="files">Upload Files</label>

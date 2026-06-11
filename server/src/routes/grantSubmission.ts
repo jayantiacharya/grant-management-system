@@ -49,12 +49,17 @@ router.post(
   upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
-    const { projectDirectorId, affectsMultipleDepartments, usesSubjects } =
-      req.body;
+    const {
+      projectDirectorId,
+      affectsMultipleDepartments,
+      usesSubjects,
+      budgetItems,
+    } = req.body;
 
     const filesRecord = req.files as
       | Record<string, Express.Multer.File[]>
       | undefined;
+
     const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
@@ -85,9 +90,11 @@ router.post(
     const db_connect = dbo.getDb();
 
     const resolvedDirectorId = projectDirectorId || userId;
+
     const directorExists = await db_connect
       .collection("user")
       .findOne({ id: resolvedDirectorId }, { projection: { _id: 1 } });
+
     if (!directorExists) {
       return res.status(400).json({
         message: "projectDirectorId does not match a known user",
@@ -104,6 +111,7 @@ router.post(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
+      budgetItems: budgetItems ?? [],
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
@@ -120,14 +128,18 @@ router.post(
     }
   },
 );
+
 router.get("/user-grants/:email", async (req: AuthRequest, res: Response) => {
   const { email } = req.params;
+
   const db_connect = dbo.getDb();
+
   try {
     const grants = await db_connect
       .collection("grant")
       .find({ submittedEmail: email })
       .toArray();
+
     return res.json(grants);
   } catch (err) {
     console.error("Failed to fetch grants:", err);
@@ -286,14 +298,19 @@ router.get("/get-grant/:id", async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch grant" });
   }
 });
+
 router.put(
   "/edit/:id",
   verifyToken,
   upload,
   async (req: AuthRequest, res: Response) => {
     const { email, userId } = req.user!;
-    const { projectDirectorId, affectsMultipleDepartments, usesSubjects } =
-      req.body;
+    const {
+      projectDirectorId,
+      affectsMultipleDepartments,
+      usesSubjects,
+      budgetItems,
+    } = req.body;
 
     const db_connect = dbo.getDb();
 
@@ -318,6 +335,7 @@ router.put(
     const filesRecord = req.files as
       | Record<string, Express.Multer.File[]>
       | undefined;
+
     const uploadedFiles = (filesRecord?.files ?? []).map((file) => ({
       originalName: file.originalname,
       savedName: file.filename,
@@ -348,14 +366,17 @@ router.put(
       validation;
 
     const resolvedDirectorId = projectDirectorId || userId;
+
     const directorExists = await db_connect
       .collection("user")
       .findOne({ id: resolvedDirectorId }, { projection: { _id: 1 } });
+
     if (!directorExists) {
       return res.status(400).json({
         message: "projectDirectorId does not match a known user",
       });
     }
+
     const update: Record<string, any> = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
@@ -365,6 +386,7 @@ router.put(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
+      budgetItems: budgetItems ?? [],
       status: normalizedStatus,
     };
     if (!isDraft) {
@@ -374,6 +396,7 @@ router.put(
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;
     }
+
     if (irbApprovalFile) {
       update.irbApprovalFile = irbApprovalFile;
     }
@@ -382,6 +405,7 @@ router.put(
       await db_connect
         .collection("grant")
         .updateOne({ _id: new ObjectId(req.params.id) }, { $set: update });
+
       return res.status(201).json(update);
     } catch (err) {
       console.error("Failed to update grant:", err);

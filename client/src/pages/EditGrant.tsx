@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
+import { useGrant } from "../context/GrantContext";
 
 import "./Dashboard.css";
 
@@ -37,20 +38,11 @@ const MAX_FILES = 3;
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
+  const { formData, setFormData, budgetItems, clearGrantDraft } = useGrant();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
 
-  const [formData, setFormData] = useState<GrantFormState>({
-    title: "",
-    description: "",
-    projectDirectorId: user?.id ?? "",
-    studentsImpacted: "",
-    affectsMultipleDepartments: "",
-    departmentCount: "",
-    usesSubjects: "",
-    irbApproved: "",
-  });
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -229,6 +221,7 @@ export default function NewGrant() {
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("budgetItems", JSON.stringify(budgetItems));
         body.append("status", status);
 
         await axios.put(
@@ -258,6 +251,7 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          budgetItems,
           status,
         };
 
@@ -522,6 +516,18 @@ export default function NewGrant() {
                   )}
                 </div>
               )}
+
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() =>
+                  navigate("/budget-worksheet", {
+                    state: { returnTo: `/grants/edit/${grantId}` },
+                  })
+                }
+              >
+                Open Budget Worksheet
+              </button>
 
               <div>
                 <label htmlFor="files">Upload Files</label>
