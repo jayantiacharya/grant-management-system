@@ -1,10 +1,20 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
+import { ObjectId } from "mongodb";
 import dbo from "../middleware/conn.js";
+import { verifyToken, type AuthRequest } from "../middleware/auth.js";
 
 const router = Router();
 
+function requireAdmin(req: AuthRequest, res: Response): boolean {
+  if (req.user?.role !== "admin") {
+    res.status(403).json({ message: "Only admins can manage criteria." });
+    return false;
+  }
+  return true;
+}
+
 // Get all criteria
-router.route("/").get(async (req: Request, res: Response) => {
+router.get("/", verifyToken, async (_req: AuthRequest, res: Response) => {
   try {
     const db = dbo.getDb();
     const criteria = await db.collection("criteria").find({}).toArray();
@@ -15,9 +25,11 @@ router.route("/").get(async (req: Request, res: Response) => {
   }
 });
 
-// Create new criteria
-router.route("/").post(async (req: Request, res: Response) => {
+// Create new criteria (admin only)
+router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { name, description, maxScore, ratingSuggestions } = req.body;
 
     if (!name || !description || !maxScore) {
@@ -52,7 +64,6 @@ router.route("/").post(async (req: Request, res: Response) => {
 
     const db = dbo.getDb();
     const newCriteria = {
-      id: Date.now().toString(),
       name: name.trim(),
       description: description.trim(),
       maxScore: parseInt(maxScore),
@@ -61,18 +72,25 @@ router.route("/").post(async (req: Request, res: Response) => {
       updatedAt: new Date().toISOString(),
     };
 
-    await db.collection("criteria").insertOne(newCriteria);
-    res.status(201).json(newCriteria);
+    const result = await db.collection("criteria").insertOne(newCriteria);
+    res.status(201).json({ _id: result.insertedId, ...newCriteria });
   } catch (error) {
     console.error("Failed to create criteria:", error);
     res.status(500).json({ message: "Failed to create criteria" });
   }
 });
 
-// Update criteria
-router.route("/:id").put(async (req: Request, res: Response) => {
+// Update criteria (admin only)
+router.put("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
   try {
+    if (!requireAdmin(req, res)) return;
+
     const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid criteria id" });
+      return;
+    }
+
     const { name, description, maxScore, ratingSuggestions } = req.body;
 
     if (maxScore && ratingSuggestions && Array.isArray(ratingSuggestions)) {
@@ -102,7 +120,7 @@ router.route("/:id").put(async (req: Request, res: Response) => {
 
     const result = await db
       .collection("criteria")
-      .updateOne({ id }, { $set: updateData });
+      .updateOne({ _id: new ObjectId(id) }, { $set: updateData });
 
     if (result.matchedCount === 0) {
       res.status(404).json({ message: "Criteria not found" });
@@ -116,13 +134,21 @@ router.route("/:id").put(async (req: Request, res: Response) => {
   }
 });
 
-// Delete criteria
-router.route("/:id").delete(async (req: Request, res: Response) => {
+// Delete criteria (admin only)
+router.delete("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const db = dbo.getDb();
+    if (!requireAdmin(req, res)) return;
 
-    const result = await db.collection("criteria").deleteOne({ id });
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid criteria id" });
+      return;
+    }
+
+    const db = dbo.getDb();
+    const result = await db
+      .collection("criteria")
+      .deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
       res.status(404).json({ message: "Criteria not found" });

@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { type Criteria } from "../../types/rubric";
 import CriteriaForm from "../../components/CriteriaForm";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CriteriaManagement() {
+  const { token } = useAuth();
   const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCriteria, setEditingCriteria] = useState<Criteria | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => {
     loadCriteria();
@@ -16,7 +20,10 @@ export default function CriteriaManagement() {
   const loadCriteria = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/criteria");
+      const response = await axios.get(
+        "http://localhost:5000/api/criteria",
+        authHeaders,
+      );
       setCriteria(response.data);
     } catch (error) {
       console.error("Failed to load criteria:", error);
@@ -30,6 +37,7 @@ export default function CriteriaManagement() {
       const response = await axios.post(
         "http://localhost:5000/api/criteria",
         criteriaData,
+        authHeaders,
       );
       setCriteria([...criteria, response.data]);
       setShowForm(false);
@@ -41,10 +49,14 @@ export default function CriteriaManagement() {
 
   const handleUpdate = async (id: string, criteriaData: Partial<Criteria>) => {
     try {
-      await axios.put(`http://localhost:5000/api/criteria/${id}`, criteriaData);
+      await axios.put(
+        `http://localhost:5000/api/criteria/${id}`,
+        criteriaData,
+        authHeaders,
+      );
       setCriteria(
         criteria.map((c) =>
-          c.id === id
+          c._id === id
             ? { ...c, ...criteriaData, updatedAt: new Date().toISOString() }
             : c,
         ),
@@ -60,8 +72,11 @@ export default function CriteriaManagement() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this criteria?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/criteria/${id}`);
-      setCriteria(criteria.filter((c) => c.id !== id));
+      await axios.delete(
+        `http://localhost:5000/api/criteria/${id}`,
+        authHeaders,
+      );
+      setCriteria(criteria.filter((c) => c._id !== id));
     } catch (error) {
       console.error("Failed to delete criteria:", error);
       alert("Failed to delete criteria");
@@ -99,7 +114,7 @@ export default function CriteriaManagement() {
               initialData={editingCriteria || undefined}
               onSubmit={(data) => {
                 if (editingCriteria) {
-                  handleUpdate(editingCriteria.id, data);
+                  handleUpdate(editingCriteria._id, data);
                 } else {
                   handleCreate(data);
                 }
@@ -123,7 +138,7 @@ export default function CriteriaManagement() {
             </div>
           )}
           {criteria.map((criterion) => (
-            <div key={criterion.id} style={styles.criteriaCard}>
+            <div key={criterion._id} style={styles.criteriaCard}>
               <div style={styles.criteriaHeader}>
                 <div>
                   <h3 style={styles.criteriaTitle}>{criterion.name}</h3>
@@ -143,7 +158,7 @@ export default function CriteriaManagement() {
                   </button>
                   <button
                     style={styles.deleteButton}
-                    onClick={() => handleDelete(criterion.id)}
+                    onClick={() => handleDelete(criterion._id)}
                   >
                     Delete
                   </button>
