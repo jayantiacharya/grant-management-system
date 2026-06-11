@@ -144,23 +144,32 @@ router.post(
   },
 );
 
-router.get("/user-grants/:email", async (req: AuthRequest, res: Response) => {
-  const { email } = req.params;
+router.get(
+  "/user-grants/:email",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { email } = req.params;
 
-  const db_connect = dbo.getDb();
+    // A user may only list their own grants; admins may list anyone's.
+    if (req.user!.email !== email && req.user!.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
 
-  try {
-    const grants = await db_connect
-      .collection("grant")
-      .find({ submittedEmail: email })
-      .toArray();
+    const db_connect = dbo.getDb();
 
-    return res.json(grants);
-  } catch (err) {
-    console.error("Failed to fetch grants:", err);
-    return res.status(500).json({ message: "Failed to fetch grants" });
-  }
-});
+    try {
+      const grants = await db_connect
+        .collection("grant")
+        .find({ submittedEmail: email })
+        .toArray();
+
+      return res.json(grants);
+    } catch (err) {
+      console.error("Failed to fetch grants:", err);
+      return res.status(500).json({ message: "Failed to fetch grants" });
+    }
+  },
+);
 router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
   const { userId } = req.user!;
 
@@ -294,25 +303,37 @@ router.put(
   },
 );
 
-router.get("/get-grant/:id", async (req, res) => {
-  const { id } = req.params;
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid grant id" });
-  }
-  const db_connect = dbo.getDb();
-  try {
-    const grant = await db_connect
-      .collection("grant")
-      .findOne({ _id: new ObjectId(id) });
-    if (!grant) {
-      return res.status(404).json({ message: "Grant not found" });
+router.get(
+  "/get-grant/:id",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
     }
-    return res.json(grant);
-  } catch (err) {
-    console.error("Failed to fetch grant:", err);
-    return res.status(500).json({ message: "Failed to fetch grant" });
-  }
-});
+    const db_connect = dbo.getDb();
+    try {
+      const grant = await db_connect
+        .collection("grant")
+        .findOne({ _id: new ObjectId(id) });
+      if (!grant) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+      // Used by the edit flow: only the owner (or an admin) may read it.
+      // ARCC reviewers have their own /review/:id endpoint.
+      if (
+        grant.submittedEmail !== req.user!.email &&
+        req.user!.role !== "admin"
+      ) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      return res.json(grant);
+    } catch (err) {
+      console.error("Failed to fetch grant:", err);
+      return res.status(500).json({ message: "Failed to fetch grant" });
+    }
+  },
+);
 
 router.put(
   "/edit/:id",
@@ -326,6 +347,10 @@ router.put(
       usesSubjects,
       budgetItems,
     } = req.body;
+
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
 
     const db_connect = dbo.getDb();
 

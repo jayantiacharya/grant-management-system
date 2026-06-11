@@ -52,36 +52,79 @@ beforeEach(() => {
 });
 
 describe("GET /api/grants/user-grants/:email", () => {
-  it("200 returns grants for the email", async () => {
-    findToArray.mockResolvedValueOnce([{ _id: "g1", title: "Grant" }]);
+  it("401 without Authorization header", async () => {
     const res = await request(app).get("/api/grants/user-grants/alice@wsu.edu");
+    expect(res.status).toBe(401);
+  });
+
+  it("403 when requesting another user's grants", async () => {
+    const res = await request(app)
+      .get("/api/grants/user-grants/bob@wsu.edu")
+      .set("Authorization", `Bearer ${validToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("200 returns grants for the caller's own email", async () => {
+    findToArray.mockResolvedValueOnce([{ _id: "g1", title: "Grant" }]);
+    const res = await request(app)
+      .get("/api/grants/user-grants/alice@wsu.edu")
+      .set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ _id: "g1", title: "Grant" }]);
   });
 
   it("500 when db read throws", async () => {
     findToArray.mockRejectedValueOnce(new Error("mongo down"));
-    const res = await request(app).get("/api/grants/user-grants/alice@wsu.edu");
+    const res = await request(app)
+      .get("/api/grants/user-grants/alice@wsu.edu")
+      .set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(500);
   });
 });
 
 describe("GET /api/grants/get-grant/:id", () => {
+  it("401 without Authorization header", async () => {
+    const res = await request(app).get(`/api/grants/get-grant/${OID}`);
+    expect(res.status).toBe(401);
+  });
+
   it("404 when grant not found", async () => {
     findOne.mockResolvedValueOnce(null);
-    const res = await request(app).get(`/api/grants/get-grant/${OID}`);
+    const res = await request(app)
+      .get(`/api/grants/get-grant/${OID}`)
+      .set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(404);
   });
 
-  it("200 returns the grant", async () => {
-    findOne.mockResolvedValueOnce({ _id: OID, title: "Grant" });
-    const res = await request(app).get(`/api/grants/get-grant/${OID}`);
+  it("200 returns the caller's own grant", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: OID,
+      title: "Grant",
+      submittedEmail: "alice@wsu.edu",
+    });
+    const res = await request(app)
+      .get(`/api/grants/get-grant/${OID}`)
+      .set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.title).toBe("Grant");
   });
 
+  it("403 when the grant belongs to someone else", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: OID,
+      title: "Grant",
+      submittedEmail: "bob@wsu.edu",
+    });
+    const res = await request(app)
+      .get(`/api/grants/get-grant/${OID}`)
+      .set("Authorization", `Bearer ${validToken}`);
+    expect(res.status).toBe(403);
+  });
+
   it("400 on a malformed grant id instead of crashing", async () => {
-    const res = await request(app).get("/api/grants/get-grant/not-a-real-id");
+    const res = await request(app)
+      .get("/api/grants/get-grant/not-a-real-id")
+      .set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/invalid grant id/i);
     expect(findOne).not.toHaveBeenCalled();
@@ -94,6 +137,16 @@ describe("PUT /api/grants/edit/:id", () => {
       .put(`/api/grants/edit/${OID}`)
       .send(validBody);
     expect(res.status).toBe(401);
+  });
+
+  it("400 on a malformed grant id instead of crashing", async () => {
+    const res = await request(app)
+      .put("/api/grants/edit/not-a-real-id")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send(validBody);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/invalid grant id/i);
+    expect(findOne).not.toHaveBeenCalled();
   });
 
   it("400 when title missing", async () => {
