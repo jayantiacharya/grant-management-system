@@ -16,6 +16,7 @@ export default function Dashboard() {
     logout();
     navigate("/login");
   };
+
   const handleProfile = () => {
     navigate("/profile");
   };
@@ -53,7 +54,6 @@ export default function Dashboard() {
           <span className="dash-logo">GMS</span>
           <span>Grant Management</span>
         </div>
-
         <div className="dash-user">
           {user?.isArcc && (
             <button onClick={handleReview} className="logout-btn">
@@ -63,17 +63,14 @@ export default function Dashboard() {
           <button onClick={handleProfile} className="logout-btn">
             {user?.email}
           </button>
-
           <button onClick={handleLogout} className="logout-btn">
             Sign out
           </button>
         </div>
       </header>
-
       <main className="dash-main">
         <div className="grant-form-card">
           <h2 className="grant-title">Welcome, {user?.email}</h2>
-
           <p className="grant-description">
             Submit a new grant proposal or review your existing submissions.
           </p>
@@ -82,7 +79,16 @@ export default function Dashboard() {
               <h3>Your Grant Submissions:</h3>
               <div>
                 {grants.map((grant: any) => (
-                  <div key={grant._id}>
+                  <div
+                    key={grant._id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "0.5rem 0",
+                      borderBottom: "1px solid #eee",
+                    }}
+                  >
                     <strong>{grant.title}</strong>
 
                     {grant.status === GRANT_STATUS.SUBMITTED ? (

@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Review from "./pages/Review";
 import ReviewDetail from "./pages/ReviewDetail";
 import BudgetWorksheet from "./pages/BudgetWorksheet";
+import CriteriaManagement from "./pages/admin/CriteriaManagement";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -22,13 +23,16 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { token, user } = useAuth();
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
-
-  if (!token || !user) {
-    return <>{children}</>;
-  }
-
+  if (!token || !user) return <>{children}</>;
   return (
     <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />
   );
@@ -143,6 +147,14 @@ export default function App() {
                 <ProtectedRoute>
                   <ReviewDetail />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/criteria"
+              element={
+                <AdminRoute>
+                  <CriteriaManagement />
+                </AdminRoute>
               }
             />
           </Routes>
