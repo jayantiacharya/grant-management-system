@@ -38,7 +38,7 @@ const MAX_FILES = 3;
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
-  const { formData, setFormData, budgetItems, clearGrantDraft } = useGrant();
+  const { formData, setFormData, budgetItems, beginEditingGrant } = useGrant();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
@@ -70,20 +70,24 @@ export default function NewGrant() {
 
       setIsLocked(grant.status === GRANT_STATUS.SUBMITTED);
 
-      setFormData({
-        title: grant.title || "",
-        description: grant.description || "",
-        projectDirectorId: grant.projectDirectorId || user?.id || "",
-        studentsImpacted:
-          grant.studentsImpacted === undefined ||
-          grant.studentsImpacted === null
-            ? ""
-            : String(grant.studentsImpacted),
-        affectsMultipleDepartments: grant.affectsMultipleDepartments || "",
-        departmentCount: grant.departmentCount ?? "",
-        usesSubjects: grant.usesSubjects || "",
-        irbApproved: grant.irbApproved || "",
-      });
+      beginEditingGrant(
+        grantId,
+        {
+          title: grant.title || "",
+          description: grant.description || "",
+          projectDirectorId: grant.projectDirectorId || user?.id || "",
+          studentsImpacted:
+            grant.studentsImpacted === undefined ||
+            grant.studentsImpacted === null
+              ? ""
+              : String(grant.studentsImpacted),
+          affectsMultipleDepartments: grant.affectsMultipleDepartments || "",
+          departmentCount: grant.departmentCount ?? "",
+          usesSubjects: grant.usesSubjects || "",
+          irbApproved: grant.irbApproved || "",
+        },
+        Array.isArray(grant.budgetItems) ? grant.budgetItems : [],
+      );
     } catch (err) {
       console.error("Failed to fetch grant", err);
       setMessage("Failed to load grant data");

@@ -38,7 +38,17 @@ const MAX_FILES = 3;
 
 export default function NewGrant() {
   const { user, token, logout } = useAuth();
-  const { formData, setFormData, budgetItems, clearGrantDraft } = useGrant();
+  const { formData, setFormData, budgetItems, activeGrantId, clearGrantDraft } =
+    useGrant();
+
+  // The shared draft may still hold a grant loaded for editing; a fresh
+  // proposal must not start from another grant's data.
+  useEffect(() => {
+    if (activeGrantId) {
+      clearGrantDraft();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGrantId]);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);

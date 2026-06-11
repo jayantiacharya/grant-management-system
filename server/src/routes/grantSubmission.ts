@@ -32,6 +32,21 @@ const upload = multer({
   { name: "irbApprovalFile", maxCount: 1 },
 ]);
 
+// budgetItems arrives as an array in JSON requests but as a JSON string in
+// multipart (file upload) requests; normalize to an array either way.
+function parseBudgetItems(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 async function isArccMember(userId: string): Promise<boolean> {
   const db_connect = dbo.getDb();
   const arcc = await db_connect
@@ -111,7 +126,7 @@ router.post(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
-      budgetItems: budgetItems ?? [],
+      budgetItems: parseBudgetItems(budgetItems),
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
@@ -386,7 +401,7 @@ router.put(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
-      budgetItems: budgetItems ?? [],
+      budgetItems: parseBudgetItems(budgetItems),
       status: normalizedStatus,
     };
     if (!isDraft) {
@@ -415,7 +430,10 @@ router.put(
 );
 
 // Get all grants (admin)
-router.get("/all", async (_req, res) => {
+router.get("/all", verifyToken, async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Not authorized" });
+  }
   const db_connect = dbo.getDb();
   try {
     const grants = await db_connect.collection("grant").find({}).toArray();

@@ -26,6 +26,12 @@ type GrantContextType = {
   setFormData: React.Dispatch<React.SetStateAction<GrantFormData>>;
   budgetItems: BudgetItem[];
   setBudgetItems: React.Dispatch<React.SetStateAction<BudgetItem[]>>;
+  activeGrantId: string | null;
+  beginEditingGrant: (
+    grantId: string,
+    form: GrantFormData,
+    items: BudgetItem[],
+  ) => void;
   clearGrantDraft: () => void;
 };
 
@@ -63,6 +69,10 @@ export function GrantProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [{ ...emptyBudgetItem }];
   });
 
+  const [activeGrantId, setActiveGrantIdState] = useState<string | null>(() =>
+    localStorage.getItem("activeGrantId"),
+  );
+
   const setFormData: React.Dispatch<React.SetStateAction<GrantFormData>> = (
     value,
   ) => {
@@ -83,11 +93,28 @@ export function GrantProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Seed the draft from a fetched grant when starting to edit it. If the
+  // same grant is already loaded (e.g. returning from the budget worksheet),
+  // keep the in-progress edits instead of overwriting them with server state.
+  const beginEditingGrant = (
+    grantId: string,
+    form: GrantFormData,
+    items: BudgetItem[],
+  ) => {
+    if (activeGrantId === grantId) return;
+    setActiveGrantIdState(grantId);
+    localStorage.setItem("activeGrantId", grantId);
+    setFormData(form);
+    setBudgetItems(items.length > 0 ? items : [{ ...emptyBudgetItem }]);
+  };
+
   const clearGrantDraft = () => {
     setFormDataState(emptyFormData);
     setBudgetItemsState([{ ...emptyBudgetItem }]);
+    setActiveGrantIdState(null);
     localStorage.removeItem("grantFormData");
     localStorage.removeItem("budgetItems");
+    localStorage.removeItem("activeGrantId");
   };
 
   return (
@@ -97,6 +124,8 @@ export function GrantProvider({ children }: { children: ReactNode }) {
         setFormData,
         budgetItems,
         setBudgetItems,
+        activeGrantId,
+        beginEditingGrant,
         clearGrantDraft,
       }}
     >

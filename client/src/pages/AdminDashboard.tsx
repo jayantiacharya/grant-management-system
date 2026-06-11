@@ -5,13 +5,15 @@ import "./Dashboard.css";
 import axios from "axios";
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
 
   const fetchGrants = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/grants/all");
+      const { data } = await axios.get("http://localhost:5000/api/grants/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch grants:", error);
@@ -19,8 +21,9 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchGrants();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (user?.role !== "admin") {
