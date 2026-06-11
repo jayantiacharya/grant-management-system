@@ -82,7 +82,11 @@ export default function NewGrant() {
         title: grant.title || "",
         description: grant.description || "",
         projectDirectorId: grant.projectDirectorId || user?.id || "",
-        studentsImpacted: grant.studentsImpacted ?? "",
+        studentsImpacted:
+          grant.studentsImpacted === undefined ||
+          grant.studentsImpacted === null
+            ? ""
+            : String(grant.studentsImpacted),
         affectsMultipleDepartments: grant.affectsMultipleDepartments || "",
         departmentCount: grant.departmentCount ?? "",
         usesSubjects: grant.usesSubjects || "",

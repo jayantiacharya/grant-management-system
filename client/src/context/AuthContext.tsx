@@ -18,7 +18,16 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // Corrupt storage should not crash the app; clear both keys so we start
+      // fully logged out rather than with a stale token but no user.
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      return null;
+    }
   });
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("token"),
