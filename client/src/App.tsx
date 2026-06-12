@@ -10,19 +10,24 @@ import CreateCollege from "./pages/CreateCollege";
 import CreateDepartment from "./pages/CreateDepartment";
 import ArccCommittee from "./pages/ArccCommittee";
 import Profile from "./pages/Profile";
+import CriteriaManagement from "./pages/admin/CriteriaManagement";
+import BudgetManagement from "./pages/grants/BudgetManagement";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { token, user } = useAuth();
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
-
-  if (!token || !user) {
-    return <>{children}</>;
-  }
-
+  if (!token || !user) return <>{children}</>;
   return (
     <Navigate to={user.role === "admin" ? "/admin" : "/dashboard"} replace />
   );
@@ -75,6 +80,14 @@ export default function App() {
             }
           />
           <Route
+            path="/grants/:grantId/budget"
+            element={
+              <ProtectedRoute>
+                <BudgetManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin"
             element={
               <ProtectedRoute>
@@ -112,6 +125,15 @@ export default function App() {
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
+            }
+          />
+          {/* Admin-only: Criteria Management */}
+          <Route
+            path="/admin/criteria"
+            element={
+              <AdminRoute>
+                <CriteriaManagement />
+              </AdminRoute>
             }
           />
         </Routes>

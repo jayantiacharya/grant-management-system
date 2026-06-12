@@ -278,4 +278,16 @@ router.put(
   },
 );
 
+// Get all grants (admin)
+router.get("/all", async (_req, res) => {
+  const db_connect = dbo.getDb();
+  try {
+    const grants = await db_connect.collection("grant").find({}).toArray();
+    return res.json(grants);
+  } catch (err) {
+    console.error("Failed to fetch all grants:", err);
+    return res.status(500).json({ message: "Failed to fetch grants" });
+  }
+});
+
 export default router;
