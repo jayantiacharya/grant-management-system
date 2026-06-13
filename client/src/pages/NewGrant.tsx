@@ -3,6 +3,9 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
+import { GRANT_STATUS, type GrantStatus } from "../types/grant";
+import { useGrant, type GrantFormData } from "../context/GrantContext";
+import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
 
@@ -11,50 +14,43 @@ export type UserOption = {
   email: string;
 };
 
-type YesNo = "" | "yes" | "no";
-
-export type GrantSubmission = {
-  title: string;
-  description: string;
-  projectDirectorId: string;
-  studentsImpacted: number;
-  affectsMultipleDepartments: YesNo;
-  departmentCount: string;
-  usesSubjects: YesNo;
-  irbApproved: YesNo;
-};
-
-type GrantFormState = Omit<GrantSubmission, "studentsImpacted"> & {
-  studentsImpacted: string;
-};
-
 type GrantFormErrors = Partial<
-  Record<keyof GrantFormState | "files" | "irbApprovalFile", string>
+  Record<keyof GrantFormData | "files" | "irbApprovalFile", string>
 >;
 
 const MAX_FILES = 3;
 
 export default function NewGrant() {
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
+  const { formData, setFormData, budgetItems, activeGrantId, clearGrantDraft } =
+    useGrant();
+
+  // The shared draft may still hold a grant loaded for editing; a fresh
+  // proposal must not start from another grant's data.
+  useEffect(() => {
+    if (activeGrantId) {
+      clearGrantDraft();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGrantId]);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
 
-  const [formData, setFormData] = useState<GrantFormState>({
-    title: "",
-    description: "",
-    projectDirectorId: user?.id ?? "",
-    studentsImpacted: "",
-    affectsMultipleDepartments: "",
-    departmentCount: "",
-    usesSubjects: "",
-    irbApproved: "",
-  });
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<GrantFormErrors>({});
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id && !formData.projectDirectorId) {
+      setFormData((prev) => ({
+        ...prev,
+        projectDirectorId: user.id,
+      }));
+    }
+  }, [user, formData.projectDirectorId, setFormData]);
 
   useEffect(() => {
     if (!token) return;
@@ -78,16 +74,16 @@ export default function NewGrant() {
     return () => controller.abort();
   }, [token]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
   };
@@ -109,7 +105,7 @@ export default function NewGrant() {
   };
 
   const validate = (
-    data: GrantFormState,
+    data: GrantFormData,
     selectedFiles: File[],
   ): GrantFormErrors => {
     const next: GrantFormErrors = {};
@@ -155,11 +151,15 @@ export default function NewGrant() {
     return next;
   };
 
-  const submitGrant = async () => {
+  const submitGrant = async (status: GrantStatus) => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
-    const validationErrors = validate(formData, selectedFiles);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    if (status === GRANT_STATUS.SUBMITTED) {
+      const validationErrors = validate(formData, selectedFiles);
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
+    } else {
+      setErrors({});
+    }
 
     setLoading(true);
     setMessage("");
@@ -169,17 +169,14 @@ export default function NewGrant() {
 
       const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
-      let response;
       if (useMultipart) {
         const body = new FormData();
-        const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
-        body.append(
-          "studentsImpacted",
-          String(Number(formData.studentsImpacted)),
-        );
+        if (formData.studentsImpacted !== "") {
+          body.append("studentsImpacted", formData.studentsImpacted);
+        }
         body.append(
           "affectsMultipleDepartments",
           formData.affectsMultipleDepartments,
@@ -191,27 +188,30 @@ export default function NewGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
+
+        body.append("budgetItems", JSON.stringify(budgetItems));
+
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("status", status);
 
-        response = await axios.post(
-          "http://localhost:5000/api/grants/submit",
-          body,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
+        await axios.post("http://localhost:5000/api/grants/submit", body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
-        );
+        });
       } else {
         const payload = {
           title: formData.title,
           description: formData.description,
           projectDirectorId: formData.projectDirectorId,
-          studentsImpacted: Number(formData.studentsImpacted),
+          studentsImpacted:
+            formData.studentsImpacted === ""
+              ? null
+              : Number(formData.studentsImpacted),
           affectsMultipleDepartments: formData.affectsMultipleDepartments,
           departmentCount:
             formData.affectsMultipleDepartments === "yes"
@@ -220,34 +220,17 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          budgetItems,
+          status,
         };
 
-        response = await axios.post(
-          "http://localhost:5000/api/grants/submit",
-          payload,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        await axios.post("http://localhost:5000/api/grants/submit", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
-      void response;
-      setMessage("Grant proposal submitted successfully.");
-
-      setFormData({
-        title: "",
-        description: "",
-        projectDirectorId: user?.id ?? "",
-        studentsImpacted: "",
-        affectsMultipleDepartments: "",
-        departmentCount: "",
-        usesSubjects: "",
-        irbApproved: "",
-      });
-      setFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (irbApprovalFileRef.current) irbApprovalFileRef.current.value = "";
-      setErrors({});
+      clearGrantDraft();
+      navigate("/dashboard");
     } catch (error) {
       const fallback = "Failed to submit proposal.";
       if (axios.isAxiosError(error)) {
@@ -262,24 +245,7 @@ export default function NewGrant() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-
-        <div className="dash-user">
-          <span>{user?.email}</span>
-
-          <button onClick={() => navigate("/dashboard")} className="logout-btn">
-            Back to dashboard
-          </button>
-
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
 
       <main className="dash-main">
         <div className="grant-form-card">
@@ -291,9 +257,14 @@ export default function NewGrant() {
 
           <form
             className="grant-form"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              submitGrant();
+              // Pressing Enter saves a draft (never submit-locks, which always
+              // requires an explicit Submit click + confirmation). noValidate
+              // keeps native required-field validation from blocking the save
+              // of a partial draft; full validation runs in JS on Submit.
+              submitGrant(GRANT_STATUS.DRAFT);
             }}
           >
             <div>
@@ -484,6 +455,18 @@ export default function NewGrant() {
               </div>
             )}
 
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() =>
+                navigate("/budget-worksheet", {
+                  state: { returnTo: "/grants/new" },
+                })
+              }
+            >
+              Open Budget Worksheet
+            </button>
+
             <div>
               <label htmlFor="files">Upload Files</label>
 
@@ -507,9 +490,33 @@ export default function NewGrant() {
               )}
             </div>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Submitting..." : "Submit Proposal"}
-            </button>
+            <div className="grant-form-actions">
+              <button
+                type="button"
+                className="save-btn"
+                disabled={loading}
+                onClick={() => submitGrant(GRANT_STATUS.DRAFT)}
+              >
+                {loading ? "Saving..." : "Save Grant Proposal"}
+              </button>
+
+              <button
+                type="button"
+                className="submit-btn"
+                disabled={loading}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Submitting locks this proposal and prevents further editing. Continue?",
+                    )
+                  ) {
+                    submitGrant(GRANT_STATUS.SUBMITTED);
+                  }
+                }}
+              >
+                {loading ? "Submitting..." : "Submit Grant Proposal"}
+              </button>
+            </div>
 
             {message && <p className="form-message">{message}</p>}
           </form>

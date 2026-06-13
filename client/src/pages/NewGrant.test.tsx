@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { GrantProvider } from "../context/GrantContext";
 
 const { mockUseAuth, mockNavigate, mockLogout } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -38,7 +39,18 @@ import NewGrant from "./NewGrant";
 
 const fakeUser = { id: "u1", email: "alice@wsu.edu", role: "user" };
 
+const renderNewGrant = () => {
+  return render(
+    <GrantProvider>
+      <NewGrant />
+    </GrantProvider>,
+  );
+};
+
 beforeEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
+
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
     user: fakeUser,
@@ -47,11 +59,17 @@ beforeEach(() => {
   });
   vi.mocked(axios.get).mockResolvedValue({ data: [] });
   vi.mocked(axios.post).mockResolvedValue({ data: {} });
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+});
+
+afterEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe("NewGrant", () => {
   it("renders all form fields", async () => {
-    render(<NewGrant />);
+    renderNewGrant();
     expect(screen.getByLabelText(/grant title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/project director/i)).toBeInTheDocument();
@@ -60,7 +78,7 @@ describe("NewGrant", () => {
   });
 
   it("fetches user-options with bearer token on mount", async () => {
-    render(<NewGrant />);
+    renderNewGrant();
     await waitFor(() => {
       expect(axios.get).toHaveBeenCalledWith(
         "http://localhost:5000/api/admin/user-options",
@@ -72,7 +90,7 @@ describe("NewGrant", () => {
   });
 
   it("pre-selects current user as project director", async () => {
-    render(<NewGrant />);
+    renderNewGrant();
     const select = screen.getByLabelText(
       /project director/i,
     ) as HTMLSelectElement;
@@ -82,7 +100,7 @@ describe("NewGrant", () => {
 
   it("shows field errors when submitting an empty form", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     screen.getByLabelText(/grant title/i).removeAttribute("required");
     screen.getByLabelText(/description/i).removeAttribute("required");
@@ -94,7 +112,9 @@ describe("NewGrant", () => {
       .getByLabelText(/human or animal subjects/i)
       .removeAttribute("required");
 
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
     expect(screen.getByText(/description is required/i)).toBeInTheDocument();
@@ -105,7 +125,7 @@ describe("NewGrant", () => {
 
   it("submits typed payload and shows success", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     await user.type(screen.getByLabelText(/grant title/i), "AI for Good");
     await user.type(screen.getByLabelText(/description/i), "Build it");
@@ -118,7 +138,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
@@ -130,15 +152,16 @@ describe("NewGrant", () => {
           studentsImpacted: 42,
           affectsMultipleDepartments: "no",
           usesSubjects: "no",
+          status: "submitted",
         }),
         expect.objectContaining({
           headers: { Authorization: "Bearer tok123" },
         }),
       );
     });
-    expect(
-      await screen.findByText(/submitted successfully/i),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard"),
+    );
   });
 
   it("surfaces server error message on submit failure", async () => {
@@ -147,7 +170,7 @@ describe("NewGrant", () => {
       response: { data: { message: "Bad request from server" } },
     });
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
@@ -160,7 +183,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText("Bad request from server"),
@@ -172,13 +197,13 @@ describe("NewGrant", () => {
       isAxiosError: true,
       response: { data: { message: "Forbidden" } },
     });
-    render(<NewGrant />);
+    renderNewGrant();
     expect(await screen.findByText("Forbidden")).toBeInTheDocument();
   });
 
   it("clears field error as user types", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     const titleInput = screen.getByLabelText(
       /grant title/i,
@@ -193,7 +218,9 @@ describe("NewGrant", () => {
       .getByLabelText(/human or animal subjects/i)
       .removeAttribute("required");
 
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
     expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
 
     await user.type(titleInput, "x");
@@ -202,7 +229,7 @@ describe("NewGrant", () => {
 
   it("rejects negative studentsImpacted client-side", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     const num = screen.getByLabelText(/students impacted/i) as HTMLInputElement;
     num.removeAttribute("min");
@@ -219,7 +246,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/non-negative integer/i),
@@ -229,7 +258,7 @@ describe("NewGrant", () => {
 
   it("requires departmentCount >= 2 when affecting multiple departments", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
@@ -248,7 +277,9 @@ describe("NewGrant", () => {
       screen.getByLabelText(/human or animal subjects/i),
       "no",
     );
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/number of departments \(2 or more\)/i),
@@ -258,7 +289,7 @@ describe("NewGrant", () => {
 
   it("requires IRB approval when human or animal subjects are used", async () => {
     const user = userEvent.setup();
-    render(<NewGrant />);
+    renderNewGrant();
 
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
@@ -273,11 +304,32 @@ describe("NewGrant", () => {
     );
     screen.getByLabelText(/upload files/i).removeAttribute("required");
     await user.selectOptions(screen.getByLabelText(/irb approval/i), "no");
-    await user.click(screen.getByRole("button", { name: /submit proposal/i }));
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
 
     expect(
       await screen.findByText(/irb approval is required/i),
     ).toBeInTheDocument();
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("Save sends a draft and skips required-field validation", async () => {
+    const user = userEvent.setup();
+    renderNewGrant();
+
+    await user.click(
+      screen.getByRole("button", { name: /save grant proposal/i }),
+    );
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "http://localhost:5000/api/grants/submit",
+        expect.objectContaining({ status: "draft" }),
+        expect.objectContaining({
+          headers: { Authorization: "Bearer tok123" },
+        }),
+      );
+    });
   });
 });

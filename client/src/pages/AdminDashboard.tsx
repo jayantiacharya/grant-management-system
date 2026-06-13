@@ -1,17 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import axios from "axios";
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
 
   const fetchGrants = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/grants/all");
+      const { data } = await axios.get("http://localhost:5000/api/grants/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch grants:", error);
@@ -19,8 +22,9 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchGrants();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (user?.role !== "admin") {
@@ -28,25 +32,13 @@ export default function AdminDashboard() {
     }
   }, [user, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader>
+        <button onClick={() => navigate("/dashboard")} className="logout-btn">
+          My Grants
+        </button>
+      </DashHeader>
       <main className="dash-main">
         <div className="dash-welcome">
           <h2>Welcome back</h2>
@@ -63,7 +55,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Grant Applications with Budget links */}
+        {/* Grant Applications */}
         {grants.length > 0 && (
           <div className="grant-form-card" style={{ marginBottom: "2rem" }}>
             <h2>Grant Applications</h2>
@@ -79,12 +71,6 @@ export default function AdminDashboard() {
                 }}
               >
                 <strong>{grant.title}</strong>
-                <button
-                  onClick={() => navigate(`/grants/${grant._id}/budget`)}
-                  className="edit-btn"
-                >
-                  💰 Budget Worksheet
-                </button>
               </div>
             ))}
           </div>

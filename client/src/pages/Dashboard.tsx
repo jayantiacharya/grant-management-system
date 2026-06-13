@@ -2,49 +2,56 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";
+
+import { GRANT_STATUS } from "../types/grant";
+import DashHeader from "../components/DashHeader";
+
 import "./Dashboard.css";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const handleProfile = () => {
-    navigate("/profile");
-  };
-
   const fetchGrants = async () => {
-    const { data } = await axios.get(
-      `http://localhost:5000/api/grants/user-grants/${user?.email}`,
-    );
-    setGrants(Array.isArray(data) ? data : []);
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/grants/user-grants/${user?.email}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setGrants(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch grants:", error);
+      setGrants([]);
+    }
+  };
+
+  const checkArccMembership = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/admin/arcc");
+      const isArcc = data.memberIds?.includes(user?.id) || false;
+      updateUserArccStatus(isArcc);
+    } catch (error) {
+      console.error("Failed to check ARCC membership:", error);
+    }
   };
 
   useEffect(() => {
     fetchGrants();
-  }, []);
+    if (user?.id) {
+      checkArccMembership();
+    }
+  }, [user?.id]);
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <button onClick={handleProfile} className="logout-btn">
-            {user?.email}
+      <DashHeader>
+        {user?.isArcc && (
+          <button onClick={() => navigate("/review")} className="logout-btn">
+            Review
           </button>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+        )}
+      </DashHeader>
       <main className="dash-main">
         <div className="grant-form-card">
           <h2 className="grant-title">Welcome, {user?.email}</h2>
@@ -67,20 +74,17 @@ export default function Dashboard() {
                     }}
                   >
                     <strong>{grant.title}</strong>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
+
+                    {grant.status === GRANT_STATUS.SUBMITTED ? (
+                      <span className="grant-status">Submitted</span>
+                    ) : (
                       <button
                         onClick={() => navigate(`/grants/edit/${grant._id}`)}
                         className="edit-btn"
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => navigate(`/grants/${grant._id}/budget`)}
-                        className="edit-btn"
-                      >
-                        💰 Budget Worksheet
-                      </button>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -5,7 +5,7 @@ export interface RatingSuggestion {
 }
 
 export interface Criteria {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   maxScore: number;
@@ -15,7 +15,7 @@ export interface Criteria {
 }
 
 export interface Rubric {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   criteria: Criteria[];
@@ -23,35 +23,9 @@ export interface Rubric {
   createdAt: string;
 }
 
-export const BUDGET_CATEGORIES = [
-  "Hardware",
-  "Software",
-  "Supplies",
-  "Travel",
-  "Personnel",
-  "Training",
-  "Other",
-] as const;
-
-export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
-
-export interface BudgetItem {
-  id: string;
-  grantId: string;
-  itemDescription: string;
-  amountRequested: number;
-  amountFromARCC: number;
-  amountFromCollege: number;
-  amountFromDepartment: number;
-  amountFromOther: number;
-  category: BudgetCategory;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export const DUMMY_CRITERIA: Criteria[] = [
   {
-    id: "1",
+    _id: "1",
     name: "Educational Impact",
     description:
       "How does the proposed project enhance the educational experience at Weber State University?",
@@ -70,7 +44,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "2",
+    _id: "2",
     name: "Student Reach",
     description:
       "How many students are impacted? Are multiple departments or programs involved?",
@@ -85,7 +59,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "3",
+    _id: "3",
     name: "Innovation",
     description:
       "Does this project introduce new teaching methods or technologies?",
@@ -100,7 +74,7 @@ export const DUMMY_CRITERIA: Criteria[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "4",
+    _id: "4",
     name: "Sustainability",
     description:
       "Will the project continue to provide value after funding ends?",

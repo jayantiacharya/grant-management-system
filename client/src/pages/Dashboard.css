@@ -125,7 +125,7 @@
 
 .grant-form-card {
   width: 100%;
-  max-width: 650px;
+  max-width: 620px;
   background: white;
   padding: 34px;
   border-radius: 12px;
@@ -198,6 +198,7 @@
 .submit-btn:hover {
   background: #17345c;
 }
+
 .edit-btn {
   margin-left: 12px;
   background: #3b82f6;
@@ -208,8 +209,47 @@
   cursor: pointer;
   font-size: 13px;
 }
+
 .edit-btn:hover {
   background: #2960b8;
+}
+
+.grant-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 8px;
+}
+
+.save-btn {
+  background: white;
+  color: #1f4373;
+  border: 1px solid #1f4373;
+  padding: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.save-btn:hover {
+  background: #eef2f8;
+}
+
+.save-btn:disabled {
+  color: #9ca3af;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.grant-status {
+  margin-left: 12px;
+  display: inline-block;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .submit-btn:disabled {
@@ -224,6 +264,7 @@
   font-size: 12px;
   font-weight: 500;
 }
+
 .form-message {
   margin-top: 12px;
   padding: 8px 12px;
@@ -231,4 +272,109 @@
   background: #f3f4f6;
   color: #374151;
   font-size: 13px;
+}
+
+/* Budget Worksheet */
+
+.budget-section {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.budget-section h3 {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 24px;
+  margin-bottom: 18px;
+}
+
+.budget-item-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 18px;
+}
+
+.budget-item-card h4 {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 20px;
+  margin: 0 0 18px;
+}
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.budget-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.budget-field label {
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.budget-field input,
+.budget-field select,
+.budget-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  background: white;
+  color: #111827;
+}
+
+.budget-field textarea {
+  resize: vertical;
+}
+
+.budget-actions {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.budget-actions .submit-btn {
+  width: auto;
+  padding: 13px 28px;
+}
+
+.remove-budget-btn {
+  margin-top: 12px;
+  background: #b91c1c;
+  color: white;
+  border: none;
+  padding: 11px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.remove-budget-btn:hover {
+  background: #991b1b;
+}
+
+.budget-total {
+  display: block;
+  margin-top: 12px;
+  color: #374151;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .budget-grid {
+    grid-template-columns: 1fr;
+  }
 }
