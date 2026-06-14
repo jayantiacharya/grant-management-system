@@ -52,6 +52,27 @@ export default function NewGrant() {
     }
   }, [user, formData.projectDirectorId, setFormData]);
 
+  // Auto-calculate matching funds from budget items whenever they change
+  // Matching funds = Department + College + Other Sources (NOT ARCC)
+  useEffect(() => {
+    if (budgetItems.length === 0) return;
+    const autoTotal = budgetItems.reduce((sum, item) => {
+      return (
+        sum +
+        (parseFloat(item.amountFromDepartment) || 0) +
+        (parseFloat(item.amountFromCollege) || 0) +
+        (parseFloat(item.amountFromOtherSources) || 0)
+      );
+    }, 0);
+    if (autoTotal > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        hasMatchingFunds: true,
+        matchingFundsTotal: String(autoTotal),
+      }));
+    }
+  }, [budgetItems]);
+
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
@@ -86,6 +107,14 @@ export default function NewGrant() {
 
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
+  };
+
+  const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      hasMatchingFunds: e.target.checked,
+      matchingFundsTotal: e.target.checked ? prev.matchingFundsTotal : "",
+    }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +217,10 @@ export default function NewGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
-
+        body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
+        if (formData.hasMatchingFunds) {
+          body.append("matchingFundsTotal", formData.matchingFundsTotal);
+        }
         body.append("budgetItems", JSON.stringify(budgetItems));
 
         selectedFiles.forEach((file) => body.append("files", file));
@@ -220,6 +252,10 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          hasMatchingFunds: formData.hasMatchingFunds,
+          matchingFundsTotal: formData.hasMatchingFunds
+            ? parseFloat(formData.matchingFundsTotal) || 0
+            : 0,
           budgetItems,
           status,
         };
@@ -489,6 +525,40 @@ export default function NewGrant() {
                 <span className="field-error">{errors.files}</span>
               )}
             </div>
+
+            {/* Matching Funds — auto-calculated from Budget Worksheet */}
+            <div>
+              <label>Are matching funds available from other sources?</label>
+              <div style={{ marginTop: "0.4rem" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.hasMatchingFunds}
+                  onChange={handleCheckboxChange}
+                />
+              </div>
+            </div>
+
+            {formData.hasMatchingFunds && (
+              <div>
+                <label htmlFor="matchingFundsTotal">
+                  Matching Funds Total ($)
+                </label>
+                <input
+                  type="number"
+                  id="matchingFundsTotal"
+                  name="matchingFundsTotal"
+                  min={0}
+                  step={0.01}
+                  value={formData.matchingFundsTotal}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                />
+                <small>
+                  Auto-calculated from Budget Worksheet (Department + College +
+                  Other Sources, not ARCC).
+                </small>
+              </div>
+            )}
 
             <div className="grant-form-actions">
               <button

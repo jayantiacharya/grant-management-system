@@ -68,6 +68,10 @@ export default function EditGrant() {
           departmentCount: grant.departmentCount ?? "",
           usesSubjects: grant.usesSubjects || "",
           irbApproved: grant.irbApproved || "",
+          hasMatchingFunds: grant.hasMatchingFunds || false,
+          matchingFundsTotal: grant.matchingFundsTotal
+            ? String(grant.matchingFundsTotal)
+            : "",
         },
         Array.isArray(grant.budgetItems) ? grant.budgetItems : [],
       );
@@ -76,6 +80,27 @@ export default function EditGrant() {
       setMessage("Failed to load grant data");
     }
   };
+
+  // Auto-calculate matching funds from budget items whenever they change
+  // Matching funds = Department + College + Other Sources (NOT ARCC)
+  useEffect(() => {
+    if (budgetItems.length === 0) return;
+    const autoTotal = budgetItems.reduce((sum, item) => {
+      return (
+        sum +
+        (parseFloat(item.amountFromDepartment) || 0) +
+        (parseFloat(item.amountFromCollege) || 0) +
+        (parseFloat(item.amountFromOtherSources) || 0)
+      );
+    }, 0);
+    if (autoTotal > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        hasMatchingFunds: true,
+        matchingFundsTotal: String(autoTotal),
+      }));
+    }
+  }, [budgetItems]);
 
   useEffect(() => {
     if (!token) return;
@@ -107,6 +132,14 @@ export default function EditGrant() {
     setFormData({ ...formData, [name]: value });
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
+  };
+
+  const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      hasMatchingFunds: e.target.checked,
+      matchingFundsTotal: e.target.checked ? prev.matchingFundsTotal : "",
+    }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -150,9 +183,6 @@ export default function EditGrant() {
     if (!data.usesSubjects) {
       next.usesSubjects = "Please select an option.";
     } else if (data.usesSubjects === "yes" && data.irbApproved !== "yes") {
-      // The file/document requirements are enforced server-side, which can see
-      // files already attached to the draft; the client only checks the IRB
-      // approval answer it actually holds in form state.
       next.irbApproved =
         "IRB approval is required when human or animal subjects are used.";
     }
@@ -199,6 +229,10 @@ export default function EditGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
+        body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
+        if (formData.hasMatchingFunds) {
+          body.append("matchingFundsTotal", formData.matchingFundsTotal);
+        }
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
@@ -233,6 +267,10 @@ export default function EditGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          hasMatchingFunds: formData.hasMatchingFunds,
+          matchingFundsTotal: formData.hasMatchingFunds
+            ? parseFloat(formData.matchingFundsTotal) || 0
+            : 0,
           budgetItems,
           status,
         };
@@ -281,11 +319,6 @@ export default function EditGrant() {
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                // Pressing Enter saves a draft (never submit-locks, which
-                // always requires an explicit Submit click + confirmation).
-                // noValidate keeps native required-field validation from
-                // blocking the save of a partial draft; full validation runs
-                // in JS on Submit.
                 submitGrant(GRANT_STATUS.DRAFT);
               }}
             >
@@ -516,6 +549,40 @@ export default function EditGrant() {
                   <span className="field-error">{errors.files}</span>
                 )}
               </div>
+
+              {/* Matching Funds — auto-calculated from Budget Worksheet */}
+              <div>
+                <label>Are matching funds available from other sources?</label>
+                <div style={{ marginTop: "0.4rem" }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.hasMatchingFunds}
+                    onChange={handleCheckboxChange}
+                  />
+                </div>
+              </div>
+
+              {formData.hasMatchingFunds && (
+                <div>
+                  <label htmlFor="matchingFundsTotal">
+                    Matching Funds Total ($)
+                  </label>
+                  <input
+                    type="number"
+                    id="matchingFundsTotal"
+                    name="matchingFundsTotal"
+                    min={0}
+                    step={0.01}
+                    value={formData.matchingFundsTotal}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                  />
+                  <small>
+                    Auto-calculated from Budget Worksheet (Department + College
+                    + Other Sources, not ARCC).
+                  </small>
+                </div>
+              )}
 
               <div className="grant-form-actions">
                 <button

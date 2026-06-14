@@ -11,6 +11,8 @@ export type GrantFormData = {
   departmentCount: string;
   usesSubjects: YesNo;
   irbApproved: YesNo;
+  hasMatchingFunds: boolean;
+  matchingFundsTotal: string;
 };
 
 export type BudgetItem = {
@@ -46,6 +48,8 @@ const emptyFormData: GrantFormData = {
   departmentCount: "",
   usesSubjects: "",
   irbApproved: "",
+  hasMatchingFunds: false,
+  matchingFundsTotal: "",
 };
 
 export const emptyBudgetItem: BudgetItem = {
