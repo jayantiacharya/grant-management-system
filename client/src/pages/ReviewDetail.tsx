@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -21,6 +21,8 @@ export default function ReviewDetail() {
   const { grantId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromApprovalView = (location.state as any)?.fromApprovalView ?? false;
   const [grant, setGrant] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [message, setMessage] = useState("");
@@ -235,24 +237,30 @@ export default function ReviewDetail() {
             </>
           )}
 
-          <div className="review-decision-actions">
-            <button
-              type="button"
-              className="review-btn review-btn-primary"
-              disabled={loading || grant.reviewStatus === "approved"}
-              onClick={() => updateStatus("approved")}
-            >
-              Approve
-            </button>
-            <button
-              type="button"
-              className="review-btn review-btn-primary"
-              disabled={loading || grant.reviewStatus === "denied"}
-              onClick={() => updateStatus("denied")}
-            >
-              Deny
-            </button>
-          </div>
+          {fromApprovalView ? (
+            <div className="review-decision-actions">
+              <button
+                type="button"
+                className="review-btn review-btn-primary"
+                disabled={loading || grant.reviewStatus === "approved"}
+                onClick={() => updateStatus("approved")}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                className="review-btn review-btn-primary"
+                disabled={loading || grant.reviewStatus === "denied"}
+                onClick={() => updateStatus("denied")}
+              >
+                Deny
+              </button>
+            </div>
+          ) : (
+            <div>
+              <textarea placeholder="Enter review comments... submit coming soon" />
+            </div>
+          )}
         </div>
       </main>
     </div>
