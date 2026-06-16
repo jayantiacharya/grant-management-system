@@ -538,9 +538,13 @@ export default function EditGrant() {
                   type="checkbox"
                   id="matchingFundsAvailable"
                   name="matchingFundsAvailable"
+                  className="toggle-checkbox"
                   checked={formData.matchingFundsAvailable}
                   onChange={handleMatchingToggle}
                 />
+                <label htmlFor="matchingFundsAvailable" className="toggle-btn">
+                  Yes
+                </label>
               </div>
 
               {formData.matchingFundsAvailable && (
@@ -548,17 +552,19 @@ export default function EditGrant() {
                   <label htmlFor="matchingFundsAmount">How much?</label>
 
                   <input
-                    type="text"
+                    type="number"
                     id="matchingFundsAmount"
                     name="matchingFundsAmount"
+                    min={0}
+                    step="0.01"
                     value={formData.matchingFundsAmount}
                     onChange={handleChange}
-                    placeholder="0"
+                    placeholder="0.00"
                   />
 
                   <button
                     type="button"
-                    className="save-btn"
+                    className="save-btn pull-btn"
                     onClick={handlePullFromBudget}
                   >
                     Pull from budget
