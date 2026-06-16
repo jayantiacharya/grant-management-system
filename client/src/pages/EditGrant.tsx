@@ -543,8 +543,7 @@ export default function EditGrant() {
                   onChange={handleMatchingToggle}
                 />
                 <label htmlFor="matchingFundsAvailable" className="toggle-btn">
-                  {formData.matchingFundsAvailable && "Yes"}
-                  {!formData.matchingFundsAvailable && "No"}
+                  {formData.matchingFundsAvailable ? "Yes" : "No"}
                 </label>
               </div>
 
