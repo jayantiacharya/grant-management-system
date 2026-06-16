@@ -58,6 +58,51 @@ async function isArccMember(userId: string): Promise<boolean> {
   return memberIds.includes(String(userId));
 }
 
+type CriteriaDoc = {
+  _id: ObjectId;
+  maxScore: number;
+  ratingSuggestions?: { score: number }[];
+};
+
+function validateReviewScores(
+  scores: unknown,
+  criteria: CriteriaDoc[],
+): scores is Record<string, number> {
+  if (!scores || typeof scores !== "object" || Array.isArray(scores)) {
+    return false;
+  }
+
+  const scoreRecord = scores as Record<string, unknown>;
+
+  for (const criterion of criteria) {
+    const criteriaId = criterion._id.toString();
+    const selectedScore = scoreRecord[criteriaId];
+
+    if (selectedScore === undefined || selectedScore === null) {
+      return false;
+    }
+
+    if (typeof selectedScore !== "number" || !Number.isFinite(selectedScore)) {
+      return false;
+    }
+
+    const allowedScores = (criterion.ratingSuggestions ?? []).map(
+      (suggestion) => suggestion.score,
+    );
+    if (!allowedScores.includes(selectedScore)) {
+      return false;
+    }
+  }
+
+  for (const key of Object.keys(scoreRecord)) {
+    if (!criteria.some((criterion) => criterion._id.toString() === key)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 router.post(
   "/submit",
   verifyToken,
@@ -131,7 +176,7 @@ router.post(
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
-      reviewStatus: isDraft ? null : "pending",
+      reviews: [],
     };
 
     try {
@@ -269,16 +314,14 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     const { userId } = req.user!;
     const { id } = req.params;
-    const { reviewStatus } = req.body;
+    const { scores, comments } = req.body;
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid grant id" });
     }
 
-    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
-      return res.status(400).json({
-        message: "reviewStatus must be approved or denied",
-      });
+    if (typeof comments !== "string") {
+      return res.status(400).json({ message: "comments must be a string" });
     }
 
     try {
@@ -287,18 +330,65 @@ router.put(
       }
 
       const db_connect = dbo.getDb();
+      const criteria = (await db_connect
+        .collection("criteria")
+        .find({})
+        .toArray()) as CriteriaDoc[];
+
+      if (criteria.length === 0) {
+        return res.status(400).json({
+          message: "No review criteria configured",
+        });
+      }
+
+      if (!validateReviewScores(scores, criteria)) {
+        return res.status(400).json({
+          message:
+            "scores must include one valid rating for each review criterion",
+        });
+      }
+
+      const grant = await db_connect
+        .collection("grant")
+        .findOne({ _id: new ObjectId(id) });
+      if (!grant) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+
+      const reviewEntry = {
+        reviewerId: String(userId),
+        scores,
+        comments: comments.trim(),
+        submittedAt: new Date(),
+      };
+
+      const existingReviews = Array.isArray(grant.reviews) ? grant.reviews : [];
+      const existingIndex = existingReviews.findIndex(
+        (review: { reviewerId?: string }) =>
+          String(review.reviewerId) === String(userId),
+      );
+
+      const updatedReviews =
+        existingIndex >= 0
+          ? existingReviews.map((review: unknown, index: number) =>
+              index === existingIndex ? reviewEntry : review,
+            )
+          : [...existingReviews, reviewEntry];
+
       const result = await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { reviews: updatedReviews } },
+        );
       if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      return res.json({ reviewStatus });
+
+      return res.json(reviewEntry);
     } catch (err) {
-      console.error("Failed to update review status:", err);
-      return res
-        .status(500)
-        .json({ message: "Failed to update review status" });
+      console.error("Failed to submit grant review:", err);
+      return res.status(500).json({ message: "Failed to submit grant review" });
     }
   },
 );
@@ -431,7 +521,6 @@ router.put(
     };
     if (!isDraft) {
       update.submittedAt = new Date();
-      update.reviewStatus = "pending";
     }
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;

@@ -1,15 +1,11 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
+import { type Criteria } from "../types/rubric";
 import "./Dashboard.css";
 import "./Review.css";
-
-function formatStatus(status?: string) {
-  const value = status ?? "pending";
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 function formatYesNo(value?: string | null) {
   if (value === "yes") return "Yes";
@@ -17,30 +13,70 @@ function formatYesNo(value?: string | null) {
   return "—";
 }
 
+type GrantReview = {
+  reviewerId: string;
+  scores: Record<string, number>;
+  comments: string;
+  submittedAt: string;
+};
+
 export default function ReviewDetail() {
   const { grantId } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const [grant, setGrant] = useState<any>(null);
+  const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [scores, setScores] = useState<Record<string, string>>({});
+  const [comments, setComments] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!token || !grantId) return;
+    if (!token || !grantId || !user?.id) return;
 
     const fetchData = async () => {
       try {
-        const [grantRes, usersRes] = await Promise.all([
+        const [grantRes, usersRes, criteriaRes] = await Promise.all([
           axios.get(`http://localhost:5000/api/grants/review/${grantId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           axios.get("http://localhost:5000/api/admin/user-options", {
             headers: { Authorization: `Bearer ${token}` },
           }),
+          axios.get("http://localhost:5000/api/criteria", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
-        setGrant(grantRes.data);
+        const grantData = grantRes.data;
+        const criteriaData = Array.isArray(criteriaRes.data)
+          ? criteriaRes.data
+          : [];
+
+        setGrant(grantData);
         setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+        setCriteria(criteriaData);
+
+        const myReview = (
+          Array.isArray(grantData.reviews) ? grantData.reviews : []
+        ).find(
+          (review: GrantReview) =>
+            String(review.reviewerId) === String(user.id),
+        ) as GrantReview | undefined;
+
+        if (myReview) {
+          const initialScores: Record<string, string> = {};
+          for (const [criteriaId, score] of Object.entries(
+            myReview.scores ?? {},
+          )) {
+            initialScores[criteriaId] = String(score);
+          }
+          setScores(initialScores);
+          setComments(myReview.comments ?? "");
+        } else {
+          setScores({});
+          setComments("");
+        }
       } catch (err) {
         if (axios.isAxiosError(err) && err.response?.status === 403) {
           navigate("/dashboard", { replace: true });
@@ -51,12 +87,47 @@ export default function ReviewDetail() {
     };
 
     fetchData();
-  }, [token, grantId, navigate]);
+  }, [token, grantId, navigate, user?.id]);
 
   const directorEmail =
     users.find((u) => u.id === grant?.projectDirectorId)?.email ??
     grant?.projectDirectorId ??
     "—";
+
+  const maxPossibleScore = useMemo(
+    () => criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0),
+    [criteria],
+  );
+
+  const selectedTotal = useMemo(
+    () =>
+      criteria.reduce((sum, criterion) => {
+        const value = scores[String(criterion._id)];
+        return sum + (value ? Number(value) : 0);
+      }, 0),
+    [criteria, scores],
+  );
+
+  const allCriteriaScored = useMemo(
+    () =>
+      criteria.length > 0 &&
+      criteria.every((criterion) => {
+        const value = scores[String(criterion._id)];
+        return value !== undefined && value !== "";
+      }),
+    [criteria, scores],
+  );
+
+  const submittedReviews: GrantReview[] = Array.isArray(grant?.reviews)
+    ? grant.reviews
+    : [];
+
+  const getReviewerLabel = (reviewerId: string) =>
+    users.find((u) => String(u.id) === String(reviewerId))?.email ?? reviewerId;
+
+  const getCriterionName = (criteriaId: string) =>
+    criteria.find((criterion) => String(criterion._id) === String(criteriaId))
+      ?.name ?? criteriaId;
 
   const handleDownload = async (savedName: string, originalName: string) => {
     try {
@@ -80,23 +151,58 @@ export default function ReviewDetail() {
     }
   };
 
-  const updateStatus = async (reviewStatus: "approved" | "denied") => {
-    if (!grantId) return;
+  const handleScoreChange = (criteriaId: string, value: string) => {
+    setScores((prev) => ({
+      ...prev,
+      [criteriaId]: value,
+    }));
+  };
+
+  const submitReview = async () => {
+    if (!grantId || !allCriteriaScored) return;
+
+    const payloadScores = criteria.reduce<Record<string, number>>(
+      (acc, criterion) => {
+        const criteriaId = String(criterion._id);
+        const value = scores[criteriaId];
+        if (value) {
+          acc[criteriaId] = Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+
     setLoading(true);
     setMessage("");
     try {
-      await axios.put(
+      const { data } = await axios.put(
         `http://localhost:5000/api/grants/review/${grantId}`,
-        { reviewStatus },
+        { scores: payloadScores, comments },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setGrant((prev: any) => (prev ? { ...prev, reviewStatus } : prev));
-      setMessage(`Grant ${reviewStatus}.`);
+
+      setGrant((prev: any) => {
+        if (!prev) return prev;
+        const existingReviews = Array.isArray(prev.reviews) ? prev.reviews : [];
+        const existingIndex = existingReviews.findIndex(
+          (review: GrantReview) =>
+            String(review.reviewerId) === String(user?.id),
+        );
+        const updatedReviews =
+          existingIndex >= 0
+            ? existingReviews.map((review: GrantReview, index: number) =>
+                index === existingIndex ? data : review,
+              )
+            : [...existingReviews, data];
+        return { ...prev, reviews: updatedReviews };
+      });
+      setMessage("Review submitted.");
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setMessage(err.response?.data?.message ?? "Failed to update status.");
+        setMessage(err.response?.data?.message ?? "Failed to submit review.");
       } else {
-        setMessage("Failed to update status.");
+        setMessage("Failed to submit review.");
       }
     } finally {
       setLoading(false);
@@ -137,9 +243,6 @@ export default function ReviewDetail() {
         </div>
         {message && <p className="review-message">{message}</p>}
         <div className="review-card">
-          <p>
-            <strong>Status:</strong> {formatStatus(grant.reviewStatus)}
-          </p>
           <p>
             <strong>Submitted by:</strong> {grant.submittedEmail}
           </p>
@@ -235,24 +338,116 @@ export default function ReviewDetail() {
             </>
           )}
 
-          <div className="review-decision-actions">
-            <button
-              type="button"
-              className="review-btn review-btn-primary"
-              disabled={loading || grant.reviewStatus === "approved"}
-              onClick={() => updateStatus("approved")}
-            >
-              Approve
-            </button>
-            <button
-              type="button"
-              className="review-btn review-btn-primary"
-              disabled={loading || grant.reviewStatus === "denied"}
-              onClick={() => updateStatus("denied")}
-            >
-              Deny
-            </button>
+          <div className="review-criteria-section">
+            <h3>Grading Criteria</h3>
+            {criteria.length === 0 ? (
+              <p>No review criteria configured yet.</p>
+            ) : (
+              <>
+                {criteria.map((criterion) => {
+                  const criteriaId = String(criterion._id);
+                  return (
+                    <div key={criteriaId} className="review-criterion">
+                      <p>
+                        <strong>{criterion.name}</strong> (max{" "}
+                        {criterion.maxScore})
+                      </p>
+                      <p>{criterion.description}</p>
+                      <select
+                        className="review-criterion-select"
+                        value={scores[criteriaId] ?? ""}
+                        onChange={(e) =>
+                          handleScoreChange(criteriaId, e.target.value)
+                        }
+                      >
+                        <option value="">Select a score...</option>
+                        {criterion.ratingSuggestions.map((suggestion, idx) => (
+                          <option
+                            key={`${criteriaId}-${suggestion.score}-${idx}`}
+                            value={String(suggestion.score)}
+                          >
+                            {suggestion.score} — {suggestion.description}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
+                <p className="review-score-total">
+                  <strong>Your total:</strong> {selectedTotal}/
+                  {maxPossibleScore}
+                </p>
+                <label
+                  className="review-comments-label"
+                  htmlFor="review-comments"
+                >
+                  Comments
+                </label>
+                <textarea
+                  id="review-comments"
+                  className="review-comments"
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  rows={4}
+                  placeholder="Add review comments..."
+                />
+                <div className="review-submit-actions">
+                  <button
+                    type="button"
+                    className="review-btn review-btn-primary"
+                    disabled={loading || !allCriteriaScored}
+                    onClick={submitReview}
+                  >
+                    Submit Review
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+
+          {submittedReviews.length > 0 && (
+            <div className="review-submitted-list">
+              <h3>Submitted Reviews</h3>
+              {submittedReviews.map((review) => {
+                const reviewTotal = Object.values(review.scores ?? {}).reduce(
+                  (sum, score) => sum + score,
+                  0,
+                );
+                return (
+                  <div
+                    key={`${review.reviewerId}-${review.submittedAt}`}
+                    className="review-submitted-item"
+                  >
+                    <p>
+                      <strong>{getReviewerLabel(review.reviewerId)}</strong>
+                      {" — "}
+                      {review.submittedAt
+                        ? new Date(review.submittedAt).toLocaleString()
+                        : "—"}
+                    </p>
+                    <p>
+                      <strong>Total score:</strong> {reviewTotal}/
+                      {maxPossibleScore}
+                    </p>
+                    <ul>
+                      {Object.entries(review.scores ?? {}).map(
+                        ([criteriaId, score]) => (
+                          <li key={criteriaId}>
+                            {getCriterionName(criteriaId)}: {score}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                    {review.comments && (
+                      <p>
+                        <strong>Comments:</strong> {review.comments}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
     </div>
