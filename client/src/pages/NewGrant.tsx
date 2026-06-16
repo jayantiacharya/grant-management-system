@@ -514,7 +514,7 @@ export default function NewGrant() {
                 onChange={handleMatchingToggle}
               />
               <label htmlFor="matchingFundsAvailable" className="toggle-btn">
-                Yes
+                {formData.matchingFundsAvailable ? "Yes" : "No"}
               </label>
             </div>
 
