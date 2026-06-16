@@ -11,6 +11,9 @@ export type GrantFormData = {
   departmentCount: string;
   usesSubjects: YesNo;
   irbApproved: YesNo;
+  timeline: string;
+  matchingFundsAvailable: boolean;
+  matchingFundsAmount: string;
 };
 
 export type BudgetItem = {
@@ -46,6 +49,9 @@ const emptyFormData: GrantFormData = {
   departmentCount: "",
   usesSubjects: "",
   irbApproved: "",
+  timeline: "",
+  matchingFundsAvailable: false,
+  matchingFundsAmount: "",
 };
 
 export const emptyBudgetItem: BudgetItem = {
@@ -57,6 +63,26 @@ export const emptyBudgetItem: BudgetItem = {
   amountFromDepartment: "",
   amountFromOtherSources: "",
 };
+
+// Sum of every budget source that is NOT ARCC (College + Department + Other),
+// used to seed the matching-funds amount via the "Pull from budget" button.
+// Non-numeric / blank cells count as 0. Returned as a string to match the
+// text-input value type.
+export function sumMatchingFromBudget(items: BudgetItem[]): string {
+  const num = (v: string) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const total = items.reduce(
+    (acc, item) =>
+      acc +
+      num(item.amountFromCollege) +
+      num(item.amountFromDepartment) +
+      num(item.amountFromOtherSources),
+    0,
+  );
+  return String(total);
+}
 
 const GrantContext = createContext<GrantContextType | null>(null);
 
