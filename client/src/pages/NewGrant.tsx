@@ -4,11 +4,7 @@ import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
-import {
-  useGrant,
-  type GrantFormData,
-  sumMatchingFromBudget,
-} from "../context/GrantContext";
+import { useGrant, type GrantFormData } from "../context/GrantContext";
 import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
@@ -90,19 +86,6 @@ export default function NewGrant() {
 
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
-  };
-
-  const handleMatchingToggle = (e: ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setFormData((prev) => ({ ...prev, matchingFundsAvailable: checked }));
-    setMessage("");
-  };
-
-  const handlePullFromBudget = () => {
-    setFormData((prev) => ({
-      ...prev,
-      matchingFundsAmount: sumMatchingFromBudget(budgetItems),
-    }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -207,14 +190,6 @@ export default function NewGrant() {
         }
 
         body.append("timeline", formData.timeline);
-        body.append(
-          "matchingFundsAvailable",
-          String(formData.matchingFundsAvailable),
-        );
-        body.append(
-          "matchingFundsAmount",
-          formData.matchingFundsAvailable ? formData.matchingFundsAmount : "",
-        );
 
         body.append("budgetItems", JSON.stringify(budgetItems));
 
@@ -248,10 +223,6 @@ export default function NewGrant() {
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
           timeline: formData.timeline,
-          matchingFundsAvailable: formData.matchingFundsAvailable,
-          matchingFundsAmount: formData.matchingFundsAvailable
-            ? formData.matchingFundsAmount
-            : "",
           budgetItems,
           status,
         };
@@ -499,53 +470,6 @@ export default function NewGrant() {
                 placeholder="e.g. August: design, September: build, or just an end date"
               />
             </div>
-
-            <div>
-              <label htmlFor="matchingFundsAvailable">
-                Are matching funds available from other sources?
-              </label>
-
-              <input
-                type="checkbox"
-                id="matchingFundsAvailable"
-                name="matchingFundsAvailable"
-                className="toggle-checkbox"
-                checked={formData.matchingFundsAvailable}
-                onChange={handleMatchingToggle}
-              />
-              <label htmlFor="matchingFundsAvailable" className="toggle-btn">
-                {formData.matchingFundsAvailable ? "Yes" : "No"}
-              </label>
-            </div>
-
-            {formData.matchingFundsAvailable && (
-              <div>
-                <label htmlFor="matchingFundsAmount">How much?</label>
-
-                <input
-                  type="number"
-                  id="matchingFundsAmount"
-                  name="matchingFundsAmount"
-                  min={0}
-                  step="0.01"
-                  value={formData.matchingFundsAmount}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                />
-
-                <button
-                  type="button"
-                  className="save-btn pull-btn"
-                  onClick={handlePullFromBudget}
-                >
-                  Pull from budget
-                </button>
-
-                <small>
-                  Pull totals from your budget worksheet, then adjust if needed.
-                </small>
-              </div>
-            )}
 
             <button
               type="button"

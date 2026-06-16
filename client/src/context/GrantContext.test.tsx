@@ -4,7 +4,6 @@ import {
   GrantProvider,
   useGrant,
   emptyBudgetItem,
-  sumMatchingFromBudget,
   type GrantFormData,
 } from "./GrantContext";
 
@@ -20,8 +19,6 @@ const sampleForm: GrantFormData = {
   usesSubjects: "no",
   irbApproved: "",
   timeline: "",
-  matchingFundsAvailable: false,
-  matchingFundsAmount: "",
 };
 
 const sampleBudget = [
@@ -130,41 +127,5 @@ describe("GrantContext", () => {
     expect(localStorage.getItem("grantFormData")).toBeNull();
     expect(localStorage.getItem("budgetItems")).toBeNull();
     expect(localStorage.getItem("activeGrantId")).toBeNull();
-  });
-});
-
-describe("sumMatchingFromBudget", () => {
-  it("returns '0' for a single empty item", () => {
-    expect(sumMatchingFromBudget([{ ...emptyBudgetItem }])).toBe("0");
-  });
-
-  it("sums college + department + other across items, ignoring ARCC and requested", () => {
-    const items = [
-      {
-        ...emptyBudgetItem,
-        amountRequested: "1000",
-        amountFromARCC: "400",
-        amountFromCollege: "200",
-        amountFromDepartment: "300",
-        amountFromOtherSources: "100",
-      },
-      {
-        ...emptyBudgetItem,
-        amountFromCollege: "50",
-        amountFromOtherSources: "25",
-      },
-    ];
-    expect(sumMatchingFromBudget(items)).toBe("675");
-  });
-
-  it("treats blank and non-numeric values as 0", () => {
-    const items = [
-      {
-        ...emptyBudgetItem,
-        amountFromCollege: "",
-        amountFromDepartment: "abc",
-      },
-    ];
-    expect(sumMatchingFromBudget(items)).toBe("0");
   });
 });

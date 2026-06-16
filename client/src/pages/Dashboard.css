@@ -265,47 +265,6 @@
   font-weight: 500;
 }
 
-/* Checkbox styled as a single toggle button: the native box is hidden and the
-   adjacent label renders as a button that looks pressed when checked. */
-.grant-form input.toggle-checkbox {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-}
-
-.grant-form label.toggle-btn {
-  display: inline-block;
-  width: auto;
-  margin-bottom: 0;
-  padding: 8px 24px;
-  background: white;
-  color: #1f4373;
-  border: 1px solid #1f4373;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.grant-form input.toggle-checkbox:checked + label.toggle-btn {
-  background: #1f4373;
-  color: white;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
-}
-
-.grant-form input.toggle-checkbox:focus-visible + label.toggle-btn {
-  outline: 2px solid #1f4373;
-  outline-offset: 2px;
-}
-
-/* Keep the "Pull from budget" button off the amount input above it. */
-.pull-btn {
-  margin-top: 8px;
-}
-
 .form-message {
   margin-top: 12px;
   padding: 8px 12px;

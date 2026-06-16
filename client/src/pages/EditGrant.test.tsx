@@ -49,8 +49,6 @@ const existingGrant = {
   usesSubjects: "no",
   irbApproved: "",
   timeline: "Phase 1 in fall",
-  matchingFundsAvailable: true,
-  matchingFundsAmount: "750",
   status: "draft",
 };
 
@@ -226,7 +224,7 @@ describe("EditGrant", () => {
     expect(await screen.findByText("Edit rejected")).toBeInTheDocument();
   });
 
-  it("seeds timeline + matching funds from the fetched grant", async () => {
+  it("seeds timeline from the fetched grant", async () => {
     renderEditGrant();
 
     expect(
@@ -234,13 +232,9 @@ describe("EditGrant", () => {
         /project timeline/i,
       )) as HTMLTextAreaElement,
     ).toHaveValue("Phase 1 in fall");
-    expect(screen.getByLabelText(/matching funds available/i)).toBeChecked();
-    expect((screen.getByLabelText(/how much/i) as HTMLInputElement).value).toBe(
-      "750",
-    );
   });
 
-  it("includes timeline + matching funds in the edit payload", async () => {
+  it("includes timeline in the edit payload", async () => {
     const user = userEvent.setup();
     renderEditGrant();
 
@@ -257,8 +251,6 @@ describe("EditGrant", () => {
         expect.stringContaining("/api/grants/edit/"),
         expect.objectContaining({
           timeline: "New plan",
-          matchingFundsAvailable: true,
-          matchingFundsAmount: "750",
         }),
         expect.objectContaining({
           headers: { Authorization: "Bearer tok123" },

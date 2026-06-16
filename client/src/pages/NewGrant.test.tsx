@@ -333,51 +333,13 @@ describe("NewGrant", () => {
     });
   });
 
-  it("renders timeline and matching-funds fields", async () => {
+  it("renders the timeline field", async () => {
     renderNewGrant();
     expect(screen.getByLabelText(/project timeline/i)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/matching funds available/i),
-    ).toBeInTheDocument();
-    expect(screen.queryByLabelText(/how much/i)).not.toBeInTheDocument();
     await waitFor(() => expect(axios.get).toHaveBeenCalled());
   });
 
-  it("reveals the amount + pull button when matching funds is checked", async () => {
-    const user = userEvent.setup();
-    renderNewGrant();
-    await user.click(screen.getByLabelText(/matching funds available/i));
-    expect(screen.getByLabelText(/how much/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /pull from budget/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("pull button fills the amount from non-ARCC budget totals", async () => {
-    localStorage.setItem(
-      "budgetItems",
-      JSON.stringify([
-        {
-          itemDescription: "",
-          category: "",
-          amountRequested: "1000",
-          amountFromARCC: "400",
-          amountFromCollege: "200",
-          amountFromDepartment: "300",
-          amountFromOtherSources: "100",
-        },
-      ]),
-    );
-    const user = userEvent.setup();
-    renderNewGrant();
-    await user.click(screen.getByLabelText(/matching funds available/i));
-    await user.click(screen.getByRole("button", { name: /pull from budget/i }));
-    expect((screen.getByLabelText(/how much/i) as HTMLInputElement).value).toBe(
-      "600",
-    );
-  });
-
-  it("includes timeline + matching funds in the submit payload", async () => {
+  it("includes timeline in the submit payload", async () => {
     const user = userEvent.setup();
     renderNewGrant();
 
@@ -396,8 +358,6 @@ describe("NewGrant", () => {
       screen.getByLabelText(/project timeline/i),
       "Aug: design, Sept: build",
     );
-    await user.click(screen.getByLabelText(/matching funds available/i));
-    await user.type(screen.getByLabelText(/how much/i), "1500");
 
     await user.click(
       screen.getByRole("button", { name: /submit grant proposal/i }),
@@ -408,8 +368,6 @@ describe("NewGrant", () => {
         "http://localhost:5000/api/grants/submit",
         expect.objectContaining({
           timeline: "Aug: design, Sept: build",
-          matchingFundsAvailable: true,
-          matchingFundsAmount: "1500",
         }),
         expect.objectContaining({
           headers: { Authorization: "Bearer tok123" },

@@ -47,12 +47,6 @@ function parseBudgetItems(raw: unknown): unknown[] {
   return [];
 }
 
-// Multipart requests send booleans as the strings "true"/"false"; coerce to a
-// real boolean so persistence and downstream logic stay type-correct.
-function toBool(value: unknown): boolean {
-  return value === true || value === "true";
-}
-
 async function isArccMember(userId: string): Promise<boolean> {
   const db_connect = dbo.getDb();
   const arcc = await db_connect
@@ -76,8 +70,6 @@ router.post(
       usesSubjects,
       budgetItems,
       timeline,
-      matchingFundsAvailable,
-      matchingFundsAmount,
     } = req.body;
 
     const filesRecord = req.files as
@@ -136,10 +128,6 @@ router.post(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      matchingFundsAvailable: toBool(matchingFundsAvailable),
-      matchingFundsAmount: toBool(matchingFundsAvailable)
-        ? (matchingFundsAmount ?? "")
-        : "",
       budgetItems: parseBudgetItems(budgetItems),
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
@@ -361,8 +349,6 @@ router.put(
       usesSubjects,
       budgetItems,
       timeline,
-      matchingFundsAvailable,
-      matchingFundsAmount,
     } = req.body;
 
     if (!ObjectId.isValid(req.params.id)) {
@@ -444,10 +430,6 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      matchingFundsAvailable: toBool(matchingFundsAvailable),
-      matchingFundsAmount: toBool(matchingFundsAvailable)
-        ? (matchingFundsAmount ?? "")
-        : "",
       budgetItems: parseBudgetItems(budgetItems),
       status: normalizedStatus,
     };

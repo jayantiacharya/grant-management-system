@@ -184,41 +184,14 @@ describe("POST /api/grants/submit", () => {
     expect(bad.status).toBe(400);
   });
 
-  it("persists timeline + matching funds and coerces the boolean", async () => {
+  it("persists the timeline", async () => {
     const res = await request(app)
       .post("/api/grants/submit")
       .set("Authorization", `Bearer ${validToken}`)
-      .send({
-        ...validBody,
-        timeline: "Aug then Sept",
-        matchingFundsAvailable: "true",
-        matchingFundsAmount: "1500",
-      });
+      .send({ ...validBody, timeline: "Aug then Sept" });
     expect(res.status).toBe(201);
     expect(insertOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timeline: "Aug then Sept",
-        matchingFundsAvailable: true,
-        matchingFundsAmount: "1500",
-      }),
-    );
-  });
-
-  it("forces matching amount empty when matching funds is not available", async () => {
-    const res = await request(app)
-      .post("/api/grants/submit")
-      .set("Authorization", `Bearer ${validToken}`)
-      .send({
-        ...validBody,
-        matchingFundsAvailable: false,
-        matchingFundsAmount: "999",
-      });
-    expect(res.status).toBe(201);
-    expect(insertOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        matchingFundsAvailable: false,
-        matchingFundsAmount: "",
-      }),
+      expect.objectContaining({ timeline: "Aug then Sept" }),
     );
   });
 });
@@ -305,7 +278,7 @@ describe("PUT /api/grants/edit/:id", () => {
     expect(updateOne).not.toHaveBeenCalled();
   });
 
-  it("persists timeline + matching funds on edit with boolean coercion", async () => {
+  it("persists the timeline on edit", async () => {
     findOne.mockResolvedValueOnce({
       _id: "mongo-id",
       submittedEmail: "alice@wsu.edu",
@@ -317,19 +290,10 @@ describe("PUT /api/grants/edit/:id", () => {
     const res = await request(app)
       .put("/api/grants/edit/507f1f77bcf86cd799439011")
       .set("Authorization", `Bearer ${validToken}`)
-      .send({
-        ...validBody,
-        timeline: "Edited timeline",
-        matchingFundsAvailable: "true",
-        matchingFundsAmount: "200",
-      });
+      .send({ ...validBody, timeline: "Edited timeline" });
     expect(res.status).toBe(201);
     expect(updateOne).toHaveBeenCalledWith(expect.anything(), {
-      $set: expect.objectContaining({
-        timeline: "Edited timeline",
-        matchingFundsAvailable: true,
-        matchingFundsAmount: "200",
-      }),
+      $set: expect.objectContaining({ timeline: "Edited timeline" }),
     });
   });
 });
