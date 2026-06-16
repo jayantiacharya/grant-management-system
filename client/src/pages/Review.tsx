@@ -42,7 +42,7 @@ export default function Review() {
     const checkDeptChair = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:5000/api/admin/checkDeptChair/${user.email}`,
+          `http://localhost:5000/api/admin/checkDeptChair/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

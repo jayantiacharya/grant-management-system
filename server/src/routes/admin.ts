@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import dbo from "../middleware/conn.js"; // Database connection
-import { verifyToken } from "../middleware/auth.js";
+import { AuthRequest, verifyToken } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -202,8 +202,8 @@ router.route("/updateArcc").post(async (req, res) => {
   });
 });
 
-router.route(`/checkDeptChair/:userEmail`).get(async (req, res) => {
-  const { userEmail } = req.params;
+router.route("/checkDeptChair/").get(verifyToken, async (req, res) => {
+  const userEmail = req.user!.email;
   let db_connect = dbo.getDb();
   const department = await db_connect
     .collection("department")
@@ -211,5 +211,19 @@ router.route(`/checkDeptChair/:userEmail`).get(async (req, res) => {
 
   res.json({ isChair: !!department });
 });
+
+router.get(
+  "/checkDeptChair/",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const userEmail = req.user!.email;
+    let db_connect = dbo.getDb();
+    const department = await db_connect
+      .collection("department")
+      .findOne({ chair: userEmail });
+
+    res.json({ isChair: !!department });
+  },
+);
 
 export default router;

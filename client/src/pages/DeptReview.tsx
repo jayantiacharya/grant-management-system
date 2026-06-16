@@ -23,7 +23,7 @@ export default function Review() {
     const fetchGrants = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:5000/api/grants/review/department/${user.email}`,
+          `http://localhost:5000/api/grants/review/department/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

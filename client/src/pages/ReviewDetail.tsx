@@ -236,7 +236,7 @@ export default function ReviewDetail() {
               </ul>
             </>
           )}
-
+          {/* TODO: Implement approval view logic from team */}
           {fromApprovalView ? (
             <div className="review-decision-actions">
               <button

@@ -192,10 +192,10 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
 });
 
 router.get(
-  "/review/department/:userEmail",
+  "/review/department",
   verifyToken,
   async (req: AuthRequest, res: Response) => {
-    const { userEmail } = req.params;
+    const userEmail = req.user!.email;
 
     try {
       const db_connect = dbo.getDb();
