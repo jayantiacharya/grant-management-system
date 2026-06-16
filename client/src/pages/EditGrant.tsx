@@ -4,7 +4,11 @@ import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
 import { GRANT_STATUS, type GrantStatus } from "../types/grant";
-import { useGrant, type GrantFormData } from "../context/GrantContext";
+import {
+  useGrant,
+  type GrantFormData,
+  sumMatchingFromBudget,
+} from "../context/GrantContext";
 import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
@@ -68,6 +72,9 @@ export default function EditGrant() {
           departmentCount: grant.departmentCount ?? "",
           usesSubjects: grant.usesSubjects || "",
           irbApproved: grant.irbApproved || "",
+          timeline: grant.timeline ?? "",
+          matchingFundsAvailable: grant.matchingFundsAvailable ?? false,
+          matchingFundsAmount: grant.matchingFundsAmount ?? "",
         },
         Array.isArray(grant.budgetItems) ? grant.budgetItems : [],
       );
@@ -107,6 +114,19 @@ export default function EditGrant() {
     setFormData({ ...formData, [name]: value });
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
+  };
+
+  const handleMatchingToggle = (e: ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setFormData({ ...formData, matchingFundsAvailable: checked });
+    setMessage("");
+  };
+
+  const handlePullFromBudget = () => {
+    setFormData({
+      ...formData,
+      matchingFundsAmount: sumMatchingFromBudget(budgetItems),
+    });
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +223,15 @@ export default function EditGrant() {
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("timeline", formData.timeline);
+        body.append(
+          "matchingFundsAvailable",
+          String(formData.matchingFundsAvailable),
+        );
+        body.append(
+          "matchingFundsAmount",
+          formData.matchingFundsAvailable ? formData.matchingFundsAmount : "",
+        );
         body.append("budgetItems", JSON.stringify(budgetItems));
         body.append("status", status);
 
@@ -233,6 +262,11 @@ export default function EditGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          timeline: formData.timeline,
+          matchingFundsAvailable: formData.matchingFundsAvailable,
+          matchingFundsAmount: formData.matchingFundsAvailable
+            ? formData.matchingFundsAmount
+            : "",
           budgetItems,
           status,
         };
@@ -479,6 +513,61 @@ export default function EditGrant() {
                       {errors.irbApprovalFile}
                     </span>
                   )}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="timeline">Project Timeline</label>
+
+                <textarea
+                  id="timeline"
+                  name="timeline"
+                  rows={6}
+                  value={formData.timeline}
+                  onChange={handleChange}
+                  placeholder="e.g. August: design, September: build, or just an end date"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="matchingFundsAvailable">
+                  Are matching funds available from other sources?
+                </label>
+
+                <input
+                  type="checkbox"
+                  id="matchingFundsAvailable"
+                  name="matchingFundsAvailable"
+                  checked={formData.matchingFundsAvailable}
+                  onChange={handleMatchingToggle}
+                />
+              </div>
+
+              {formData.matchingFundsAvailable && (
+                <div>
+                  <label htmlFor="matchingFundsAmount">How much?</label>
+
+                  <input
+                    type="text"
+                    id="matchingFundsAmount"
+                    name="matchingFundsAmount"
+                    value={formData.matchingFundsAmount}
+                    onChange={handleChange}
+                    placeholder="0"
+                  />
+
+                  <button
+                    type="button"
+                    className="save-btn"
+                    onClick={handlePullFromBudget}
+                  >
+                    Pull from budget
+                  </button>
+
+                  <small>
+                    Pull totals from your budget worksheet, then adjust if
+                    needed.
+                  </small>
                 </div>
               )}
 

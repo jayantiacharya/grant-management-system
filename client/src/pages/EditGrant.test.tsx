@@ -48,6 +48,9 @@ const existingGrant = {
   departmentCount: "",
   usesSubjects: "no",
   irbApproved: "",
+  timeline: "Phase 1 in fall",
+  matchingFundsAvailable: true,
+  matchingFundsAmount: "750",
   status: "draft",
 };
 
@@ -221,6 +224,47 @@ describe("EditGrant", () => {
     );
 
     expect(await screen.findByText("Edit rejected")).toBeInTheDocument();
+  });
+
+  it("seeds timeline + matching funds from the fetched grant", async () => {
+    renderEditGrant();
+
+    expect(
+      (await screen.findByLabelText(
+        /project timeline/i,
+      )) as HTMLTextAreaElement,
+    ).toHaveValue("Phase 1 in fall");
+    expect(screen.getByLabelText(/matching funds available/i)).toBeChecked();
+    expect((screen.getByLabelText(/how much/i) as HTMLInputElement).value).toBe(
+      "750",
+    );
+  });
+
+  it("includes timeline + matching funds in the edit payload", async () => {
+    const user = userEvent.setup();
+    renderEditGrant();
+
+    const timeline = await screen.findByLabelText(/project timeline/i);
+    await user.clear(timeline);
+    await user.type(timeline, "New plan");
+
+    await user.click(
+      screen.getByRole("button", { name: /save grant proposal/i }),
+    );
+
+    await waitFor(() => {
+      expect(axios.put).toHaveBeenCalledWith(
+        expect.stringContaining("/api/grants/edit/"),
+        expect.objectContaining({
+          timeline: "New plan",
+          matchingFundsAvailable: true,
+          matchingFundsAmount: "750",
+        }),
+        expect.objectContaining({
+          headers: { Authorization: "Bearer tok123" },
+        }),
+      );
+    });
   });
 
   it("shows a load error when fetching the grant fails", async () => {
