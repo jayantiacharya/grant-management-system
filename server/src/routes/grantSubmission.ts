@@ -237,6 +237,47 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
 });
 
 router.get(
+  "/review/department",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const userEmail = req.user!.email;
+
+    try {
+      const db_connect = dbo.getDb();
+
+      const department = await db_connect
+        .collection("department")
+        .findOne({ chair: userEmail });
+
+      if (!department) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const usersInDept = await db_connect
+        .collection("user")
+        .find({ department: department.name })
+        .toArray();
+
+      const userEmails = usersInDept.map((u) => u.email);
+
+      const grants = await db_connect
+        .collection("grant")
+        .find({
+          submittedEmail: { $in: userEmails },
+          status: { $ne: GRANT_STATUS.DRAFT },
+        })
+        .sort({ submittedAt: -1 })
+        .toArray();
+
+      return res.json(grants);
+    } catch (err) {
+      console.error("Failed to fetch department grants for review:", err);
+      return res.status(500).json({ message: "Failed to fetch grants" });
+    }
+  },
+);
+
+router.get(
   "/review/:id/files/:savedName",
   verifyToken,
   async (req: AuthRequest, res: Response) => {

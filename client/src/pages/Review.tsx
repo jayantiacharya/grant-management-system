@@ -12,10 +12,11 @@ function formatReviewCount(reviews: unknown) {
 }
 
 export default function Review() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
   const [message, setMessage] = useState("");
+  const [deptChair, setDeptChair] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -38,8 +39,23 @@ export default function Review() {
       }
     };
 
+    const checkDeptChair = async () => {
+      try {
+        const { data } = await axios.get(
+          `http://localhost:5000/api/admin/checkDeptChair/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setDeptChair(data.isChair);
+      } catch (err) {
+        console.error("Failed to check department chair status:", err);
+      }
+    };
+
     fetchGrants();
-  }, [token, navigate]);
+    checkDeptChair();
+  }, [token, navigate, user?.email]);
 
   return (
     <div className="dashboard-page review-page">
@@ -55,6 +71,14 @@ export default function Review() {
           >
             Back to Dashboard
           </button>
+          {deptChair && (
+            <button
+              onClick={() => navigate("/department-review")}
+              className="review-btn review-btn-secondary"
+            >
+              Department Review
+            </button>
+          )}
         </div>
         {message && <p className="review-message">{message}</p>}
         <div className="review-card">

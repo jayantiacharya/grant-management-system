@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -24,6 +24,8 @@ export default function ReviewDetail() {
   const { grantId } = useParams();
   const { token, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromApprovalView = (location.state as any)?.fromApprovalView ?? false;
   const [grant, setGrant] = useState<any>(null);
   const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -150,7 +152,28 @@ export default function ReviewDetail() {
       setMessage("Failed to download file.");
     }
   };
-
+  const updateStatus = async (reviewStatus: "approved" | "denied") => {
+    if (!grantId) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      await axios.put(
+        `http://localhost:5000/api/grants/review/${grantId}`,
+        { reviewStatus },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setGrant((prev: any) => (prev ? { ...prev, reviewStatus } : prev));
+      setMessage(`Grant ${reviewStatus}.`);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message ?? "Failed to update status.");
+      } else {
+        setMessage("Failed to update status.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleScoreChange = (criteriaId: string, value: string) => {
     setScores((prev) => ({
       ...prev,
@@ -212,7 +235,13 @@ export default function ReviewDetail() {
   if (!grant) {
     return (
       <div className="dashboard-page review-page">
-        <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
+        {fromApprovalView ? (
+          <DashHeader
+            back={{ label: "Back to approvals", to: "/department-review" }}
+          />
+        ) : (
+          <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
+        )}
         <main className="review-main">
           {message ? (
             <p className="review-message">{message}</p>
@@ -228,18 +257,34 @@ export default function ReviewDetail() {
 
   return (
     <div className="dashboard-page review-page">
-      <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
+      {fromApprovalView ? (
+        <DashHeader
+          back={{ label: "Back to approvals", to: "/department-review" }}
+        />
+      ) : (
+        <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
+      )}
       <main className="review-main">
         <div className="review-welcome">
           <h2>{grant.title}</h2>
           <p>Review grant submission</p>
-          <button
-            type="button"
-            className="review-btn review-btn-secondary"
-            onClick={() => navigate("/review")}
-          >
-            Back to Review List
-          </button>
+          {fromApprovalView ? (
+            <button
+              type="button"
+              className="review-btn review-btn-secondary"
+              onClick={() => navigate("/department-review")}
+            >
+              Back to Review List
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="review-btn review-btn-secondary"
+              onClick={() => navigate("/review")}
+            >
+              Back to Review List
+            </button>
+          )}
         </div>
         {message && <p className="review-message">{message}</p>}
         <div className="review-card">
@@ -338,115 +383,139 @@ export default function ReviewDetail() {
             </>
           )}
 
-          <div className="review-criteria-section">
-            <h3>Grading Criteria</h3>
-            {criteria.length === 0 ? (
-              <p>No review criteria configured yet.</p>
-            ) : (
-              <>
-                {criteria.map((criterion) => {
-                  const criteriaId = String(criterion._id);
-                  return (
-                    <div key={criteriaId} className="review-criterion">
-                      <p>
-                        <strong>{criterion.name}</strong> (max{" "}
-                        {criterion.maxScore})
-                      </p>
-                      <p>{criterion.description}</p>
-                      <select
-                        className="review-criterion-select"
-                        value={scores[criteriaId] ?? ""}
-                        onChange={(e) =>
-                          handleScoreChange(criteriaId, e.target.value)
-                        }
-                      >
-                        <option value="">Select a score...</option>
-                        {criterion.ratingSuggestions.map((suggestion, idx) => (
-                          <option
-                            key={`${criteriaId}-${suggestion.score}-${idx}`}
-                            value={String(suggestion.score)}
+          {fromApprovalView ? (
+            <div className="review-decision-actions">
+              <button
+                type="button"
+                className="review-btn review-btn-primary"
+                disabled={loading || grant.reviewStatus === "approved"}
+                onClick={() => updateStatus("approved")}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                className="review-btn review-btn-primary"
+                disabled={loading || grant.reviewStatus === "denied"}
+                onClick={() => updateStatus("denied")}
+              >
+                Deny
+              </button>
+            </div>
+          ) : (
+            <>
+              {" "}
+              <div className="review-criteria-section">
+                <h3>Grading Criteria</h3>
+                {criteria.length === 0 ? (
+                  <p>No review criteria configured yet.</p>
+                ) : (
+                  <>
+                    {criteria.map((criterion) => {
+                      const criteriaId = String(criterion._id);
+                      return (
+                        <div key={criteriaId} className="review-criterion">
+                          <p>
+                            <strong>{criterion.name}</strong> (max{" "}
+                            {criterion.maxScore})
+                          </p>
+                          <p>{criterion.description}</p>
+                          <select
+                            className="review-criterion-select"
+                            value={scores[criteriaId] ?? ""}
+                            onChange={(e) =>
+                              handleScoreChange(criteriaId, e.target.value)
+                            }
                           >
-                            {suggestion.score} — {suggestion.description}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-                <p className="review-score-total">
-                  <strong>Your total:</strong> {selectedTotal}/
-                  {maxPossibleScore}
-                </p>
-                <label
-                  className="review-comments-label"
-                  htmlFor="review-comments"
-                >
-                  Comments
-                </label>
-                <textarea
-                  id="review-comments"
-                  className="review-comments"
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  rows={4}
-                  placeholder="Add review comments..."
-                />
-                <div className="review-submit-actions">
-                  <button
-                    type="button"
-                    className="review-btn review-btn-primary"
-                    disabled={loading || !allCriteriaScored}
-                    onClick={submitReview}
-                  >
-                    Submit Review
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          {submittedReviews.length > 0 && (
-            <div className="review-submitted-list">
-              <h3>Submitted Reviews</h3>
-              {submittedReviews.map((review) => {
-                const reviewTotal = Object.values(review.scores ?? {}).reduce(
-                  (sum, score) => sum + score,
-                  0,
-                );
-                return (
-                  <div
-                    key={`${review.reviewerId}-${review.submittedAt}`}
-                    className="review-submitted-item"
-                  >
-                    <p>
-                      <strong>{getReviewerLabel(review.reviewerId)}</strong>
-                      {" — "}
-                      {review.submittedAt
-                        ? new Date(review.submittedAt).toLocaleString()
-                        : "—"}
-                    </p>
-                    <p>
-                      <strong>Total score:</strong> {reviewTotal}/
+                            <option value="">Select a score...</option>
+                            {(criterion.ratingSuggestions ?? []).map(
+                              (suggestion, idx) => (
+                                <option
+                                  key={`${criteriaId}-${suggestion.score}-${idx}`}
+                                  value={String(suggestion.score)}
+                                >
+                                  {suggestion.score} — {suggestion.description}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+                      );
+                    })}
+                    <p className="review-score-total">
+                      <strong>Your total:</strong> {selectedTotal}/
                       {maxPossibleScore}
                     </p>
-                    <ul>
-                      {Object.entries(review.scores ?? {}).map(
-                        ([criteriaId, score]) => (
-                          <li key={criteriaId}>
-                            {getCriterionName(criteriaId)}: {score}
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                    {review.comments && (
-                      <p>
-                        <strong>Comments:</strong> {review.comments}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    <label
+                      className="review-comments-label"
+                      htmlFor="review-comments"
+                    >
+                      Comments
+                    </label>
+                    <textarea
+                      id="review-comments"
+                      className="review-comments"
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      rows={4}
+                      placeholder="Add review comments..."
+                    />
+                    <div className="review-submit-actions">
+                      <button
+                        type="button"
+                        className="review-btn review-btn-primary"
+                        disabled={loading || !allCriteriaScored}
+                        onClick={submitReview}
+                      >
+                        Submit Review
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+              {submittedReviews.length > 0 && (
+                <div className="review-submitted-list">
+                  <h3>Submitted Reviews</h3>
+                  {submittedReviews.map((review) => {
+                    const reviewTotal = Object.values(
+                      review.scores ?? {},
+                    ).reduce((sum, score) => sum + score, 0);
+                    return (
+                      <div
+                        key={`${review.reviewerId}-${review.submittedAt}`}
+                        className="review-submitted-item"
+                      >
+                        <p>
+                          <strong>{getReviewerLabel(review.reviewerId)}</strong>
+                          {" — "}
+                          {review.submittedAt
+                            ? new Date(review.submittedAt).toLocaleString()
+                            : "—"}
+                        </p>
+                        <p>
+                          <strong>Total score:</strong> {reviewTotal}/
+                          {maxPossibleScore}
+                        </p>
+                        <ul>
+                          {Object.entries(review.scores ?? {}).map(
+                            ([criteriaId, score]) => (
+                              <li key={criteriaId}>
+                                {getCriterionName(criteriaId)}: {score}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                        {review.comments && (
+                          <p>
+                            <strong>Comments:</strong> {review.comments}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
