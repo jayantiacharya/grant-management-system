@@ -12,6 +12,7 @@ export default function Dashboard() {
   const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
+  const [isReviewer, setIsReviewer] = useState(false);
 
   const fetchGrants = async () => {
     try {
@@ -36,17 +37,34 @@ export default function Dashboard() {
     }
   };
 
+  const checkDeptChair = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/admin/checkDeptChair/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (data.isChair) {
+        setIsReviewer(true);
+      }
+    } catch (error) {
+      console.error("Failed to check department chair status:", error);
+    }
+  };
+
   useEffect(() => {
     fetchGrants();
     if (user?.id) {
       checkArccMembership();
+      checkDeptChair();
     }
   }, [user?.id]);
 
   return (
     <div className="dashboard-page">
       <DashHeader>
-        {user?.isArcc && (
+        {(user?.isArcc || isReviewer) && (
           <button onClick={() => navigate("/review")} className="logout-btn">
             Review
           </button>

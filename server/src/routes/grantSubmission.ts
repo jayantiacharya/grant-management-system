@@ -47,6 +47,14 @@ function parseBudgetItems(raw: unknown): unknown[] {
   return [];
 }
 
+async function isDeptChair(userEmail: string): Promise<boolean> {
+  const db_connect = dbo.getDb();
+  const department = await db_connect
+    .collection("department")
+    .findOne({ chair: userEmail });
+  return !!department;
+}
+
 async function isArccMember(userId: string): Promise<boolean> {
   const db_connect = dbo.getDb();
   const arcc = await db_connect
@@ -219,7 +227,10 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
   const { userId } = req.user!;
 
   try {
-    if (!(await isArccMember(userId))) {
+    if (
+      !(await isArccMember(userId)) &&
+      !(await isDeptChair(req.user!.email))
+    ) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -289,7 +300,10 @@ router.get(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -330,7 +344,10 @@ router.get(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -366,7 +383,10 @@ router.put(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -433,7 +453,45 @@ router.put(
     }
   },
 );
+router.put(
+  "/review/approval/:id",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { userId } = req.user!;
+    const { id } = req.params;
+    const { reviewStatus } = req.body;
 
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
+
+    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
+      return res.status(400).json({
+        message: "reviewStatus must be approved or denied",
+      });
+    }
+
+    try {
+      if (!(await isArccMember(userId))) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const db_connect = dbo.getDb();
+      const result = await db_connect
+        .collection("grant")
+        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+      return res.json({ reviewStatus });
+    } catch (err) {
+      console.error("Failed to update review status:", err);
+      return res
+        .status(500)
+        .json({ message: "Failed to update review status" });
+    }
+  },
+);
 router.get(
   "/get-grant/:id",
   verifyToken,

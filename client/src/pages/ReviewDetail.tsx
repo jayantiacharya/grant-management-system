@@ -158,7 +158,7 @@ export default function ReviewDetail() {
     setMessage("");
     try {
       await axios.put(
-        `http://localhost:5000/api/grants/review/${grantId}`,
+        `http://localhost:5000/api/grants/review/approval/${grantId}`,
         { reviewStatus },
         { headers: { Authorization: `Bearer ${token}` } },
       );

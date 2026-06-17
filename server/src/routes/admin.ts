@@ -202,16 +202,6 @@ router.route("/updateArcc").post(async (req, res) => {
   });
 });
 
-router.route("/checkDeptChair/").get(verifyToken, async (req, res) => {
-  const userEmail = req.user!.email;
-  let db_connect = dbo.getDb();
-  const department = await db_connect
-    .collection("department")
-    .findOne({ chair: userEmail });
-
-  res.json({ isChair: !!department });
-});
-
 router.get(
   "/checkDeptChair/",
   verifyToken,
