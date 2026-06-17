@@ -472,7 +472,10 @@ router.put(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
