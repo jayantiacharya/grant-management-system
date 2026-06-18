@@ -252,13 +252,13 @@ flowchart TD
     end
 
     subgraph arcc [ARCC + department review]
-        R[/review/] -->|View| RD[/review/:id/<br/>score vs rubric + comments]
+        R[/review/] -->|View| RD[/"review/:id<br/>score vs rubric, comments"/]
         R -->|if dept chair| DR[/department-review/]
         DR -->|View, fromApprovalView| RD
     end
 
     subgraph dean [College dean]
-        CG[/college-grants/<br/>approve / reject inline]
+        CG[/"college-grants<br/>approve / reject inline"/]
     end
 
     subgraph admin [Admin world]
