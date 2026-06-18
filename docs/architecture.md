@@ -199,12 +199,16 @@ flowchart TD
 
 ## Proposed navigation
 
-> Reflects the in-flight review overhaul (open PRs adding rubric scoring, department
-> chair review, and college-dean review). It supersedes the earlier single-ARCC
-> approve/deny plan: there is no longer one "Review" surface but several role-specific
-> ones, and ARCC "approve/deny" is being replaced by per-criterion **scoring +
-> comments** (a grant collects many reviews in `grant.reviews[]`). Not yet merged to
-> `main`, so the "Navigation today" diagram above still describes the running code.
+> Forward-looking design for the review overhaul: several role-specific review surfaces
+> (rubric scoring, department-chair review, college-dean review) replacing the single
+> ARCC approve/deny flow, with ARCC "approve/deny" becoming per-criterion **scoring +
+> comments** (a grant would then collect many reviews in `grant.reviews[]`).
+>
+> Status as of this branch: only the admin-facing **criteria management** page has
+> landed (`/admin/criteria`, PR 15), which defines the rubric. The reviewer-facing
+> pieces, per-criterion scoring, department-chair and college-dean surfaces, and
+> `grant.reviews[]`, are not built yet. The running code still uses single-ARCC
+> approve/deny, so the "Navigation today" diagram above still describes it.
 
 Review rights are no longer a single flag. A user can be a proposer plus any of:
 **ARCC reviewer** (committee membership, `isArccMember`), **department chair**
@@ -222,9 +226,10 @@ surface whichever entry points apply, on every page.
 - **Admin** `/admin`: management pages plus the all-grants list, which should become
   clickable through to a read-only detail (still an open dead end, below).
 
-`/review/:id` (ReviewDetail) gates its action controls on how it was reached:
-navigations pass `state.fromApprovalView`, so the same page renders read-only when
-opened to view and editable when opened to act.
+`/review/:id` (ReviewDetail) would gate its action controls on how it was reached:
+navigations would pass `state.fromApprovalView`, so the same page renders read-only
+when opened to view and editable when opened to act. (Not built; today the page always
+shows approve/deny.)
 
 ```mermaid
 flowchart TD
@@ -269,7 +274,7 @@ flowchart TD
     H2 --> D
 ```
 
-### Still open after the review overhaul
+### Still open (all three dead ends remain)
 
 - **DEAD1** Admin "Grant Applications" rows are still plain text; they need
   click-through to a read-only `/review/:id`. No open PR touches `AdminDashboard.tsx`.
@@ -277,7 +282,10 @@ flowchart TD
   so each reviewer can only reach their queue from a specific page. Each role's entry
   (ARCC / dept chair / dean / admin) should live in `DashHeader`, driven by role flags
   resolved once in `AuthContext` rather than re-checked per page.
-- **Resolved** The rubric is now visible to reviewers inline on `/review/:id`.
+- **DEAD3** The rubric is still invisible to reviewers. `ReviewDetail` fetches only the
+  grant (plus user options) and renders approve/deny; it never fetches or renders the
+  criteria. Admins can manage the rubric at `/admin/criteria`, but it is not yet
+  surfaced on `/review/:id`.
 
 ## Roles and permissions
 
