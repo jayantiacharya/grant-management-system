@@ -19,6 +19,8 @@ const sampleForm: GrantFormData = {
   usesSubjects: "no",
   irbApproved: "",
   timeline: "",
+  hasMatchingFunds: false,
+  matchingFundsTotal: "",
 };
 
 const sampleBudget = [

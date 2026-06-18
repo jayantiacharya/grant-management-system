@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import dbo from "../middleware/conn.js"; // Database connection
+import dbo from "../middleware/conn.js";
 import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
 import { GRANT_STATUS, validateGrantPayload } from "./grantValidation.js";
@@ -26,14 +26,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { files: 4 }, // 4 regular files + 1 IRB approval file
+  limits: { files: 4 },
 }).fields([
   { name: "files", maxCount: 3 },
   { name: "irbApprovalFile", maxCount: 1 },
 ]);
 
-// budgetItems arrives as an array in JSON requests but as a JSON string in
-// multipart (file upload) requests; normalize to an array either way.
 function parseBudgetItems(raw: unknown): unknown[] {
   if (Array.isArray(raw)) return raw;
   if (typeof raw === "string") {
@@ -134,6 +132,12 @@ router.post(
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
       reviewStatus: isDraft ? null : "pending",
+      hasMatchingFunds:
+        req.body.hasMatchingFunds === "true" ||
+        req.body.hasMatchingFunds === true,
+      matchingFundsTotal: req.body.matchingFundsTotal
+        ? parseFloat(req.body.matchingFundsTotal)
+        : 0,
     };
 
     try {
@@ -152,7 +156,6 @@ router.get(
   async (req: AuthRequest, res: Response) => {
     const { email } = req.params;
 
-    // A user may only list their own grants; admins may list anyone's.
     if (req.user!.email !== email && req.user!.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -172,6 +175,7 @@ router.get(
     }
   },
 );
+
 router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
   const { userId } = req.user!;
 
@@ -321,8 +325,6 @@ router.get(
       if (!grant) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      // Used by the edit flow: only the owner (or an admin) may read it.
-      // ARCC reviewers have their own /review/:id endpoint.
       if (
         grant.submittedEmail !== req.user!.email &&
         req.user!.role !== "admin"
@@ -432,6 +434,12 @@ router.put(
       timeline: timeline ?? "",
       budgetItems: parseBudgetItems(budgetItems),
       status: normalizedStatus,
+      hasMatchingFunds:
+        req.body.hasMatchingFunds === "true" ||
+        req.body.hasMatchingFunds === true,
+      matchingFundsTotal: req.body.matchingFundsTotal
+        ? parseFloat(req.body.matchingFundsTotal)
+        : 0,
     };
     if (!isDraft) {
       update.submittedAt = new Date();
@@ -440,7 +448,6 @@ router.put(
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;
     }
-
     if (irbApprovalFile) {
       update.irbApprovalFile = irbApprovalFile;
     }
@@ -458,7 +465,6 @@ router.put(
   },
 );
 
-// Get all grants (admin)
 router.get("/all", verifyToken, async (req: AuthRequest, res: Response) => {
   if (req.user?.role !== "admin") {
     return res.status(403).json({ message: "Not authorized" });

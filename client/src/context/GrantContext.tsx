@@ -12,6 +12,8 @@ export type GrantFormData = {
   usesSubjects: YesNo;
   irbApproved: YesNo;
   timeline: string;
+  hasMatchingFunds: boolean;
+  matchingFundsTotal: string;
 };
 
 export type BudgetItem = {
@@ -20,6 +22,7 @@ export type BudgetItem = {
   amountRequested: string;
   amountFromARCC: string;
   amountFromCollege: string;
+  collegeId: string;
   amountFromDepartment: string;
   amountFromOtherSources: string;
 };
@@ -48,6 +51,8 @@ const emptyFormData: GrantFormData = {
   usesSubjects: "",
   irbApproved: "",
   timeline: "",
+  hasMatchingFunds: false,
+  matchingFundsTotal: "",
 };
 
 export const emptyBudgetItem: BudgetItem = {
@@ -56,14 +61,13 @@ export const emptyBudgetItem: BudgetItem = {
   amountRequested: "",
   amountFromARCC: "",
   amountFromCollege: "",
+  collegeId: "",
   amountFromDepartment: "",
   amountFromOtherSources: "",
 };
 
 const GrantContext = createContext<GrantContextType | null>(null);
 
-// Corrupt localStorage (manual edits, devtools) must not crash the initial
-// render; fall back to a clean draft and drop the bad value.
 function readStoredJson<T>(key: string, fallback: T): T {
   const saved = localStorage.getItem(key);
   if (!saved) return fallback;
@@ -108,9 +112,6 @@ export function GrantProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Seed the draft from a fetched grant when starting to edit it. If the
-  // same grant is already loaded (e.g. returning from the budget worksheet),
-  // keep the in-progress edits instead of overwriting them with server state.
   const beginEditingGrant = (
     grantId: string,
     form: GrantFormData,
