@@ -16,6 +16,7 @@ import Review from "./pages/Review";
 import ReviewDetail from "./pages/ReviewDetail";
 import BudgetWorksheet from "./pages/BudgetWorksheet";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
+import CollegeGrants from "./pages/CollegeGrants";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -155,6 +156,14 @@ export default function App() {
                 <AdminRoute>
                   <CriteriaManagement />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/college-grants"
+              element={
+                <ProtectedRoute>
+                  <CollegeGrants />
+                </ProtectedRoute>
               }
             />
           </Routes>
