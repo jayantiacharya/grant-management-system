@@ -5,7 +5,11 @@ import fs from "fs";
 import dbo from "../middleware/conn.js";
 import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
-import { GRANT_STATUS, validateGrantPayload } from "./grantValidation.js";
+import {
+  GRANT_STATUS,
+  GRANT_APPROVAL_STATUS,
+  validateGrantPayload,
+} from "./grantValidation.js";
 
 const router = Router();
 
@@ -131,6 +135,7 @@ router.post(
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
+      departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
       reviewStatus: isDraft ? null : "pending",
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -275,15 +280,18 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     const { userId } = req.user!;
     const { id } = req.params;
-    const { reviewStatus } = req.body;
+    const { departmentReviewStatus } = req.body;
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid grant id" });
     }
 
-    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
+    if (
+      departmentReviewStatus !== "approved" &&
+      departmentReviewStatus !== "denied"
+    ) {
       return res.status(400).json({
-        message: "reviewStatus must be approved or denied",
+        message: "departmentReviewStatus must be approved or denied",
       });
     }
 
@@ -295,16 +303,19 @@ router.put(
       const db_connect = dbo.getDb();
       const result = await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { departmentReviewStatus } },
+        );
       if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      return res.json({ reviewStatus });
+      return res.json({ departmentReviewStatus });
     } catch (err) {
-      console.error("Failed to update review status:", err);
+      console.error("Failed to update departmentreview status:", err);
       return res
         .status(500)
-        .json({ message: "Failed to update review status" });
+        .json({ message: "Failed to update department review status" });
     }
   },
 );

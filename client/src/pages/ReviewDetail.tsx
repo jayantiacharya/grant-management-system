@@ -80,18 +80,22 @@ export default function ReviewDetail() {
     }
   };
 
-  const updateStatus = async (reviewStatus: "approved" | "denied") => {
+  const updateStatus = async (
+    departmentReviewStatus: "approved" | "denied",
+  ) => {
     if (!grantId) return;
     setLoading(true);
     setMessage("");
     try {
       await axios.put(
         `http://localhost:5000/api/grants/review/${grantId}`,
-        { reviewStatus },
+        { departmentReviewStatus },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setGrant((prev: any) => (prev ? { ...prev, reviewStatus } : prev));
-      setMessage(`Grant ${reviewStatus}.`);
+      setGrant((prev: any) =>
+        prev ? { ...prev, departmentReviewStatus } : prev,
+      );
+      setMessage(`Grant ${departmentReviewStatus}.`);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message ?? "Failed to update status.");
