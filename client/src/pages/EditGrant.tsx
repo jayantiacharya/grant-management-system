@@ -42,15 +42,10 @@ export default function EditGrant() {
     try {
       const res = await axios.get(
         `http://localhost:5000/api/grants/get-grant/${grantId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const grant = res.data;
-
       setIsLocked(grant.status === GRANT_STATUS.SUBMITTED);
 
       beginEditingGrant(
@@ -68,6 +63,10 @@ export default function EditGrant() {
           departmentCount: grant.departmentCount ?? "",
           usesSubjects: grant.usesSubjects || "",
           irbApproved: grant.irbApproved || "",
+          hasMatchingFunds: grant.hasMatchingFunds ?? false,
+          matchingFundsTotal: grant.matchingFundsTotal
+            ? String(grant.matchingFundsTotal)
+            : "",
         },
         Array.isArray(grant.budgetItems) ? grant.budgetItems : [],
       );
@@ -125,6 +124,23 @@ export default function EditGrant() {
     setMessage("");
   };
 
+  // Pull matching funds total from budget items on demand
+  const pullMatchingFundsFromBudget = () => {
+    const total = budgetItems.reduce((sum, item) => {
+      return (
+        sum +
+        (parseFloat(item.amountFromDepartment) || 0) +
+        (parseFloat(item.amountFromCollege) || 0) +
+        (parseFloat(item.amountFromOtherSources) || 0)
+      );
+    }, 0);
+    setFormData((prev) => ({
+      ...prev,
+      hasMatchingFunds: total > 0,
+      matchingFundsTotal: total > 0 ? String(total) : prev.matchingFundsTotal,
+    }));
+  };
+
   const validate = (
     data: GrantFormData,
     selectedFiles: File[],
@@ -150,9 +166,6 @@ export default function EditGrant() {
     if (!data.usesSubjects) {
       next.usesSubjects = "Please select an option.";
     } else if (data.usesSubjects === "yes" && data.irbApproved !== "yes") {
-      // The file/document requirements are enforced server-side, which can see
-      // files already attached to the draft; the client only checks the IRB
-      // approval answer it actually holds in form state.
       next.irbApproved =
         "IRB approval is required when human or animal subjects are used.";
     }
@@ -177,7 +190,6 @@ export default function EditGrant() {
 
     try {
       const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
-
       const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
       if (useMultipart) {
@@ -199,6 +211,8 @@ export default function EditGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
+        body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
+        body.append("matchingFundsTotal", formData.matchingFundsTotal);
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
@@ -233,6 +247,8 @@ export default function EditGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          hasMatchingFunds: formData.hasMatchingFunds,
+          matchingFundsTotal: formData.matchingFundsTotal,
           budgetItems,
           status,
         };
@@ -240,9 +256,7 @@ export default function EditGrant() {
         await axios.put(
           `http://localhost:5000/api/grants/edit/${grantId}`,
           payload,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
       }
 
@@ -281,17 +295,11 @@ export default function EditGrant() {
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                // Pressing Enter saves a draft (never submit-locks, which
-                // always requires an explicit Submit click + confirmation).
-                // noValidate keeps native required-field validation from
-                // blocking the save of a partial draft; full validation runs
-                // in JS on Submit.
                 submitGrant(GRANT_STATUS.DRAFT);
               }}
             >
               <div>
                 <label htmlFor="title">Grant Title</label>
-
                 <input
                   type="text"
                   id="title"
@@ -308,7 +316,6 @@ export default function EditGrant() {
 
               <div>
                 <label htmlFor="description">Description</label>
-
                 <textarea
                   id="description"
                   name="description"
@@ -327,7 +334,6 @@ export default function EditGrant() {
                 <label htmlFor="projectDirectorId">
                   Project Director / Principal Investigator
                 </label>
-
                 <select
                   id="projectDirectorId"
                   name="projectDirectorId"
@@ -355,7 +361,6 @@ export default function EditGrant() {
                 <label htmlFor="studentsImpacted">
                   Weber State University students impacted
                 </label>
-
                 <input
                   type="number"
                   id="studentsImpacted"
@@ -376,7 +381,6 @@ export default function EditGrant() {
                 <label htmlFor="affectsMultipleDepartments">
                   Does this grant affect more than one department?
                 </label>
-
                 <select
                   id="affectsMultipleDepartments"
                   name="affectsMultipleDepartments"
@@ -398,7 +402,6 @@ export default function EditGrant() {
               {formData.affectsMultipleDepartments === "yes" && (
                 <div>
                   <label htmlFor="departmentCount">How many departments?</label>
-
                   <input
                     type="number"
                     id="departmentCount"
@@ -422,7 +425,6 @@ export default function EditGrant() {
                 <label htmlFor="usesSubjects">
                   Does this project use human or animal subjects?
                 </label>
-
                 <select
                   id="usesSubjects"
                   name="usesSubjects"
@@ -444,7 +446,6 @@ export default function EditGrant() {
                   <label htmlFor="irbApproved">
                     Has IRB approval been completed?
                   </label>
-
                   <select
                     id="irbApproved"
                     name="irbApproved"
@@ -461,19 +462,18 @@ export default function EditGrant() {
                   )}
                 </div>
               )}
+
               {formData.irbApproved === "yes" && (
                 <div>
                   <label htmlFor="irbApprovalFile">
                     Upload IRB Approval Document
                   </label>
-
                   <input
                     ref={irbApprovalFileRef}
                     type="file"
                     id="irbApprovalFile"
                     name="irbApprovalFile"
                   />
-
                   {errors.irbApprovalFile && (
                     <span className="field-error">
                       {errors.irbApprovalFile}
@@ -494,9 +494,66 @@ export default function EditGrant() {
                 Open Budget Worksheet
               </button>
 
+              {/* Matching Funds */}
+              <div>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.hasMatchingFunds}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        hasMatchingFunds: e.target.checked,
+                        matchingFundsTotal: e.target.checked
+                          ? prev.matchingFundsTotal
+                          : "",
+                      }))
+                    }
+                  />{" "}
+                  This grant has matching funds
+                </label>
+              </div>
+
+              {formData.hasMatchingFunds && (
+                <div>
+                  <label htmlFor="matchingFundsTotal">
+                    Matching Funds Total ($)
+                  </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      id="matchingFundsTotal"
+                      name="matchingFundsTotal"
+                      min={0}
+                      step="0.01"
+                      value={formData.matchingFundsTotal}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                    />
+                    <button
+                      type="button"
+                      className="save-btn"
+                      onClick={pullMatchingFundsFromBudget}
+                    >
+                      Pull from budget
+                    </button>
+                  </div>
+                  <small>
+                    Matching funds = Department + College + Other Sources
+                    (excludes ARCC). Click "Pull from budget" to calculate from
+                    your budget worksheet, or enter a value manually.
+                  </small>
+                </div>
+              )}
+
               <div>
                 <label htmlFor="files">Upload Files</label>
-
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -505,13 +562,10 @@ export default function EditGrant() {
                   onChange={handleFileChange}
                   multiple
                 />
-
                 <small>Maximum {MAX_FILES} files allowed.</small>
-
                 {files.length > 0 && (
                   <small>{files.length} file(s) selected.</small>
                 )}
-
                 {errors.files && (
                   <span className="field-error">{errors.files}</span>
                 )}
