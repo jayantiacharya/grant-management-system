@@ -6,6 +6,7 @@ export type GrantFormData = {
   title: string;
   description: string;
   projectDirectorId: string;
+  accountNumber: string;
   studentsImpacted: string;
   affectsMultipleDepartments: YesNo;
   departmentCount: string;
@@ -49,6 +50,7 @@ const emptyFormData: GrantFormData = {
   title: "",
   description: "",
   projectDirectorId: "",
+  accountNumber: "",
   studentsImpacted: "",
   affectsMultipleDepartments: "",
   departmentCount: "",

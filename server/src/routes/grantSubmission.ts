@@ -134,6 +134,10 @@ router.post(
       description: req.body.description ?? "",
       submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
@@ -458,6 +462,10 @@ router.put(
       title: req.body.title ?? "",
       description: req.body.description ?? "",
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,

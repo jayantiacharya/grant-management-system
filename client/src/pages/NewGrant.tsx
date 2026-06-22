@@ -124,6 +124,9 @@ export default function NewGrant() {
     if (!data.description.trim()) next.description = "Description is required.";
     if (!data.projectDirectorId)
       next.projectDirectorId = "Select a project director.";
+    if (!data.accountNumber.trim()) {
+      next.accountNumber = "Account # is required.";
+    }
     const n = Number(data.studentsImpacted);
     if (data.studentsImpacted === "" || !Number.isInteger(n) || n < 0) {
       next.studentsImpacted =
@@ -198,6 +201,7 @@ export default function NewGrant() {
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
+        body.append("accountNumber", formData.accountNumber);
         if (formData.studentsImpacted !== "") {
           body.append("studentsImpacted", formData.studentsImpacted);
         }
@@ -237,6 +241,7 @@ export default function NewGrant() {
           title: formData.title,
           description: formData.description,
           projectDirectorId: formData.projectDirectorId,
+          accountNumber: formData.accountNumber,
           studentsImpacted:
             formData.studentsImpacted === ""
               ? null
@@ -353,6 +358,22 @@ export default function NewGrant() {
               </select>
               {errors.projectDirectorId && (
                 <span className="field-error">{errors.projectDirectorId}</span>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="accountNumber">Account #</label>
+              <input
+                type="text"
+                id="accountNumber"
+                name="accountNumber"
+                value={formData.accountNumber}
+                onChange={handleChange}
+                placeholder="Enter account number"
+                required
+              />
+              {errors.accountNumber && (
+                <span className="field-error">{errors.accountNumber}</span>
               )}
             </div>
 

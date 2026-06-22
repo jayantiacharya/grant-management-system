@@ -49,6 +49,7 @@ export function validateGrantPayload(
   const {
     title,
     description,
+    accountNumber,
     studentsImpacted,
     affectsMultipleDepartments,
     departmentCount,
@@ -86,6 +87,15 @@ export function validateGrantPayload(
         ok: false,
         status: 400,
         message: "title and description are required",
+      };
+    }
+    const normalizedAccountNumber =
+      typeof accountNumber === "string" ? accountNumber.trim() : "";
+    if (!normalizedAccountNumber) {
+      return {
+        ok: false,
+        status: 400,
+        message: "accountNumber is required",
       };
     }
     if (!studentsValid) {
