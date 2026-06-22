@@ -110,6 +110,11 @@ export default function ReviewDetail() {
     [criteria, scores],
   );
 
+  const scoreToPercentage = (total: number) =>
+    maxPossibleScore === 0 ? 0 : Math.round((total / maxPossibleScore) * 100);
+
+  const selectedPercentage = scoreToPercentage(selectedTotal);
+
   const allCriteriaScored = useMemo(
     () =>
       criteria.length > 0 &&
@@ -443,8 +448,7 @@ export default function ReviewDetail() {
                       );
                     })}
                     <p className="review-score-total">
-                      <strong>Your total:</strong> {selectedTotal}/
-                      {maxPossibleScore}
+                      <strong>Your total:</strong> {selectedPercentage}%
                     </p>
                     <label
                       className="review-comments-label"
@@ -493,8 +497,8 @@ export default function ReviewDetail() {
                             : "—"}
                         </p>
                         <p>
-                          <strong>Total score:</strong> {reviewTotal}/
-                          {maxPossibleScore}
+                          <strong>Total score:</strong>{" "}
+                          {scoreToPercentage(reviewTotal)}%
                         </p>
                         <ul>
                           {Object.entries(review.scores ?? {}).map(
