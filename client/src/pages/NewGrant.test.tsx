@@ -370,6 +370,15 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "AI for Good");
     await user.type(screen.getByLabelText(/description/i), "Build it");
     await user.type(screen.getByLabelText(/students impacted/i), "42");
+    await user.type(screen.getByLabelText(/account #/i), "ACC-001");
+    await user.click(screen.getByLabelText(/acknowledgement 1/i));
+    await user.click(screen.getByLabelText(/acknowledgement 2/i));
+    await user.click(screen.getByLabelText(/acknowledgement 3/i));
+    await user.click(screen.getByLabelText(/acknowledgement 4/i));
+    await user.type(
+      screen.getByLabelText(/full name signature/i),
+      "Jane Director",
+    );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),
       "no",
