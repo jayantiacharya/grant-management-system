@@ -449,6 +449,17 @@ router.put(
     const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
       validation;
 
+    let signature = "";
+    if (!isDraft) {
+      const ackValidation = validateAcknowledgements(req.body);
+      if (!ackValidation.ok) {
+        return res
+          .status(ackValidation.status)
+          .json({ message: ackValidation.message });
+      }
+      signature = ackValidation.signature;
+    }
+
     const resolvedDirectorId = projectDirectorId || userId;
 
     const directorExists = await db_connect
@@ -483,6 +494,26 @@ router.put(
       matchingFundsTotal: req.body.matchingFundsTotal
         ? parseFloat(req.body.matchingFundsTotal)
         : 0,
+      acknowledgements: {
+        acknowledgement1:
+          req.body.acknowledgement1 === true ||
+          req.body.acknowledgement1 === "true",
+        acknowledgement2:
+          req.body.acknowledgement2 === true ||
+          req.body.acknowledgement2 === "true",
+        acknowledgement3:
+          req.body.acknowledgement3 === true ||
+          req.body.acknowledgement3 === "true",
+        acknowledgement4:
+          req.body.acknowledgement4 === true ||
+          req.body.acknowledgement4 === "true",
+      },
+      signature: isDraft
+        ? typeof req.body.signature === "string"
+          ? req.body.signature.trim()
+          : ""
+        : signature,
+      signedAt: isDraft ? null : new Date(),
     };
     if (!isDraft) {
       update.submittedAt = new Date();

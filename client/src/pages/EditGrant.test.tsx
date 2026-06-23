@@ -50,6 +50,13 @@ const existingGrant = {
   usesSubjects: "no",
   irbApproved: "",
   timeline: "Phase 1 in fall",
+  acknowledgements: {
+    acknowledgement1: true,
+    acknowledgement2: true,
+    acknowledgement3: true,
+    acknowledgement4: true,
+  },
+  signature: "Jane Director",
   status: "draft",
 };
 
