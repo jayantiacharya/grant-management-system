@@ -64,6 +64,7 @@ export default function EditGrant() {
           departmentCount: grant.departmentCount ?? "",
           usesSubjects: grant.usesSubjects || "",
           irbApproved: grant.irbApproved || "",
+          timeline: grant.timeline ?? "",
           hasMatchingFunds: grant.hasMatchingFunds ?? false,
           matchingFundsTotal: grant.matchingFundsTotal
             ? String(grant.matchingFundsTotal)
@@ -222,6 +223,7 @@ export default function EditGrant() {
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
         }
+        body.append("timeline", formData.timeline);
         body.append("budgetItems", JSON.stringify(budgetItems));
         body.append("status", status);
 
@@ -253,6 +255,7 @@ export default function EditGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          timeline: formData.timeline,
           hasMatchingFunds: formData.hasMatchingFunds,
           matchingFundsTotal: formData.matchingFundsTotal,
           budgetItems,
@@ -503,6 +506,19 @@ export default function EditGrant() {
                   )}
                 </div>
               )}
+
+              <div>
+                <label htmlFor="timeline">Project Timeline</label>
+
+                <textarea
+                  id="timeline"
+                  name="timeline"
+                  rows={6}
+                  value={formData.timeline}
+                  onChange={handleChange}
+                  placeholder="e.g. August: design, September: build, or just an end date"
+                />
+              </div>
 
               <button
                 type="button"

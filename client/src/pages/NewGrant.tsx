@@ -216,6 +216,7 @@ export default function NewGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
+        body.append("timeline", formData.timeline);
         body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
         body.append("matchingFundsTotal", formData.matchingFundsTotal);
         body.append("budgetItems", JSON.stringify(budgetItems));
@@ -254,6 +255,7 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          timeline: formData.timeline,
           hasMatchingFunds: formData.hasMatchingFunds,
           matchingFundsTotal: formData.matchingFundsTotal,
           acknowledgement1: formData.acknowledgement1,
@@ -498,6 +500,19 @@ export default function NewGrant() {
                 )}
               </div>
             )}
+
+            <div>
+              <label htmlFor="timeline">Project Timeline</label>
+
+              <textarea
+                id="timeline"
+                name="timeline"
+                rows={6}
+                value={formData.timeline}
+                onChange={handleChange}
+                placeholder="e.g. August: design, September: build, or just an end date"
+              />
+            </div>
 
             <button
               type="button"

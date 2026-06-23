@@ -71,6 +71,7 @@ router.post(
       affectsMultipleDepartments,
       usesSubjects,
       budgetItems,
+      timeline,
     } = req.body;
 
     const filesRecord = req.files as
@@ -143,6 +144,7 @@ router.post(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
+      timeline: timeline ?? "",
       budgetItems: parseBudgetItems(budgetItems),
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
@@ -387,6 +389,7 @@ router.put(
       affectsMultipleDepartments,
       usesSubjects,
       budgetItems,
+      timeline,
     } = req.body;
 
     if (!ObjectId.isValid(req.params.id)) {
@@ -471,6 +474,7 @@ router.put(
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
+      timeline: timeline ?? "",
       budgetItems: parseBudgetItems(budgetItems),
       status: normalizedStatus,
       hasMatchingFunds:
