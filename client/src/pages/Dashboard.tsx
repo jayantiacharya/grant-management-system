@@ -83,6 +83,16 @@ export default function Dashboard() {
                     ) : (
                       <span className="grant-status">Department Pending</span>
                     )}
+                    {grant.collegeReviewStatus !== "N/A" &&
+                      (grant.collegeReviewStatus ===
+                      GRANT_APPROVAL_STATUS.APPROVED ? (
+                        <span className="grant-status">College Approved</span>
+                      ) : grant.collegeReviewStatus ===
+                        GRANT_APPROVAL_STATUS.DENIED ? (
+                        <span className="grant-status">College Denied</span>
+                      ) : (
+                        <span className="grant-status">College Pending</span>
+                      ))}
 
                     {grant.status === GRANT_STATUS.SUBMITTED ? (
                       <span className="grant-status">Submitted</span>

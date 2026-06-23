@@ -49,6 +49,13 @@ function parseBudgetItems(raw: unknown): unknown[] {
   return [];
 }
 
+function hasCollegeFundingRequest(budgetItems: unknown[]): boolean {
+  return budgetItems.some((item: any) => {
+    const amount = parseFloat(item?.amountFromCollege) || 0;
+    return amount > 0;
+  });
+}
+
 async function isArccMember(userId: string): Promise<boolean> {
   const db_connect = dbo.getDb();
   const arcc = await db_connect
@@ -119,6 +126,8 @@ router.post(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const newGrant = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
@@ -130,12 +139,15 @@ router.post(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
       departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : "N/A",
       reviewStatus: isDraft ? null : "pending",
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -433,6 +445,8 @@ router.put(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const update: Record<string, any> = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
@@ -443,7 +457,10 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : null,
       status: normalizedStatus,
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
