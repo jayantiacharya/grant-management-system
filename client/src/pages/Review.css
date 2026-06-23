@@ -133,6 +133,12 @@
   background: white;
 }
 
+.review-page .review-criterion-note {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
 .review-page .review-score-total {
   margin: 8px 0 16px;
   font-size: 14px;

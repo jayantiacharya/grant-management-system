@@ -13,6 +13,10 @@ function formatYesNo(value?: string | null) {
   return "—";
 }
 
+function isScorable(criterion: Criteria) {
+  return (criterion.ratingSuggestions ?? []).length > 0;
+}
+
 type GrantReview = {
   reviewerId: string;
   scores: Record<string, number>;
@@ -96,18 +100,24 @@ export default function ReviewDetail() {
     grant?.projectDirectorId ??
     "—";
 
-  const maxPossibleScore = useMemo(
-    () => criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0),
+  const scorableCriteria = useMemo(
+    () => criteria.filter(isScorable),
     [criteria],
+  );
+
+  const maxPossibleScore = useMemo(
+    () =>
+      scorableCriteria.reduce((sum, criterion) => sum + criterion.maxScore, 0),
+    [scorableCriteria],
   );
 
   const selectedTotal = useMemo(
     () =>
-      criteria.reduce((sum, criterion) => {
+      scorableCriteria.reduce((sum, criterion) => {
         const value = scores[String(criterion._id)];
         return sum + (value ? Number(value) : 0);
       }, 0),
-    [criteria, scores],
+    [scorableCriteria, scores],
   );
 
   const scoreToPercentage = (total: number) =>
@@ -117,12 +127,12 @@ export default function ReviewDetail() {
 
   const allCriteriaScored = useMemo(
     () =>
-      criteria.length > 0 &&
-      criteria.every((criterion) => {
+      scorableCriteria.length > 0 &&
+      scorableCriteria.every((criterion) => {
         const value = scores[String(criterion._id)];
         return value !== undefined && value !== "";
       }),
-    [criteria, scores],
+    [scorableCriteria, scores],
   );
 
   const submittedReviews: GrantReview[] = Array.isArray(grant?.reviews)
@@ -189,7 +199,7 @@ export default function ReviewDetail() {
   const submitReview = async () => {
     if (!grantId || !allCriteriaScored) return;
 
-    const payloadScores = criteria.reduce<Record<string, number>>(
+    const payloadScores = scorableCriteria.reduce<Record<string, number>>(
       (acc, criterion) => {
         const criteriaId = String(criterion._id);
         const value = scores[criteriaId];
@@ -425,25 +435,33 @@ export default function ReviewDetail() {
                             {criterion.maxScore})
                           </p>
                           <p>{criterion.description}</p>
-                          <select
-                            className="review-criterion-select"
-                            value={scores[criteriaId] ?? ""}
-                            onChange={(e) =>
-                              handleScoreChange(criteriaId, e.target.value)
-                            }
-                          >
-                            <option value="">Select a score...</option>
-                            {(criterion.ratingSuggestions ?? []).map(
-                              (suggestion, idx) => (
-                                <option
-                                  key={`${criteriaId}-${suggestion.score}-${idx}`}
-                                  value={String(suggestion.score)}
-                                >
-                                  {suggestion.score} — {suggestion.description}
-                                </option>
-                              ),
-                            )}
-                          </select>
+                          {isScorable(criterion) ? (
+                            <select
+                              className="review-criterion-select"
+                              value={scores[criteriaId] ?? ""}
+                              onChange={(e) =>
+                                handleScoreChange(criteriaId, e.target.value)
+                              }
+                            >
+                              <option value="">Select a score...</option>
+                              {(criterion.ratingSuggestions ?? []).map(
+                                (suggestion, idx) => (
+                                  <option
+                                    key={`${criteriaId}-${suggestion.score}-${idx}`}
+                                    value={String(suggestion.score)}
+                                  >
+                                    {suggestion.score} —{" "}
+                                    {suggestion.description}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          ) : (
+                            <p className="review-criterion-note">
+                              No score options configured — not included in your
+                              total.
+                            </p>
+                          )}
                         </div>
                       );
                     })}
@@ -481,9 +499,13 @@ export default function ReviewDetail() {
                 <div className="review-submitted-list">
                   <h3>Submitted Reviews</h3>
                   {submittedReviews.map((review) => {
-                    const reviewTotal = Object.values(
-                      review.scores ?? {},
-                    ).reduce((sum, score) => sum + score, 0);
+                    const reviewTotal = scorableCriteria.reduce(
+                      (sum, criterion) => {
+                        const score = review.scores?.[String(criterion._id)];
+                        return sum + (typeof score === "number" ? score : 0);
+                      },
+                      0,
+                    );
                     return (
                       <div
                         key={`${review.reviewerId}-${review.submittedAt}`}

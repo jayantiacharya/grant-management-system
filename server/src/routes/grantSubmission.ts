@@ -78,9 +78,18 @@ function validateReviewScores(
     return false;
   }
 
+  if (!criteria.some((c) => (c.ratingSuggestions ?? []).length > 0)) {
+    return false;
+  }
+
   const scoreRecord = scores as Record<string, unknown>;
 
   for (const criterion of criteria) {
+    const allowedScores = (criterion.ratingSuggestions ?? []).map(
+      (suggestion) => suggestion.score,
+    );
+    if (allowedScores.length === 0) continue;
+
     const criteriaId = criterion._id.toString();
     const selectedScore = scoreRecord[criteriaId];
 
@@ -92,16 +101,14 @@ function validateReviewScores(
       return false;
     }
 
-    const allowedScores = (criterion.ratingSuggestions ?? []).map(
-      (suggestion) => suggestion.score,
-    );
     if (!allowedScores.includes(selectedScore)) {
       return false;
     }
   }
 
   for (const key of Object.keys(scoreRecord)) {
-    if (!criteria.some((criterion) => criterion._id.toString() === key)) {
+    const criterion = criteria.find((c) => c._id.toString() === key);
+    if (!criterion || (criterion.ratingSuggestions ?? []).length === 0) {
       return false;
     }
   }
@@ -400,16 +407,16 @@ router.put(
         .find({})
         .toArray()) as CriteriaDoc[];
 
-      if (criteria.length === 0) {
+      if (!criteria.some((c) => (c.ratingSuggestions ?? []).length > 0)) {
         return res.status(400).json({
-          message: "No review criteria configured",
+          message: "No scorable review criteria configured",
         });
       }
 
       if (!validateReviewScores(scores, criteria)) {
         return res.status(400).json({
           message:
-            "scores must include one valid rating for each review criterion",
+            "scores must include one valid rating for each scorable criterion",
         });
       }
 
