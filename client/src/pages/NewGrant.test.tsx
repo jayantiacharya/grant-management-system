@@ -130,6 +130,15 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "AI for Good");
     await user.type(screen.getByLabelText(/description/i), "Build it");
     await user.type(screen.getByLabelText(/students impacted/i), "42");
+    await user.type(screen.getByLabelText(/account #/i), "ACC-001");
+    await user.click(screen.getByLabelText(/acknowledgement 1/i));
+    await user.click(screen.getByLabelText(/acknowledgement 2/i));
+    await user.click(screen.getByLabelText(/acknowledgement 3/i));
+    await user.click(screen.getByLabelText(/acknowledgement 4/i));
+    await user.type(
+      screen.getByLabelText(/full name signature/i),
+      "Jane Director",
+    );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),
       "no",
@@ -150,8 +159,14 @@ describe("NewGrant", () => {
           description: "Build it",
           projectDirectorId: "u1",
           studentsImpacted: 42,
+          accountNumber: "ACC-001",
           affectsMultipleDepartments: "no",
           usesSubjects: "no",
+          acknowledgement1: true,
+          acknowledgement2: true,
+          acknowledgement3: true,
+          acknowledgement4: true,
+          signature: "Jane Director",
           status: "submitted",
         }),
         expect.objectContaining({
@@ -175,6 +190,15 @@ describe("NewGrant", () => {
     await user.type(screen.getByLabelText(/grant title/i), "x");
     await user.type(screen.getByLabelText(/description/i), "y");
     await user.type(screen.getByLabelText(/students impacted/i), "1");
+    await user.type(screen.getByLabelText(/account #/i), "ACC-001");
+    await user.click(screen.getByLabelText(/acknowledgement 1/i));
+    await user.click(screen.getByLabelText(/acknowledgement 2/i));
+    await user.click(screen.getByLabelText(/acknowledgement 3/i));
+    await user.click(screen.getByLabelText(/acknowledgement 4/i));
+    await user.type(
+      screen.getByLabelText(/full name signature/i),
+      "Jane Director",
+    );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),
       "no",

@@ -43,6 +43,7 @@ const existingGrant = {
   title: "Original Title",
   description: "Original description",
   projectDirectorId: "u1",
+  accountNumber: "ACC-001",
   studentsImpacted: 10,
   affectsMultipleDepartments: "no",
   departmentCount: "",
