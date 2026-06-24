@@ -183,6 +183,17 @@ describe("POST /api/grants/submit", () => {
       .send({ ...validBody, title: "" });
     expect(bad.status).toBe(400);
   });
+
+  it("persists the timeline", async () => {
+    const res = await request(app)
+      .post("/api/grants/submit")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, timeline: "Aug then Sept" });
+    expect(res.status).toBe(201);
+    expect(insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ timeline: "Aug then Sept" }),
+    );
+  });
 });
 
 describe("PUT /api/grants/edit/:id", () => {
@@ -265,5 +276,24 @@ describe("PUT /api/grants/edit/:id", () => {
       });
     expect(res.status).toBe(400);
     expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("persists the timeline on edit", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "mongo-id",
+      submittedEmail: "alice@wsu.edu",
+      status: "draft",
+      files: [],
+      irbApprovalFile: null,
+    });
+    findOne.mockResolvedValueOnce({ _id: "u1" }); // director lookup
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, timeline: "Edited timeline" });
+    expect(res.status).toBe(201);
+    expect(updateOne).toHaveBeenCalledWith(expect.anything(), {
+      $set: expect.objectContaining({ timeline: "Edited timeline" }),
+    });
   });
 });

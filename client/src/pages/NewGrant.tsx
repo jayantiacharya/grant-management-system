@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
@@ -25,14 +25,13 @@ export default function NewGrant() {
   const { formData, setFormData, budgetItems, activeGrantId, clearGrantDraft } =
     useGrant();
 
-  // The shared draft may still hold a grant loaded for editing; a fresh
-  // proposal must not start from another grant's data.
   useEffect(() => {
     if (activeGrantId) {
       clearGrantDraft();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeGrantId]);
+
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const irbApprovalFileRef = useRef<HTMLInputElement | null>(null);
@@ -78,12 +77,7 @@ export default function NewGrant() {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
     setMessage("");
   };
@@ -102,6 +96,23 @@ export default function NewGrant() {
     setFiles(selected);
     setErrors((prev) => ({ ...prev, files: undefined }));
     setMessage("");
+  };
+
+  // Pull matching funds total from budget items on demand
+  const pullMatchingFundsFromBudget = () => {
+    const total = budgetItems.reduce((sum, item) => {
+      return (
+        sum +
+        (parseFloat(item.amountFromDepartment) || 0) +
+        (parseFloat(item.amountFromCollege) || 0) +
+        (parseFloat(item.amountFromOtherSources) || 0)
+      );
+    }, 0);
+    setFormData((prev) => ({
+      ...prev,
+      hasMatchingFunds: total > 0,
+      matchingFundsTotal: total > 0 ? String(total) : prev.matchingFundsTotal,
+    }));
   };
 
   const validate = (
@@ -143,7 +154,6 @@ export default function NewGrant() {
     }
     if (data.irbApproved === "yes") {
       const irbFile = irbApprovalFileRef.current?.files?.[0];
-
       if (!irbFile) {
         next.irbApprovalFile = "IRB approval document is required.";
       }
@@ -166,7 +176,6 @@ export default function NewGrant() {
 
     try {
       const irbApprovalFile = irbApprovalFileRef.current?.files?.[0];
-
       const useMultipart = selectedFiles.length > 0 || !!irbApprovalFile;
 
       if (useMultipart) {
@@ -188,9 +197,10 @@ export default function NewGrant() {
         if (formData.usesSubjects === "yes") {
           body.append("irbApproved", formData.irbApproved);
         }
-
+        body.append("timeline", formData.timeline);
+        body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
+        body.append("matchingFundsTotal", formData.matchingFundsTotal);
         body.append("budgetItems", JSON.stringify(budgetItems));
-
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) {
           body.append("irbApprovalFile", irbApprovalFile);
@@ -220,6 +230,9 @@ export default function NewGrant() {
           usesSubjects: formData.usesSubjects,
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
+          timeline: formData.timeline,
+          hasMatchingFunds: formData.hasMatchingFunds,
+          matchingFundsTotal: formData.matchingFundsTotal,
           budgetItems,
           status,
         };
@@ -260,16 +273,11 @@ export default function NewGrant() {
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              // Pressing Enter saves a draft (never submit-locks, which always
-              // requires an explicit Submit click + confirmation). noValidate
-              // keeps native required-field validation from blocking the save
-              // of a partial draft; full validation runs in JS on Submit.
               submitGrant(GRANT_STATUS.DRAFT);
             }}
           >
             <div>
               <label htmlFor="title">Grant Title</label>
-
               <input
                 type="text"
                 id="title"
@@ -286,7 +294,6 @@ export default function NewGrant() {
 
             <div>
               <label htmlFor="description">Description</label>
-
               <textarea
                 id="description"
                 name="description"
@@ -305,7 +312,6 @@ export default function NewGrant() {
               <label htmlFor="projectDirectorId">
                 Project Director / Principal Investigator
               </label>
-
               <select
                 id="projectDirectorId"
                 name="projectDirectorId"
@@ -331,7 +337,6 @@ export default function NewGrant() {
               <label htmlFor="studentsImpacted">
                 Weber State University students impacted
               </label>
-
               <input
                 type="number"
                 id="studentsImpacted"
@@ -352,7 +357,6 @@ export default function NewGrant() {
               <label htmlFor="affectsMultipleDepartments">
                 Does this grant affect more than one department?
               </label>
-
               <select
                 id="affectsMultipleDepartments"
                 name="affectsMultipleDepartments"
@@ -374,7 +378,6 @@ export default function NewGrant() {
             {formData.affectsMultipleDepartments === "yes" && (
               <div>
                 <label htmlFor="departmentCount">How many departments?</label>
-
                 <input
                   type="number"
                   id="departmentCount"
@@ -396,7 +399,6 @@ export default function NewGrant() {
               <label htmlFor="usesSubjects">
                 Does this project use human or animal subjects?
               </label>
-
               <select
                 id="usesSubjects"
                 name="usesSubjects"
@@ -418,7 +420,6 @@ export default function NewGrant() {
                 <label htmlFor="irbApproved">
                   Has IRB approval been completed?
                 </label>
-
                 <select
                   id="irbApproved"
                   name="irbApproved"
@@ -435,12 +436,12 @@ export default function NewGrant() {
                 )}
               </div>
             )}
+
             {formData.irbApproved === "yes" && (
               <div>
                 <label htmlFor="irbApprovalFile">
                   Upload IRB Approval Document
                 </label>
-
                 <input
                   ref={irbApprovalFileRef}
                   type="file"
@@ -448,12 +449,24 @@ export default function NewGrant() {
                   name="irbApprovalFile"
                   required
                 />
-
                 {errors.irbApprovalFile && (
                   <span className="field-error">{errors.irbApprovalFile}</span>
                 )}
               </div>
             )}
+
+            <div>
+              <label htmlFor="timeline">Project Timeline</label>
+
+              <textarea
+                id="timeline"
+                name="timeline"
+                rows={6}
+                value={formData.timeline}
+                onChange={handleChange}
+                placeholder="e.g. August: design, September: build, or just an end date"
+              />
+            </div>
 
             <button
               type="button"
@@ -467,9 +480,62 @@ export default function NewGrant() {
               Open Budget Worksheet
             </button>
 
+            {/* Matching Funds */}
+            <div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.hasMatchingFunds}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      hasMatchingFunds: e.target.checked,
+                      matchingFundsTotal: e.target.checked
+                        ? prev.matchingFundsTotal
+                        : "",
+                    }))
+                  }
+                />{" "}
+                This grant has matching funds
+              </label>
+            </div>
+
+            {formData.hasMatchingFunds && (
+              <div>
+                <label htmlFor="matchingFundsTotal">
+                  Matching Funds Total ($)
+                </label>
+                <div
+                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
+                >
+                  <input
+                    type="number"
+                    id="matchingFundsTotal"
+                    name="matchingFundsTotal"
+                    min={0}
+                    step="0.01"
+                    value={formData.matchingFundsTotal}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                  />
+                  <button
+                    type="button"
+                    className="save-btn"
+                    onClick={pullMatchingFundsFromBudget}
+                  >
+                    Pull from budget
+                  </button>
+                </div>
+                <small>
+                  Matching funds = Department + College + Other Sources
+                  (excludes ARCC). Click "Pull from budget" to calculate from
+                  your budget worksheet, or enter a value manually.
+                </small>
+              </div>
+            )}
+
             <div>
               <label htmlFor="files">Upload Files</label>
-
               <input
                 ref={fileInputRef}
                 type="file"
@@ -478,13 +544,10 @@ export default function NewGrant() {
                 onChange={handleFileChange}
                 multiple
               />
-
               <small>Maximum {MAX_FILES} files allowed.</small>
-
               {files.length > 0 && (
                 <small>{files.length} file(s) selected.</small>
               )}
-
               {errors.files && (
                 <span className="field-error">{errors.files}</span>
               )}
