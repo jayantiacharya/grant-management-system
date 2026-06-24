@@ -1,0 +1,193 @@
+.cg-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.cg-title {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.cg-subtitle {
+  margin: 0 0 0.25rem 0;
+  color: #555;
+}
+
+.cg-hint {
+  margin: 0 0 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.cg-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.cg-error {
+  padding: 1rem;
+  background: #fee;
+  color: #c0392b;
+  border-radius: 6px;
+}
+
+.cg-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+.cg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cg-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.cg-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.cg-grant-title {
+  margin: 0 0 0.25rem 0;
+  color: #2c3e50;
+}
+
+.cg-submitted-by {
+  margin: 0.1rem 0;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.cg-status-area {
+  flex-shrink: 0;
+}
+
+.cg-badge-pending {
+  background: #fef3cd;
+  color: #856404;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cg-badge-approved {
+  background: #d4edda;
+  color: #155724;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cg-badge-rejected {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cg-description {
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.cg-funding-section {
+  background: #f0f7ff;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.cg-funding-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.cg-funding-amount {
+  margin: 0;
+  color: #2980b9;
+}
+
+.cg-budget-section {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.cg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cg-th {
+  background: #f0f0f0;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+}
+
+.cg-td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.cg-already-reviewed {
+  color: #666;
+  font-style: italic;
+  margin: 0.5rem 0 0 0;
+}
+
+.cg-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cg-approve-btn {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cg-approve-btn:hover {
+  background: #c3e6cb;
+}
+
+.cg-reject-btn {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cg-reject-btn:hover {
+  background: #f5c6cb;
+}
