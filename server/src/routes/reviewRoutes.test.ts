@@ -43,7 +43,19 @@ const committee = { key: "committee", memberIds: ["arcc1"] };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findOne.mockResolvedValue(committee);
+
+  findOne.mockImplementation((query: any) => {
+    if (query?.key === "committee") {
+      return Promise.resolve(committee);
+    }
+
+    if (query?.chair) {
+      return Promise.resolve(null);
+    }
+
+    return Promise.resolve(null);
+  });
+
   updateOne.mockResolvedValue({ matchedCount: 1 });
   findToArray.mockResolvedValue([]);
 });
@@ -55,7 +67,9 @@ describe("GET /api/grants/review", () => {
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: ["other"] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: ["other"] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .get("/api/grants/review")
       .set("Authorization", `Bearer ${memberToken}`);
@@ -83,7 +97,9 @@ describe("GET /api/grants/review/:id", () => {
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: [] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: [] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .get(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`);
@@ -133,7 +149,9 @@ describe("PUT /api/grants/review/:id", () => {
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: [] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: [] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .put(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`)
