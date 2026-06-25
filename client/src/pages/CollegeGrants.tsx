@@ -55,7 +55,7 @@ export default function CollegeGrants() {
 
   const handleDecision = async (
     grantId: string,
-    decision: "approved" | "rejected",
+    decision: "approved" | "denied",
   ) => {
     if (!window.confirm(`Are you sure you want to ${decision} this grant?`))
       return;
@@ -83,7 +83,8 @@ export default function CollegeGrants() {
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
   const statusBadge = (status?: string) => {
-    if (!status) return <span className="cg-badge-pending">Pending</span>;
+    if (status === "pending")
+      return <span className="cg-badge-pending">Pending</span>;
     if (status === "approved")
       return <span className="cg-badge-approved">Approved</span>;
     return <span className="cg-badge-rejected">Rejected</span>;
@@ -193,7 +194,7 @@ export default function CollegeGrants() {
                     </div>
                   )}
 
-                  {grant.collegeReviewStatus ? (
+                  {grant.collegeReviewStatus !== "pending" ? (
                     <p className="cg-already-reviewed">
                       This grant has already been {grant.collegeReviewStatus}.
                     </p>
@@ -207,7 +208,7 @@ export default function CollegeGrants() {
                       </button>
                       <button
                         className="cg-reject-btn"
-                        onClick={() => handleDecision(grant._id, "rejected")}
+                        onClick={() => handleDecision(grant._id, "denied")}
                       >
                         Reject
                       </button>

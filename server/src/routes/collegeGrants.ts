@@ -39,9 +39,11 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
 
     const collegeId = college._id.toString();
 
+    console.log(`Fetching grants for college: ${college.name} (${collegeId})`);
+
     const allGrants = await db
       .collection("grant")
-      .find({ status: { $ne: "draft" } })
+      .find({ collegeReviewStatus: { $ne: "N/A" } })
       .sort({ submittedAt: -1 })
       .toArray();
 
@@ -108,7 +110,7 @@ router.get("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PUT approve/reject — scoped to this dean's college, non-draft only
+// PUT approve/deny — scoped to this dean's college, non-draft only
 router.put("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -120,10 +122,10 @@ router.put("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
 
     if (
       collegeReviewStatus !== "approved" &&
-      collegeReviewStatus !== "rejected"
+      collegeReviewStatus !== "denied"
     ) {
       return res.status(400).json({
-        message: "collegeReviewStatus must be approved or rejected",
+        message: "collegeReviewStatus must be approved or denied",
       });
     }
 
