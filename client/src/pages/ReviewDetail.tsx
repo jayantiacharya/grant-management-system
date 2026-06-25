@@ -167,7 +167,9 @@ export default function ReviewDetail() {
       setMessage("Failed to download file.");
     }
   };
-  const updateStatus = async (reviewStatus: "approved" | "denied") => {
+  const updateStatus = async (
+    departmentReviewStatus: "approved" | "denied",
+  ) => {
     if (!grantId) return;
     setLoading(true);
     setMessage("");
