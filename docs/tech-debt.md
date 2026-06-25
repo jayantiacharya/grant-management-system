@@ -7,7 +7,7 @@ now would conflict with an open PR.
 ## Conflict map: cleared
 
 The feature work on the grant-form, review/scoring, department and dean approval,
-timeline, matching-funds, and allocation surfaces is all in. The previously hot files
+timeline, matching-funds, and allocation surfaces is all in. The files the feature work touched
 (`NewGrant.tsx`, `EditGrant.tsx`, `GrantContext.tsx`, `App.tsx`, `Review.tsx`,
 `ReviewDetail.tsx`, `Review.css`, `DeptReview.tsx`, `CollegeGrants.tsx`,
 `AllocationPage.tsx`, `grantSubmission.ts`, `admin.ts`, `app.ts`) have settled, so the
@@ -63,7 +63,7 @@ nav work lifts `isArcc` into `AuthContext`, point it at the secured endpoint. Th
 `checkDeptChair` endpoint does use `verifyToken`; the older `/users`,
 `/updateArcc`, `/arcc`, college and department routes still do not.
 
-Effort: M. `admin.ts` is now cold, so this is safe to start.
+Effort: M. `admin.ts` is cold, so this is safe to start.
 
 ### 4. Server boilerplate — SAFE NOW
 

@@ -131,3 +131,69 @@ The chair does everything a committee member does, plus:
    that criterion's maximum and the bottom option is always 0; in-between options are
    the admin's choice.
 2. They add as many criteria as the rubric needs.
+
+---
+
+## Key scenarios
+
+Given/When/Then for the flows worth pinning down precisely. These map to the behavior
+the role walkthroughs above describe.
+
+```gherkin
+Feature: Submit a grant
+
+  Scenario: Proposer submits a complete grant
+    Given a logged-in proposer with a draft that has all required fields
+    And the account number and acknowledgements are filled in
+    When they click Submit and confirm
+    Then the grant status becomes "submitted"
+    And the grant is locked against further edits
+    And it enters committee and department-chair review
+
+  Scenario: Submit is blocked until acknowledgements are checked
+    Given a logged-in proposer with an otherwise complete grant
+    And at least one required acknowledgement is unchecked
+    When they click Submit
+    Then submission is rejected with a validation error
+    And the grant remains an editable draft
+```
+
+```gherkin
+Feature: Score a submitted grant
+
+  Scenario: ARCC member scores against the rubric
+    Given an ARCC committee member viewing a submitted grant they did not submit
+    When they pick one option per rubric criterion and add a note
+    And they submit the rating
+    Then the review is saved in the grant's reviews[]
+    And a final rating from 0 to 100 is computed and stored
+    And re-submitting updates that reviewer's review rather than adding another
+```
+
+```gherkin
+Feature: Department chair approval
+
+  Scenario: Chair approves a grant from their department
+    Given a department chair viewing a submitted grant from their department
+    When they approve it
+    Then the grant's reviewStatus becomes "approved"
+
+  Scenario: Chair rejects a grant
+    Given a department chair viewing a submitted grant from their department
+    When they reject it
+    Then the grant's reviewStatus becomes "denied"
+```
+
+```gherkin
+Feature: College dean approval
+
+  Scenario: Dean approves a grant that requests college funds
+    Given a submitted grant with a budget item requesting more than $0 from the dean's college
+    When the dean opens college-grants and approves it
+    Then the grant's collegeReviewStatus becomes "approved"
+
+  Scenario: A grant that requests no college funds skips dean approval
+    Given a submitted grant that requests $0 from every college
+    Then it does not appear in any dean's college-grants list
+    And no dean approval is required
+```
