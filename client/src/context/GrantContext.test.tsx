@@ -18,6 +18,9 @@ const sampleForm: GrantFormData = {
   departmentCount: "",
   usesSubjects: "no",
   irbApproved: "",
+  timeline: "",
+  hasMatchingFunds: false,
+  matchingFundsTotal: "",
 };
 
 const sampleBudget = [

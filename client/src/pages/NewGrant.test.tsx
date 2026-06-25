@@ -332,4 +332,47 @@ describe("NewGrant", () => {
       );
     });
   });
+
+  it("renders the timeline field", async () => {
+    renderNewGrant();
+    expect(screen.getByLabelText(/project timeline/i)).toBeInTheDocument();
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+  });
+
+  it("includes timeline in the submit payload", async () => {
+    const user = userEvent.setup();
+    renderNewGrant();
+
+    await user.type(screen.getByLabelText(/grant title/i), "AI for Good");
+    await user.type(screen.getByLabelText(/description/i), "Build it");
+    await user.type(screen.getByLabelText(/students impacted/i), "42");
+    await user.selectOptions(
+      screen.getByLabelText(/affect more than one department/i),
+      "no",
+    );
+    await user.selectOptions(
+      screen.getByLabelText(/human or animal subjects/i),
+      "no",
+    );
+    await user.type(
+      screen.getByLabelText(/project timeline/i),
+      "Aug: design, Sept: build",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /submit grant proposal/i }),
+    );
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "http://localhost:5000/api/grants/submit",
+        expect.objectContaining({
+          timeline: "Aug: design, Sept: build",
+        }),
+        expect.objectContaining({
+          headers: { Authorization: "Bearer tok123" },
+        }),
+      );
+    });
+  });
 });

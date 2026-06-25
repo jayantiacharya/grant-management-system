@@ -17,6 +17,7 @@ import ReviewDetail from "./pages/ReviewDetail";
 import BudgetWorksheet from "./pages/BudgetWorksheet";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
 import CollegeGrants from "./pages/CollegeGrants";
+import AllocationPage from "./pages/AllocationPage";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -124,6 +125,14 @@ export default function App() {
                 <ProtectedRoute>
                   <ArccCommittee />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/allocation"
+              element={
+                <AdminRoute>
+                  <AllocationPage />
+                </AdminRoute>
               }
             />
             <Route
