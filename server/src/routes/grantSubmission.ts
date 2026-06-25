@@ -5,7 +5,11 @@ import fs from "fs";
 import dbo from "../middleware/conn.js";
 import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
-import { GRANT_STATUS, validateGrantPayload } from "./grantValidation.js";
+import {
+  GRANT_STATUS,
+  validateAcknowledgements,
+  validateGrantPayload,
+} from "./grantValidation.js";
 
 const router = Router();
 
@@ -161,6 +165,17 @@ router.post(
     const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
       validation;
 
+    let signature = "";
+    if (!isDraft) {
+      const ackValidation = validateAcknowledgements(req.body);
+      if (!ackValidation.ok) {
+        return res
+          .status(ackValidation.status)
+          .json({ message: ackValidation.message });
+      }
+      signature = ackValidation.signature;
+    }
+
     const db_connect = dbo.getDb();
 
     const resolvedDirectorId = projectDirectorId || userId;
@@ -180,6 +195,10 @@ router.post(
       description: req.body.description ?? "",
       submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
@@ -198,6 +217,26 @@ router.post(
       matchingFundsTotal: req.body.matchingFundsTotal
         ? parseFloat(req.body.matchingFundsTotal)
         : 0,
+      acknowledgements: {
+        acknowledgement1:
+          req.body.acknowledgement1 === true ||
+          req.body.acknowledgement1 === "true",
+        acknowledgement2:
+          req.body.acknowledgement2 === true ||
+          req.body.acknowledgement2 === "true",
+        acknowledgement3:
+          req.body.acknowledgement3 === true ||
+          req.body.acknowledgement3 === "true",
+        acknowledgement4:
+          req.body.acknowledgement4 === true ||
+          req.body.acknowledgement4 === "true",
+      },
+      signature: isDraft
+        ? typeof req.body.signature === "string"
+          ? req.body.signature.trim()
+          : ""
+        : signature,
+      signedAt: isDraft ? null : new Date(),
     };
 
     try {
@@ -609,6 +648,17 @@ router.put(
     const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
       validation;
 
+    let signature = "";
+    if (!isDraft) {
+      const ackValidation = validateAcknowledgements(req.body);
+      if (!ackValidation.ok) {
+        return res
+          .status(ackValidation.status)
+          .json({ message: ackValidation.message });
+      }
+      signature = ackValidation.signature;
+    }
+
     const resolvedDirectorId = projectDirectorId || userId;
 
     const directorExists = await db_connect
@@ -625,6 +675,10 @@ router.put(
       title: req.body.title ?? "",
       description: req.body.description ?? "",
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
@@ -639,6 +693,26 @@ router.put(
       matchingFundsTotal: req.body.matchingFundsTotal
         ? parseFloat(req.body.matchingFundsTotal)
         : 0,
+      acknowledgements: {
+        acknowledgement1:
+          req.body.acknowledgement1 === true ||
+          req.body.acknowledgement1 === "true",
+        acknowledgement2:
+          req.body.acknowledgement2 === true ||
+          req.body.acknowledgement2 === "true",
+        acknowledgement3:
+          req.body.acknowledgement3 === true ||
+          req.body.acknowledgement3 === "true",
+        acknowledgement4:
+          req.body.acknowledgement4 === true ||
+          req.body.acknowledgement4 === "true",
+      },
+      signature: isDraft
+        ? typeof req.body.signature === "string"
+          ? req.body.signature.trim()
+          : ""
+        : signature,
+      signedAt: isDraft ? null : new Date(),
     };
     if (!isDraft) {
       update.submittedAt = new Date();

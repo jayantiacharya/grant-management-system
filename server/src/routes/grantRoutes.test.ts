@@ -36,6 +36,12 @@ const validBody = {
   description: "Build it",
   projectDirectorId: "u1",
   studentsImpacted: 42,
+  accountNumber: "ACC-001",
+  acknowledgement1: true,
+  acknowledgement2: true,
+  acknowledgement3: true,
+  acknowledgement4: true,
+  signature: "Jane Director",
 };
 
 beforeEach(() => {

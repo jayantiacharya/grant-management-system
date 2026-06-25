@@ -316,6 +316,9 @@ export default function ReviewDetail() {
             <strong>Project Director:</strong> {directorEmail}
           </p>
           <p>
+            <strong>Account #:</strong> {grant.accountNumber || "—"}
+          </p>
+          <p>
             <strong>Students Impacted:</strong> {grant.studentsImpacted ?? "—"}
           </p>
           <p>

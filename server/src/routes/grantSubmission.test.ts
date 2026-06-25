@@ -34,6 +34,12 @@ const validBody = {
   description: "Build it",
   projectDirectorId: "u1",
   studentsImpacted: 42,
+  accountNumber: "ACC-001",
+  acknowledgement1: true,
+  acknowledgement2: true,
+  acknowledgement3: true,
+  acknowledgement4: true,
+  signature: "Jane Director",
 };
 
 beforeEach(() => {
@@ -255,6 +261,61 @@ describe("PUT /api/grants/edit/:id", () => {
         $set: expect.objectContaining({ status: "submitted" }),
       }),
     );
+  });
+
+  it("400 when submitting via edit without all acknowledgements", async () => {
+    findOne.mockResolvedValueOnce({
+      _id: "g1",
+      status: "draft",
+      submittedEmail: "alice@wsu.edu",
+    });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, acknowledgement3: false, status: "submitted" });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/acknowledgements/);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("persists acknowledgements and signature when submitting via edit", async () => {
+    findOne
+      .mockResolvedValueOnce({
+        _id: "g1",
+        status: "draft",
+        submittedEmail: "alice@wsu.edu",
+      })
+      .mockResolvedValueOnce({ _id: "mongo-id" });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, status: "submitted" });
+    expect(res.status).toBe(201);
+    const setArg = updateOne.mock.calls[0][1].$set;
+    expect(setArg.acknowledgements).toEqual({
+      acknowledgement1: true,
+      acknowledgement2: true,
+      acknowledgement3: true,
+      acknowledgement4: true,
+    });
+    expect(setArg.signature).toBe("Jane Director");
+    expect(setArg.signedAt).toBeInstanceOf(Date);
+  });
+
+  it("does not require acknowledgements when saving an edit as draft", async () => {
+    findOne
+      .mockResolvedValueOnce({
+        _id: "g1",
+        status: "draft",
+        submittedEmail: "alice@wsu.edu",
+      })
+      .mockResolvedValueOnce({ _id: "mongo-id" });
+    const res = await request(app)
+      .put("/api/grants/edit/507f1f77bcf86cd799439011")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...validBody, acknowledgement1: false, status: "draft" });
+    expect(res.status).toBe(201);
+    expect(updateOne.mock.calls[0][1].$set.signedAt).toBeNull();
   });
 
   it("400 when submitting via edit with subjects but no IRB file on the grant", async () => {
