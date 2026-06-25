@@ -269,19 +269,19 @@ Where the current build differs from the expectations above.
 
 - **Signup** — Department is required in code; the plan says optional. Relax validation.
   The college/department dropdowns are a hardcoded list in `Register.tsx` rather than the
-  admin-managed colleges/departments, and the department list is not filtered by college.
+  admin-managed colleges/departments.
 - **Budget worksheet** — Category is a free-text field; should be a hardware/software
   dropdown.
-- **Acknowledgements** — The submit form gates on the required acknowledgement
-  checkboxes, but their labels are still placeholders ("Acknowledgement 1", etc.); the
-  final certification wording and any captured signature are not in yet.
+- **Acknowledgements** — The submit form gates on the required acknowledgement checkboxes
+  and a free-text signature, but the acknowledgement labels are still placeholders
+  ("Acknowledgement 1", etc.) and the final certification wording is not settled.
 - **Rubric** — Code rejects only rating options whose score exceeds the max; it does not
   force the top option to equal the max or the bottom to be 0, in line with the client's
   "trust the user" stance.
-- **Review consolidation** — Per-reviewer scoring, the 0-to-100 final rating, the notes
-  box, and one review per reviewer all work. The missing piece is the cross-reviewer
-  step: the grant-level consolidated/normalized rating that allocation keys off is still
-  only computed per reviewer, not aggregated across the committee.
+- **Review consolidation** — Per-reviewer scoring, the notes box, and one review per
+  reviewer all work. The 0-to-100 rating is only computed client-side for display, not
+  stored, and there is no cross-reviewer consolidated/normalized grant-level rating for
+  allocation to key off.
 - **Grant status** — The underlying tracks exist (`reviews[]`, `reviewStatus`,
   `collegeReviewStatus`) and run concurrently, but they are not surfaced as the named
   composite states ("Under Committee Review", "Department Chair Approved", "Grant

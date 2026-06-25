@@ -41,16 +41,15 @@ erDiagram
         string timeline "free text"
         boolean hasMatchingFunds
         number matchingFundsTotal
-        boolean acknowledgement1 "required to submit"
-        boolean acknowledgement2 "required to submit"
-        boolean acknowledgement3 "required to submit"
-        boolean acknowledgement4 "required to submit"
+        object acknowledgements "acknowledgement1-4 booleans, all required to submit"
+        string signature "required to submit"
+        date signedAt "null until signed"
         array budgetItems "each item carries a collegeId"
         array files
         object irbApprovalFile
         string status "draft | submitted"
         array reviews "per-reviewer scores + comments"
-        string reviewStatus "approved|denied|null (dept/ARCC approval)"
+        string reviewStatus "pending|approved|denied|null (dept/ARCC approval)"
         string collegeReviewStatus "approved|rejected|unset (dean)"
         string collegeReviewedBy "dean email"
         date collegeReviewedAt
@@ -103,10 +102,9 @@ _[Open in mermaid.live](https://mermaid.live/edit#pako:eNqtVlGP2zYM_iuEnlLs7vaeP
   array, both pointing at `User.id`. ARCC membership is what grants review rights.
 - **Criteria** stands alone, used to score grants during review.
 - **Grant.reviews\[\]** — embedded per-reviewer reviews, not a separate collection. Each
-  entry is `{ reviewerId, scores, comments, finalRating, submittedAt }`, where `scores`
-  maps a criterion `_id` to the picked rating and `finalRating` is that reviewer's
-  0-to-100 score (points awarded over criteria maximums, times 100). One entry per
-  reviewer (upserted on re-submit).
+  entry is `{ reviewerId, scores, comments, submittedAt }`, where `scores` maps a
+  criterion `_id` to the picked rating. One entry per reviewer (upserted on re-submit).
+  The 0-to-100 rating is computed client-side for display, not stored on the entry.
 - **Department chair approval** — `Department.chair` holds a user's email; the chair of
   the submitter's department approves/denies via `Grant.reviewStatus`.
 - **College dean review** — `College.dean` holds a user's email. A dean reviews a grant

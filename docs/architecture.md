@@ -63,7 +63,8 @@ flowchart TB
 ```
 
 Two contexts back these pages, both persisted to `localStorage`: `AuthContext` holds the
-session (`user`, `token`, and the `isArcc` / `isDean` flags resolved at login), and
+session (`user`, `token`, and the `isDean` flag resolved at login; `isArcc` is populated
+from a per-page fetch), and
 `GrantContext` holds the shared grant draft and budget items across `NewGrant`,
 `EditGrant`, and `BudgetWorksheet`. Page-to-page navigation is in [Navigation](#navigation).
 
@@ -130,10 +131,12 @@ editability. Reviewing is split across three concurrent tracks that all live on 
 grant document, with no separate Review entity:
 
 - **`reviews[]`** — an embedded array, one entry per committee member, each holding
-  per-criterion `scores` and `comments`, upserted on re-submit. Created empty at submit.
-- **`reviewStatus`** (`null` / `approved` / `denied`) — the approve/deny outcome, written
-  by a department chair or ARCC member through the approval route. A freshly submitted
-  grant has `reviews: []` and no `reviewStatus`.
+  per-criterion `scores` and `comments`, upserted on re-submit. The field is created on
+  the first score, not at submit.
+- **`reviewStatus`** (`null` for a draft / `pending` once submitted / `approved` /
+  `denied`) — the approve/deny outcome, written by a department chair or ARCC member
+  through the approval route. A freshly submitted grant has `reviewStatus: "pending"` and
+  no `reviews` field yet.
 - **`collegeReviewStatus`** (`approved` / `rejected` / unset) — the college dean's
   decision, written only for a grant that requests money from that dean's college; unset
   reads as pending.
@@ -158,7 +161,7 @@ Review tracks (run once submitted, concurrently):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Submitted : grant submitted (reviews: [], no reviewStatus)
+    [*] --> Submitted : grant submitted (reviewStatus: pending, no reviews field)
 
     state "Committee scoring" as Scoring
     Submitted --> Scoring : each member upserts a review into reviews[]
@@ -177,15 +180,15 @@ stateDiagram-v2
     end note
 ```
 
-| status            | field written         | Trigger          | Actor                | Route                                 |
-| ----------------- | --------------------- | ---------------- | -------------------- | ------------------------------------- |
-| (new) → draft     | none                  | save as draft    | owner                | `POST /api/grants/submit`             |
-| (new) → submitted | `reviews: []`         | submit directly  | owner                | `POST /api/grants/submit`             |
-| draft → draft     | none                  | edit, save draft | owner                | `PUT /api/grants/edit/:id`            |
-| draft → submitted | `reviews: []`         | submit           | owner                | `PUT /api/grants/edit/:id`            |
-| submitted         | `reviews[]` upsert    | score the rubric | ARCC member or chair | `PUT /api/grants/review/:id`          |
-| submitted         | `reviewStatus`        | approve / deny   | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
-| submitted         | `collegeReviewStatus` | approve / reject | college dean         | `PUT /api/college-grants/:id`         |
+| status            | field written           | Trigger          | Actor                | Route                                 |
+| ----------------- | ----------------------- | ---------------- | -------------------- | ------------------------------------- |
+| (new) → draft     | none                    | save as draft    | owner                | `POST /api/grants/submit`             |
+| (new) → submitted | `reviewStatus: pending` | submit directly  | owner                | `POST /api/grants/submit`             |
+| draft → draft     | none                    | edit, save draft | owner                | `PUT /api/grants/edit/:id`            |
+| draft → submitted | `reviewStatus: pending` | submit           | owner                | `PUT /api/grants/edit/:id`            |
+| submitted         | `reviews[]` upsert      | score the rubric | ARCC member or chair | `PUT /api/grants/review/:id`          |
+| submitted         | `reviewStatus`          | approve / deny   | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
+| submitted         | `collegeReviewStatus`   | approve / reject | college dean         | `PUT /api/college-grants/:id`         |
 
 ## Navigation
 
@@ -243,9 +246,9 @@ or **admin** (`role=admin`). Each role has its own surface:
   Reached by an automatic redirect on login.
 - **Admin** `/admin`: management pages plus the all-grants list.
 
-Role detection is mixed: `isArcc` and `isDean` are resolved at login and kept in
-`AuthContext`, while department-chair status is fetched per page (`checkDeptChair`, from
-Dashboard and Review).
+Role detection is mixed: `isDean` is resolved at login and kept in `AuthContext`, while
+`isArcc` and department-chair status are fetched per page (`GET /api/admin/arcc` and
+`checkDeptChair`, from Dashboard and Review).
 
 ## Known gaps
 
@@ -254,8 +257,9 @@ Dashboard and Review).
 - **No shared role-aware header** — navigation is per page rather than from one
   `DashHeader`. ARCC and dept-chair entries are buttons on Dashboard / Review (dept-chair
   gated by a per-page `checkDeptChair` fetch), and the dean reaches `/college-grants`
-  through a post-login redirect with no persistent nav link back. `isArcc` and `isDean`
-  already live in `AuthContext`, so a single header could be driven from those flags.
+  through a post-login redirect with no persistent nav link back. `isDean` is resolved at
+  login and `isArcc` is page-fetched into `AuthContext`, so a single header could resolve
+  all three role flags in one place.
 - **No cross-reviewer consolidation** — each reviewer's per-criterion total is computed
   client-side; there is no consolidated, normalized grant-level rating across all
   reviewers for allocation to key off.
@@ -304,7 +308,7 @@ sequenceDiagram
     participant DB as MongoDB
     Owner->>Client: fill form, click Submit
     Client->>API: POST /submit (JWT)
-    API->>API: validate, set status, reviews: []
+    API->>API: validate, set status, reviewStatus: pending
     API->>DB: insert grant
     DB-->>API: ok
     API-->>Client: 201

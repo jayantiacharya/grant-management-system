@@ -67,9 +67,9 @@ chair is also a proposer).
 3. They open a grant to view it read-only and download any submitted files via links.
 4. They rate the application against each rubric criterion, choosing one option per
    criterion from its dropdown, and may add a note. The system computes a final rating
-   from 0 to 100 (points awarded over criteria maximums, times 100) and stores it with
-   the per-criterion ratings. Submitting again updates the same reviewer's review rather
-   than adding another. Rating does not approve or deny the grant.
+   from 0 to 100 (points awarded over criteria maximums, times 100) for display; only the
+   per-criterion ratings are stored with the review. Submitting again updates the same
+   reviewer's review rather than adding another. Rating does not approve or deny the grant.
 
 ---
 
@@ -166,7 +166,7 @@ Feature: Score a submitted grant
     When they pick one option per rubric criterion and add a note
     And they submit the rating
     Then the review is saved in the grant's reviews[]
-    And a final rating from 0 to 100 is computed and stored
+    And the reviewer's 0-to-100 score is computed for display
     And re-submitting updates that reviewer's review rather than adding another
 ```
 
