@@ -19,6 +19,38 @@ chair is also a proposer).
 
 ---
 
+## Use case diagram
+
+```mermaid
+graph LR
+    P([Proposer])
+    CM([Committee Member])
+    CC([Committee Chair])
+    DC([Dept Chair])
+    DE([Dean])
+    AD([Admin])
+
+    P --- RP(Register / manage profile)
+    P --- DG(Draft grant application)
+    P --- SG(Submit grant)
+    P --- TG(Track grant status on dashboard)
+
+    CM --- RV(Rate submitted grants)
+    CC --- RV
+    CC --- AL(Run allocation cycle)
+    CC --- SA(Send to Accounting)
+
+    DC --- AP(Approve / reject dept grants)
+
+    DE --- DA(Approve / reject college grants)
+
+    AD --- MC(Manage committee)
+    AD --- MD(Manage colleges and departments)
+    AD --- MR(Define rubric)
+```
+
+---
+
 ## Proposer
 
 ### Register and set up a profile
@@ -207,4 +239,72 @@ Feature: College dean approval
     Given a submitted grant that requests $0 from every college
     Then it does not appear in any dean's college-grants list
     And no dean approval is required
+```
+
+```gherkin
+Feature: Allocation cutoff
+
+  Scenario: Applying a cutoff splits grants into two tables
+    Given the chair has set a cutoff of 75
+    When they click Apply Cutoff
+    Then grants with an average rating >= 75 appear in the eligible table
+    And grants with an average rating < 75 appear in the Rejected Grants table
+
+  Scenario: Adjusting cutoff re-splits the tables
+    Given the chair previously applied a cutoff of 70
+    When they change the cutoff to 80 and click Apply Cutoff again
+    Then the eligible and Rejected Grants tables update to reflect the new threshold
+```
+
+```gherkin
+Feature: Allocation tiers
+
+  Scenario: Tier criteria compute the allocated amount
+    Given a grant requesting $8,000 with an 88% average rating
+    And the chair has configured: above 90% gets 100%, 80-90% gets 75%
+    When the chair applies the tier criteria
+    Then the grant's Allocated Amount shows $6,000
+
+  Scenario: Grant above the full-funding threshold receives 100%
+    Given a grant requesting $10,000 with a 95% average rating
+    And the full-funding threshold is set to 90%
+    When the chair applies the tier criteria
+    Then the grant's Allocated Amount shows $10,000
+```
+
+```gherkin
+Feature: Finish Allocation
+
+  Scenario: Finish Allocation locks the cycle and sets terminal statuses
+    Given the chair has configured cutoff and tier criteria
+    When they click Finish Allocation
+    Then no further changes to the allocation page are possible
+    And each grant in the eligible table has status "accepted"
+    And each grant in the Rejected Grants table has status "rejected"
+
+  Scenario: Accepted grant receives a report due date
+    Given Finish Allocation is clicked on 2025-10-20
+    And a grant is in the eligible table
+    Then that grant's report due date is 2027-06-30
+
+  Scenario: Report due date when allocation finalizes near fiscal year end
+    Given Finish Allocation is clicked on 2026-06-23
+    And a grant is in the eligible table
+    Then that grant's report due date is 2027-06-30
+```
+
+```gherkin
+Feature: Proposer dashboard sections
+
+  Scenario: Accepted grant appears in the approved section
+    Given a grant that received an allocated amount after Finish Allocation
+    When the proposer views their dashboard
+    Then the grant appears in the Approved Grants section
+    And it displays its report due date
+
+  Scenario: Rejected grant appears in the rejected section
+    Given a grant that fell below the cutoff after Finish Allocation
+    When the proposer views their dashboard
+    Then the grant appears in the Rejected Grants section
+    And the proposer can see it was rejected so they have a record of the application
 ```
