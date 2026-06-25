@@ -18,6 +18,7 @@ import BudgetWorksheet from "./pages/BudgetWorksheet";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
 import CollegeGrants from "./pages/CollegeGrants";
 import AllocationPage from "./pages/AllocationPage";
+import DepartmentReview from "./pages/DeptReview";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
@@ -172,6 +173,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CollegeGrants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/department-review"
+              element={
+                <ProtectedRoute>
+                  <DepartmentReview />
                 </ProtectedRoute>
               }
             />
