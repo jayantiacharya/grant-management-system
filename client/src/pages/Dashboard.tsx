@@ -12,6 +12,14 @@ export default function Dashboard() {
   const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
+  const [isReviewer, setIsReviewer] = useState(false);
+
+  // Redirect deans straight to their grants review page
+  useEffect(() => {
+    if (user?.isDean) {
+      navigate("/college-grants", { replace: true });
+    }
+  }, [user?.isDean, navigate]);
 
   const fetchGrants = async () => {
     try {
@@ -36,17 +44,34 @@ export default function Dashboard() {
     }
   };
 
+  const checkDeptChair = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/admin/checkDeptChair/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (data.isChair) {
+        setIsReviewer(true);
+      }
+    } catch (error) {
+      console.error("Failed to check department chair status:", error);
+    }
+  };
+
   useEffect(() => {
     fetchGrants();
     if (user?.id) {
       checkArccMembership();
+      checkDeptChair();
     }
   }, [user?.id]);
 
   return (
     <div className="dashboard-page">
       <DashHeader>
-        {user?.isArcc && (
+        {(user?.isArcc || isReviewer) && (
           <button onClick={() => navigate("/review")} className="logout-btn">
             Review
           </button>
@@ -109,13 +134,15 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={() => navigate("/grants/new")}
-          >
-            Submit a new grant proposal
-          </button>
+          {!user?.isDean && (
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/grants/new")}
+            >
+              Submit a new grant proposal
+            </button>
+          )}
         </div>
       </main>
     </div>

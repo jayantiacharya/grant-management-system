@@ -54,7 +54,9 @@
 
 .dash-main {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   padding: 48px 20px;
 }
 
@@ -79,7 +81,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 1.25rem;
+  margin: 1.25em;
 }
 
 .admin-nav .submit-btn {
@@ -212,6 +214,11 @@
 
 .edit-btn:hover {
   background: #2960b8;
+}
+
+a.edit-btn {
+  display: inline-block;
+  text-decoration: none;
 }
 
 .grant-form-actions {
