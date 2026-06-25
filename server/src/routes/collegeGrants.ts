@@ -41,7 +41,7 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
 
     const allGrants = await db
       .collection("grant")
-      .find({ collegeReviewStatus: { $ne: "N/A" } })
+      .find({ collegeReviewStatus: { $in: ["pending", "approved", "denied"] } })
       .sort({ submittedAt: -1 })
       .toArray();
 
