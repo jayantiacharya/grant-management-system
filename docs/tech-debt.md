@@ -6,13 +6,12 @@ now would conflict with an open PR.
 
 ## Conflict map: cleared
 
-The review/timeline/dean PR wave has landed. #21 (matching funds) and #22/#26/#28 (dean
-review, timeline, review-rating-department) are merged; #23 and #27 were closed, their
-work folded into #28. No open PR touches the previously hot files
+The feature work on the grant-form, review/scoring, department and dean approval,
+timeline, matching-funds, and allocation surfaces is all in. The previously hot files
 (`NewGrant.tsx`, `EditGrant.tsx`, `GrantContext.tsx`, `App.tsx`, `Review.tsx`,
 `ReviewDetail.tsx`, `Review.css`, `DeptReview.tsx`, `CollegeGrants.tsx`,
-`grantSubmission.ts`, `admin.ts`, `app.ts`), so the whole tree is cold and every refactor
-below is safe to start.
+`AllocationPage.tsx`, `grantSubmission.ts`, `admin.ts`, `app.ts`) have settled, so the
+tree is cold and every refactor below is safe to start.
 
 ---
 
@@ -28,13 +27,13 @@ below is safe to start.
   `types/grant.ts` + a `constants.ts`.
 - Same "fetch user-options" effect in both → `useUserOptions(token)` hook.
 - Same submit flow (multipart-vs-JSON, validate, navigate) → `useGrantSubmit(grantId?)`.
-- Bug-risk divergences to fix while unifying: EditGrant dropped the "file required when
-  `usesSubjects=yes`" check that NewGrant has (`NewGrant.tsx:136` vs `EditGrant.tsx:152`);
-  `handleChange` uses a functional update in one, a raw spread in the other.
+- Bug-risk divergences to fix while unifying: the two forms have drifted on validation
+  (e.g. the file-required-when-`usesSubjects=yes` check) and on whether `handleChange`
+  uses a functional update or a raw spread. Reconcile these while extracting the shared
+  form.
 
-Effort: L. Highest payoff. The PRs that touched these files have landed, so the
-duplication is now frozen (timeline, matching-funds, and the rubric-scoring rewrite are
-all in), making this a clean extraction target.
+Effort: L. Highest payoff. The feature work on these files has settled, so the
+duplication is frozen, making this a clean extraction target.
 
 ### 2. API base URL hardcoded ~56 times — SAFE NOW
 
@@ -61,7 +60,7 @@ Most `/api/admin/*` routes have no `verifyToken`:
 A real functional hole, not a hardening nit. The client even calls `/arcc` with no
 token today (`Dashboard.tsx:31`). Fix: add `verifyToken` + an admin check. Note: when
 nav work lifts `isArcc` into `AuthContext`, point it at the secured endpoint. The newer
-`checkDeptChair` endpoint added in #28 does use `verifyToken`; the older `/users`,
+`checkDeptChair` endpoint does use `verifyToken`; the older `/users`,
 `/updateArcc`, `/arcc`, college and department routes still do not.
 
 Effort: M. `admin.ts` is now cold, so this is safe to start.
@@ -77,7 +76,7 @@ Effort: M. `admin.ts` is now cold, so this is safe to start.
 
 The middleware/helpers are new files (additive). All routes are cold now, so apply them
 across the board, including `grantSubmission.ts`, `admin.ts`, and the new
-`collegeGrants.ts`. Note `isDeptChair` (added in #28) is a fourth inline auth helper to
+`collegeGrants.ts`. Note `isDeptChair` is a fourth inline auth helper to
 fold into shared middleware. Effort: M.
 
 ### 5. Types / shared model — SAFE NOW
@@ -116,7 +115,7 @@ for the later `<GrantForm>` work. Effort: M.
 
 ## Priority order
 
-With the review/timeline/dean PRs landed the whole tree is cold, so nothing is blocked.
+With the feature work settled the whole tree is cold, so nothing is blocked.
 Rough sequencing by payoff:
 
 1. **#3 admin-endpoint auth** — the one real functional/security hole; do it first.

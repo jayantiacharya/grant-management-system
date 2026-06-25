@@ -41,8 +41,10 @@ chair is also a proposer).
 5. If matching funds are available, they check the box; the amount defaults to the
    non-ARCC total from the worksheet and can be edited.
 6. They enter a timeline as free text.
-7. They **save** at any point to keep working later, or **submit** when ready.
-8. After submitting, the grant is locked and enters review; it can no longer be edited.
+7. They check the required acknowledgements in the Acknowledgements & Signature section,
+   which the form requires before a submit is accepted.
+8. They **save** at any point to keep working later, or **submit** when ready.
+9. After submitting, the grant is locked and enters review; it can no longer be edited.
 
 ### Track grants
 

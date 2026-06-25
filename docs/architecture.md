@@ -16,7 +16,7 @@ flowchart LR
         end
 
         subgraph Contexts
-            AUTHCTX["AuthContext<br/>user + token + isArcc<br/>(localStorage)"]
+            AUTHCTX["AuthContext<br/>user + token + isArcc + isDean<br/>(localStorage)"]
             GRANTCTX["GrantContext<br/>shared grant draft + budget items<br/>activeGrantId (localStorage)"]
         end
 
@@ -51,6 +51,7 @@ flowchart LR
             DEPT["CreateDepartment"]
             ARCCPG["ArccCommittee"]
             CRIT["CriteriaManagement"]
+            ALLOC["AllocationPage<br/>/admin/allocation<br/>cycle allocation (UI only)"]
         end
     end
 
@@ -80,7 +81,7 @@ flowchart LR
     %% client wiring
     PUB --- LOGIN & REG
     PROT --- DASH & NEW & EDIT & BUDGET & PROFILE & REV & REVDET & DEPTREV & CG & ADASH & COLLEGE & DEPT & ARCCPG
-    ADM --- CRIT
+    ADM --- CRIT & ALLOC
     AUTHCTX --- HEADER
     GRANTCTX --- NEW & EDIT & BUDGET
     CRITFORM --- CRIT
@@ -231,6 +232,7 @@ flowchart TD
         A --> CR[/admin/criteria/]
         A -->|My Grants| D
         A -.-> GL[Grant Applications list]
+        A -.-> AL[/"admin/allocation<br/>UI only, placeholder data"/]
     end
 
     GL -. "titles only, nothing clickable" .-x DEAD1[no grant detail]
@@ -255,9 +257,10 @@ collected in `grant.reviews[]`.
 Review rights are not a single flag. A user can be a proposer plus any of: **ARCC
 reviewer** (committee membership, `isArccMember`), **department chair**
 (`GET /api/admin/checkDeptChair`), **college dean** (email matches a college's `dean`),
-or **admin** (`role=admin`). Each role has its own surface. Role detection is done
-per-page (Dashboard and Review fetch `checkDeptChair`; the dean is resolved server-side
-from `college.dean`), not lifted into `AuthContext` or the header yet.
+or **admin** (`role=admin`). Each role has its own surface. Role detection is mixed:
+`isArcc` and `isDean` are resolved at login and kept in `AuthContext`, while
+department-chair status is still fetched per page (`checkDeptChair`, from Dashboard and
+Review). None of them are surfaced as shared header navigation yet.
 
 - **ARCC** `/review` → `/review/:id`: score the grant against the rubric criteria and
   leave comments. Each member upserts one review; the rubric renders inline.
@@ -265,7 +268,8 @@ from `college.dean`), not lifted into `AuthContext` or the header yet.
   department; reached from a button on `/review`.
 - **College dean** `/college-grants`: only grants with positive funding from the dean's
   college; approve / reject inline (`collegeReviewStatus`), no separate detail page.
-  Reachable only by URL today, no nav link.
+  Reached by an automatic redirect to `/college-grants` on login; there is still no
+  persistent nav link to return once elsewhere in the app.
 - **Admin** `/admin`: management pages plus the all-grants list, which is still plain
   text (open dead end, below).
 
@@ -309,7 +313,7 @@ flowchart TD
     end
 
     subgraph admin [Admin world]
-        A[/admin/] --> MGMT[college / department / committee / criteria]
+        A[/admin/] --> MGMT[college / department / committee / criteria / allocation]
         A --> GL[Grant Applications]
         GL -->|row click, read-only| RD
     end
@@ -327,14 +331,18 @@ _[Open in mermaid.live](https://mermaid.live/edit#pako:eNp9U01P3DAQ_SsjX7uRVb4qR
 
 - **DEAD1** Admin "Grant Applications" rows are still plain text; they need
   click-through to a read-only `/review/:id`. No PR touches `AdminDashboard.tsx`.
-- **DEAD2** Review entry points are still not lifted into the header / `AuthContext`.
-  ARCC and dept-chair entries are reached from per-page buttons (Dashboard / Review,
-  gated by per-page `checkDeptChair` fetches), and the dean's `/college-grants` page has
-  no nav link at all (URL-only). Each role's entry should live in `DashHeader`, driven by
-  flags resolved once in `AuthContext` rather than re-checked per page.
+- **DEAD2** Role entry points are still not lifted into a shared header. `isArcc` and
+  `isDean` live in `AuthContext` (resolved at login), but navigation is still per page:
+  ARCC and dept-chair entries are buttons on Dashboard / Review (dept-chair gated by a
+  per-page `checkDeptChair` fetch), and the dean reaches `/college-grants` through an
+  automatic post-login redirect with no persistent nav link. Each role's entry should
+  live in `DashHeader`, driven by the flags already in `AuthContext`.
 - **Cross-reviewer consolidation** Each reviewer's per-criterion total is computed
   client-side; there is no server-side consolidated/normalized grant-level final rating
   across all reviewers (the number allocation is meant to key off). Not built.
+- **Allocation page** `/admin/allocation` exists under `AdminRoute`, but it is UI only:
+  placeholder data, the cycle inputs and award math are not wired to real grants, and
+  Send to Accounting does not export a spreadsheet yet.
 
 DEAD3 is now resolved (rubric renders inline in `ReviewDetail`).
 
@@ -379,7 +387,7 @@ sequenceDiagram
     participant DB as MongoDB
     Owner->>Client: fill form, click Submit
     Client->>API: POST /submit (JWT)
-    API->>API: validate, set status, reviewStatus=pending
+    API->>API: validate, set status, reviews: []
     API->>DB: insert grant
     DB-->>API: ok
     API-->>Client: 201

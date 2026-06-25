@@ -76,6 +76,13 @@ The application accepts three optional general file uploads, plus a separate,
 independently named upload for the IRB / human-animal subjects form (required only when
 the project uses subjects). Files are stored in a local folder on disk, not the cloud.
 
+### Acknowledgements
+
+The form ends with an Acknowledgements & Signature section: a set of required
+acknowledgement checkboxes the proposer certifies before the application can be
+submitted. All must be checked for a submit to go through; saving a draft does not
+require them. The label wording is still placeholder text.
+
 ### Save vs Submit
 
 - **Save** stores the application as a draft so the proposer can continue later.
@@ -263,27 +270,25 @@ Where the current build differs from the expectations above.
 - **Signup** — Department is required in code; the plan says optional. Relax validation.
   The college/department dropdowns are a hardcoded list in `Register.tsx` rather than the
   admin-managed colleges/departments, and the department list is not filtered by college.
-- **Account number** — The grant application has no account-number field yet.
 - **Budget worksheet** — Category is a free-text field; should be a hardware/software
   dropdown.
-- **Rubric** — Admin-side definition matches (each criterion carries its own max score
-  and a set of rating options). Code rejects only rating options whose score exceeds the
-  max; it does not force the top option to equal the max or the bottom to be 0, which is
-  in line with the client's "trust the user" stance. The reviewer-facing piece is
-  missing: no per-criterion dropdown scoring, no per-reviewer 0-to-100 rating, and no
-  cross-reviewer consolidated grant-level rating.
-- **Review** — Per-criterion rating, the final rating, the notes box, and per-reviewer
-  one-review-per-grant are not implemented; only a single approve/deny `reviewStatus`
-  exists.
-- **Approval workflow** — No department-chair or college-dean approval routing exists.
-  The chair and dean fields are in the data model but unused by any routing, and the
-  dean-only-when-college-funds rule is not enforced.
-- **Grant status** — The multi-status model is not implemented. A grant carries a single
-  `reviewStatus` (pending / approved / denied); concurrent committee + chair + dean
-  states do not exist, and the dashboard shows only "Submitted" rather than detailed
-  status.
-- **Allocation** — Not implemented; no allocation page or data, and no Send to
-  Accounting spreadsheet export.
-- **Matching funds** — Not implemented.
+- **Acknowledgements** — The submit form gates on the required acknowledgement
+  checkboxes, but their labels are still placeholders ("Acknowledgement 1", etc.); the
+  final certification wording and any captured signature are not in yet.
+- **Rubric** — Code rejects only rating options whose score exceeds the max; it does not
+  force the top option to equal the max or the bottom to be 0, in line with the client's
+  "trust the user" stance.
+- **Review consolidation** — Per-reviewer scoring, the 0-to-100 final rating, the notes
+  box, and one review per reviewer all work. The missing piece is the cross-reviewer
+  step: the grant-level consolidated/normalized rating that allocation keys off is still
+  only computed per reviewer, not aggregated across the committee.
+- **Grant status** — The underlying tracks exist (`reviews[]`, `reviewStatus`,
+  `collegeReviewStatus`) and run concurrently, but they are not surfaced as the named
+  composite states ("Under Committee Review", "Department Chair Approved", "Grant
+  Approved"); the dashboard shows a coarse badge rather than the full multi-status view,
+  and the allocation-driven final "Grant Approved" does not exist yet.
+- **Allocation** — The allocation page exists but is UI only: it shows placeholder data,
+  the cycle inputs (amount available, leftover, cutoff percentage) and the award math are
+  not wired to real grants, and Send to Accounting does not yet export a spreadsheet.
 - **College & department admin** — Tabs and editing are partial; delete is missing, and
   the department-chair selection UI is incomplete (the field exists but is not exposed).
