@@ -14,6 +14,13 @@ export default function Dashboard() {
   const [grants, setGrants] = useState([]);
   const [isReviewer, setIsReviewer] = useState(false);
 
+  // Redirect deans straight to their grants review page
+  useEffect(() => {
+    if (user?.isDean) {
+      navigate("/college-grants", { replace: true });
+    }
+  }, [user?.isDean, navigate]);
+
   const fetchGrants = async () => {
     try {
       const { data } = await axios.get(
@@ -108,13 +115,15 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={() => navigate("/grants/new")}
-          >
-            Submit a new grant proposal
-          </button>
+          {!user?.isDean && (
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/grants/new")}
+            >
+              Submit a new grant proposal
+            </button>
+          )}
         </div>
       </main>
     </div>

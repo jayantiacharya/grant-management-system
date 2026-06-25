@@ -16,6 +16,8 @@ import Review from "./pages/Review";
 import ReviewDetail from "./pages/ReviewDetail";
 import BudgetWorksheet from "./pages/BudgetWorksheet";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
+import CollegeGrants from "./pages/CollegeGrants";
+import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -127,6 +129,14 @@ export default function App() {
               }
             />
             <Route
+              path="/admin/allocation"
+              element={
+                <AdminRoute>
+                  <AllocationPage />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <ProtectedRoute>
@@ -156,6 +166,14 @@ export default function App() {
                 <AdminRoute>
                   <CriteriaManagement />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/college-grants"
+              element={
+                <ProtectedRoute>
+                  <CollegeGrants />
+                </ProtectedRoute>
               }
             />
             <Route

@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import axios from "axios";
 import {
   useGrant,
   emptyBudgetItem,
@@ -10,8 +12,16 @@ import "./Dashboard.css";
 export default function BudgetWorksheet() {
   const { budgetItems, setBudgetItems } = useGrant();
   const location = useLocation();
-
   const returnTo = location.state?.returnTo ?? "/grants/new";
+
+  const [colleges, setColleges] = useState<{ _id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/api/admin/colleges")
+      .then(({ data }) => setColleges(data))
+      .catch((err) => console.error("Failed to load colleges:", err));
+  }, []);
 
   const handleBudgetItemChange = (
     index: number,
@@ -24,6 +34,11 @@ export default function BudgetWorksheet() {
       ...updatedItems[index],
       [field]: value,
     };
+
+    // If amountFromCollege is cleared, also clear the collegeId
+    if (field === "amountFromCollege" && (!value || parseFloat(value) === 0)) {
+      updatedItems[index].collegeId = "";
+    }
 
     const item = updatedItems[index];
 
@@ -164,6 +179,47 @@ export default function BudgetWorksheet() {
                       placeholder="0.00"
                     />
                   </div>
+
+                  {/* Show college picker only when an amount is entered */}
+                  {parseFloat(item.amountFromCollege) > 0 && (
+                    <div className="budget-field">
+                      <label htmlFor={`collegeId-${index}`}>
+                        Which College? <span style={{ color: "red" }}>*</span>
+                      </label>
+                      <select
+                        id={`collegeId-${index}`}
+                        value={item.collegeId}
+                        onChange={(e) =>
+                          handleBudgetItemChange(
+                            index,
+                            "collegeId",
+                            e.target.value,
+                          )
+                        }
+                        required
+                        style={{
+                          borderColor:
+                            parseFloat(item.amountFromCollege) > 0 &&
+                            !item.collegeId
+                              ? "red"
+                              : undefined,
+                        }}
+                      >
+                        <option value="">Select a college</option>
+                        {colleges.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      {parseFloat(item.amountFromCollege) > 0 &&
+                        !item.collegeId && (
+                          <span style={{ color: "red", fontSize: "0.85rem" }}>
+                            Please select a college for this funding amount.
+                          </span>
+                        )}
+                    </div>
+                  )}
 
                   <div className="budget-field">
                     <label htmlFor={`amountFromDepartment-${index}`}>
