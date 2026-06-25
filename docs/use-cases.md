@@ -48,11 +48,13 @@ chair is also a proposer).
 
 ### Track grants
 
-1. The proposer's dashboard lists their grants with status. A submitted grant can hold
-   several statuses at once (committee review, department-chair review, dean review),
-   and the proposer sees each as pending, approved, or rejected, so they can chase an
-   approver who has not yet acted.
-2. Draft grants offer an edit option; submitted grants are read-only.
+1. The proposer's dashboard organizes grants into three sections: approved, rejected, and
+   active/pending. A submitted grant can hold several statuses at once (committee review,
+   department-chair review, dean review), and the proposer sees each as pending, approved,
+   or rejected, so they can chase an approver who has not yet acted.
+2. Once allocation is finalized, the grant moves to the approved or rejected section with
+   a terminal status. Approved grants also display their report due date.
+3. Draft grants offer an edit option; submitted grants are read-only.
 
 ---
 
@@ -79,11 +81,20 @@ The chair does everything a committee member does, plus:
 
 ### Set the cycle allocation
 
-1. On the allocation page (available only to the chair), the chair records the amount
-   available for the current cycle, any leftover from the last cycle, and the cutoff
-   percentage, and decides how much each grant is awarded.
-2. A Send to Accounting button exports a spreadsheet (PI name, grant title, account
-   number, amount requested from ARCC) for the accounting office to disburse.
+1. On the allocation page (available only to the chair), the chair enters the current
+   cycle amount, leftover amount, and cutoff percentage in editable text boxes.
+2. They click Apply Cutoff. Grants below the cutoff move to a Rejected Grants table;
+   grants above stay in the main table.
+3. The chair adjusts the cutoff and re-applies as many times as needed to accommodate
+   more applicants.
+4. For the eligible grants, the chair adds dynamic tier criteria: each tier maps a rating
+   range to a percentage of the requested amount. A full-funding threshold (e.g. 90%)
+   awards 100% of the request. An Allocated Amount column updates as tiers are configured.
+5. When satisfied, the chair clicks Finish Allocation. This locks the allocation and sets
+   each grant's final status (Accepted or Rejected). Accepted grants receive a calculated
+   report due date (next June 30 after the allocation date, plus one year).
+6. The chair clicks Send to Accounting, which downloads a spreadsheet (grant title, PI
+   name, amount requested from ARCC) for the accounting office to disburse.
 
 ---
 

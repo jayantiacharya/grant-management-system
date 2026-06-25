@@ -178,25 +178,89 @@ Money is released only after the required approvals are in.
 
 ## 8. Allocation
 
-The ARCC committee chair has an allocation page (available only to them) that records
-three values for a grant cycle:
+The ARCC committee chair has an allocation page (available only to them).
 
-1. The amount available for this cycle.
-2. Any money left over from the last cycle.
-3. A cutoff percentage (a positive number, generally 70%).
+### 8a. Cycle inputs
 
-Allocation decides how much each grant is awarded, which may differ from what was
-requested (a grant may be funded in full, in part, or not at all). The cutoff percentage
-is the floor: grants whose final rating falls below it are rejected and receive no money.
-How the remaining grants split the available funds is set by the committee and can change
-from cycle to cycle (for example, tiers that pay a higher-rated grant a larger share of
-its request), so the rules are configurable rather than fixed.
+At the top of the page the chair enters three values for the current cycle using editable
+text boxes. These numbers change every cycle and must not be hardcoded:
 
-A **Send to Accounting** button at the bottom of the page exports a spreadsheet for the
-accounting office, which performs the actual disbursement; the app does not move money
-itself. Each row holds the principal investigator's name, the grant title, the account
-number, and the amount requested from ARCC. The allocated amount is a planned future
-column, not yet included. Generation must use free tooling only.
+1. **Current cycle amount** — funds available from donors this cycle (e.g. $50,000).
+2. **Leftover amount** — unspent money carried over from the prior cycle (e.g. $37,000).
+3. **Cutoff percentage** — the floor for funding, generally 70% but changeable at any
+   point in the process. The chair may adjust it several times while reviewing the
+   grant table to try to accommodate more applicants.
+
+### 8b. Grant table and cutoff
+
+The table displays all submitted grants with each grant's real average final rating
+(the consolidated 0-to-100 score computed from committee reviews, not placeholder data).
+
+When the chair sets a cutoff and clicks **Apply Cutoff**, the table splits into two:
+
+- **Eligible grants** (rated at or above the cutoff) — remain in the main table.
+- **Rejected Grants** — a separate table below, containing every grant whose average
+  rating fell below the cutoff. These grants receive no money.
+
+The chair can adjust the cutoff and re-apply as many times as needed before finalizing.
+
+### 8c. Allocation tiers (criteria)
+
+For grants above the cutoff, the chair configures how much each grant is awarded using
+dynamic tier criteria. Each criterion specifies:
+
+- A **rating range** (e.g. 80%–90%).
+- A **percentage of the requested amount** to award (e.g. 75%).
+
+The chair can add as many tiers as needed. There is also a single **full-funding
+threshold**: grants rated above this number (e.g. 90%) receive 100% of what they
+requested. Together, the tiers and the full-funding threshold cover the range from the
+cutoff to 100%.
+
+An **Allocated Amount** column in the eligible table shows the computed award for each
+grant based on whichever tier or threshold applies to its rating.
+
+Example: grant requesting $8,000 with an 88% average rating, tiers set to 90%+ → 100%
+and 80–90% → 75%, receives $6,000 (75% of $8,000).
+
+### 8d. Finish Allocation
+
+When the chair is satisfied with the tier configuration, they click **Finish Allocation**.
+This action:
+
+- Locks the entire allocation — no further changes are possible.
+- Sets each grant's final status:
+  - Grants in the Rejected Grants table → **Rejected**.
+  - Grants that received any allocated amount → **Accepted**.
+- Records a **report due date** on each accepted grant (see 8e).
+
+### 8e. Report due date
+
+When a grant is accepted, the system calculates its report due date:
+
+1. Find the first June 30 that falls at or after the allocation date (the university's
+   fiscal-year end).
+2. Add one year.
+
+The result is the date by which the PI must submit their final report. Examples:
+
+- Grant accepted October 20, 2025 → next June 30 is June 30, 2026 → report date is
+  June 30, 2027.
+- Grant accepted June 23, 2026 → next June 30 is June 30, 2026 → report date is
+  June 30, 2027.
+
+### 8f. Send to Accounting
+
+A **Send to Accounting** button exports a spreadsheet the chair downloads and emails to
+the accounting office. The accounting office performs the actual disbursement; the app
+does not move money. Current spreadsheet columns per row (one row per grant):
+
+- Grant title
+- Principal investigator name
+- Amount requested from ARCC
+
+The allocated amount column is planned for a future iteration. Spreadsheet generation
+must use free tooling only.
 
 ---
 
@@ -214,10 +278,17 @@ department can also change its name, move it to a different college, or change i
 
 ## 10. Dashboard
 
-A user's grants appear on their dashboard. Draft grants can be edited; submitted grants
-are locked with no edit option. Each grant shows its current status (see below), so the
-proposer can see where it sits, for example chasing a department chair who has not yet
-approved.
+A user's grants appear on their dashboard organized into sections:
+
+- **Approved grants** — grants that received an allocated amount after Finish Allocation.
+- **Rejected grants** — grants that were below the cutoff or received no money after
+  allocation. Shown so the proposer has a record of past rejections.
+- **Active / pending grants** — drafts and submitted grants still in review or awaiting
+  approval.
+
+Draft grants can be edited; submitted grants are locked with no edit option. Each grant
+shows its current status (see below) so the proposer can see where it sits, for example
+chasing a department chair who has not yet approved.
 
 ---
 
@@ -236,10 +307,12 @@ A grant moves through these states:
 - When the department chair approves, it becomes **Department Chair Approved** while
   still under committee review. A dean approval (when college funds are requested)
   tracks the same way.
-- Once the committee finishes allocation and approves, it becomes **Grant Approved**.
+- Once Finish Allocation runs, the grant reaches a terminal state:
+  - **Accepted** if it received any allocated amount (even $1).
+  - **Rejected** if it fell below the cutoff or received $0.
 
-The proposer sees these statuses (including approved / rejected / pending) on their
-dashboard.
+The proposer sees all current statuses on their dashboard, organized into the approved,
+rejected, and active sections described in section 10.
 
 ---
 
@@ -287,8 +360,10 @@ Where the current build differs from the expectations above.
   composite states ("Under Committee Review", "Department Chair Approved", "Grant
   Approved"); the dashboard shows a coarse badge rather than the full multi-status view,
   and the allocation-driven final "Grant Approved" does not exist yet.
-- **Allocation** — The allocation page exists but is UI only: it shows placeholder data,
-  the cycle inputs (amount available, leftover, cutoff percentage) and the award math are
-  not wired to real grants, and Send to Accounting does not yet export a spreadsheet.
+- **Allocation** — The allocation page exists but is UI only: it shows placeholder data
+  rather than real grant ratings. The cycle inputs (amount available, leftover, cutoff
+  percentage) are not editable by the user. The two-table cutoff split, dynamic tier
+  criteria, allocated amount column, Finish Allocation action, report due date
+  calculation, and Send to Accounting spreadsheet export are all not yet implemented.
 - **College & department admin** — Tabs and editing are partial; delete is missing, and
   the department-chair selection UI is incomplete (the field exists but is not exposed).
