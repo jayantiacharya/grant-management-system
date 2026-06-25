@@ -99,8 +99,6 @@ for the later `<GrantForm>` work. Effort: M.
 
 ### 7. Smaller cleanup
 
-- `CriteriaManagement.tsx` has a 241-line inline `styles` object → move to a CSS file.
-  Cold, SAFE. Effort: S–M.
 - `DeptReview.tsx` default export is named `Review` (copy-paste leftover; imported as
   `DepartmentReview` in `App.tsx`). Now merged and cold, SAFE. Effort: S.
 - Status/format helpers duplicated across `Review.tsx` (`formatReviewCount`) and
@@ -110,6 +108,21 @@ for the later `<GrantForm>` work. Effort: M.
 - Test gaps: 8 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
   has zero tests. `grantValidation.ts`, `college.ts`, `department.ts` are cold → write
   those tests now. Effort: M.
+
+### 8. Styling: migrate to CSS Modules
+
+The client styles three different ways: seven global stylesheets (`Dashboard.css` is the
+large shared one imported across most pages, plus `App.css`, `index.css`, `Auth.css`,
+`Review.css`, `ArccCommittee.css`, `AllocationPage.css`), inline `style={{...}}` objects
+scattered across eight components (`CriteriaForm`, `DashHeader`, `AdminDashboard`,
+`Dashboard`, `EditGrant`, `NewGrant`, `Register`, `CriteriaManagement`), plus a large
+inline `styles` object in `CriteriaManagement.tsx`. Global class names are not scoped, so
+they leak across pages.
+
+Adopt CSS Modules (`*.module.css`, scoped class names) as the single styling approach:
+convert the global stylesheets to per-component modules and fold the inline style objects
+into their component's module. Vite supports CSS Modules out of the box. Effort: L
+(touches most pages); migrate incrementally, one page/stylesheet at a time.
 
 ---
 
@@ -126,6 +139,6 @@ Rough sequencing by payoff:
 5. **#4 server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
    `requireDeptChair`) across all routes.
 6. **#5** shared `GRANT_STATUS` / status-enum module.
-7. **#7** CriteriaManagement CSS extraction, build-script fix, server eslint config, the
-   `DeptReview` export rename, and tests for `grantValidation.ts` / `college.ts` /
-   `department.ts`.
+7. **#7** build-script fix, server eslint config, the `DeptReview` export rename, and
+   tests for `grantValidation.ts` / `college.ts` / `department.ts`.
+8. **#8 CSS Modules migration** — incremental, per page; no functional risk.
