@@ -39,8 +39,6 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
 
     const collegeId = college._id.toString();
 
-    console.log(`Fetching grants for college: ${college.name} (${collegeId})`);
-
     const allGrants = await db
       .collection("grant")
       .find({ collegeReviewStatus: { $ne: "N/A" } })

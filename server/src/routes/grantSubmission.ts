@@ -659,7 +659,7 @@ router.put(
       budgetItems: parsedBudgetItems,
       collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
         ? GRANT_APPROVAL_STATUS.PENDING
-        : null,
+        : "N/A",
       status: normalizedStatus,
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||

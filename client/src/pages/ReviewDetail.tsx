@@ -407,7 +407,9 @@ export default function ReviewDetail() {
               <button
                 type="button"
                 className="review-btn review-btn-primary"
-                disabled={loading || grant.reviewStatus === "approved"}
+                disabled={
+                  loading || grant.departmentReviewStatus === "approved"
+                }
                 onClick={() => updateStatus("approved")}
               >
                 Approve
@@ -415,7 +417,7 @@ export default function ReviewDetail() {
               <button
                 type="button"
                 className="review-btn review-btn-primary"
-                disabled={loading || grant.reviewStatus === "denied"}
+                disabled={loading || grant.departmentReviewStatus === "denied"}
                 onClick={() => updateStatus("denied")}
               >
                 Deny
