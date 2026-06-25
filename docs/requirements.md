@@ -170,7 +170,10 @@ rejects each grant. The chair sees only grants from their own department.
 The college dean must also approve, but only when the budget requests more than $0 from
 a college. The grant is routed to the dean of each college money is requested from; if
 no college funds are requested, no dean approval is needed. The college-grants view
-mirrors the review list, and the dean approves or rejects.
+(`/college-grants`) mirrors the review list, and the dean approves or rejects grants
+scoped to their own college. On login the system detects dean status and automatically
+redirects the dean to this view; the grant submission form is not available to dean
+accounts.
 
 Money is released only after the required approvals are in.
 
@@ -355,15 +358,18 @@ Where the current build differs from the expectations above.
   reviewer all work. The 0-to-100 rating is only computed client-side for display, not
   stored, and there is no cross-reviewer consolidated/normalized grant-level rating for
   allocation to key off.
-- **Grant status** — The underlying tracks exist (`reviews[]`, `reviewStatus`,
-  `collegeReviewStatus`) and run concurrently, but they are not surfaced as the named
-  composite states ("Under Committee Review", "Department Chair Approved", "Grant
-  Approved"); the dashboard shows a coarse badge rather than the full multi-status view,
-  and the allocation-driven final "Grant Approved" does not exist yet.
+- **Grant status** — The dashboard now shows department-chair and college review status
+  per grant (PR #35), but the full named composite states ("Under Committee Review",
+  "Department Chair Approved", "Grant Approved") are not yet surfaced as discrete
+  labeled badges. The allocation-driven terminal states (Accepted / Rejected) do not
+  exist yet.
 - **Allocation** — The allocation page exists but is UI only: it shows placeholder data
   rather than real grant ratings. The cycle inputs (amount available, leftover, cutoff
   percentage) are not editable by the user. The two-table cutoff split, dynamic tier
   criteria, allocated amount column, Finish Allocation action, report due date
   calculation, and Send to Accounting spreadsheet export are all not yet implemented.
-- **College & department admin** — Tabs and editing are partial; delete is missing, and
-  the department-chair selection UI is incomplete (the field exists but is not exposed).
+- **College & department admin** — The college dean approval workflow is fully
+  implemented: dean detection on login, auto-redirect to `/college-grants`, and
+  approve/reject with college-scoped filtering (PR #29). Remaining gaps: delete is
+  missing from both tabs, and the department-chair field is not exposed in the admin
+  department UI (the field exists in the data model but has no write route).
