@@ -6,6 +6,7 @@ export type GrantFormData = {
   title: string;
   description: string;
   projectDirectorId: string;
+  accountNumber: string;
   studentsImpacted: string;
   affectsMultipleDepartments: YesNo;
   departmentCount: string;
@@ -14,6 +15,11 @@ export type GrantFormData = {
   timeline: string;
   hasMatchingFunds: boolean;
   matchingFundsTotal: string;
+  acknowledgement1: boolean;
+  acknowledgement2: boolean;
+  acknowledgement3: boolean;
+  acknowledgement4: boolean;
+  signature: string;
 };
 
 export type BudgetItem = {
@@ -45,6 +51,7 @@ const emptyFormData: GrantFormData = {
   title: "",
   description: "",
   projectDirectorId: "",
+  accountNumber: "",
   studentsImpacted: "",
   affectsMultipleDepartments: "",
   departmentCount: "",
@@ -53,6 +60,11 @@ const emptyFormData: GrantFormData = {
   timeline: "",
   hasMatchingFunds: false,
   matchingFundsTotal: "",
+  acknowledgement1: false,
+  acknowledgement2: false,
+  acknowledgement3: false,
+  acknowledgement4: false,
+  signature: "",
 };
 
 export const emptyBudgetItem: BudgetItem = {
@@ -80,9 +92,10 @@ function readStoredJson<T>(key: string, fallback: T): T {
 }
 
 export function GrantProvider({ children }: { children: ReactNode }) {
-  const [formData, setFormDataState] = useState<GrantFormData>(() =>
-    readStoredJson("grantFormData", emptyFormData),
-  );
+  const [formData, setFormDataState] = useState<GrantFormData>(() => ({
+    ...emptyFormData,
+    ...readStoredJson<Partial<GrantFormData>>("grantFormData", {}),
+  }));
 
   const [budgetItems, setBudgetItemsState] = useState<BudgetItem[]>(() =>
     readStoredJson("budgetItems", [{ ...emptyBudgetItem }]),
