@@ -1,0 +1,135 @@
+.allocation-page {
+  min-height: 100vh;
+  padding: 2rem;
+  background: #f5f7fb;
+}
+
+.allocation-card {
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.allocation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.allocation-card h1 {
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+}
+
+.allocation-subtitle {
+  margin: 0;
+  color: #6b7280;
+}
+
+.chair-only-badge {
+  white-space: nowrap;
+  padding: 0.45rem 0.75rem;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.allocation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-box {
+  padding: 1.25rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.summary-box span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.summary-box strong {
+  color: #111827;
+  font-size: 1.4rem;
+}
+
+.allocation-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.allocation-table th,
+.allocation-table td {
+  padding: 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.allocation-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.allocation-actions {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.send-accounting-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  background: #111827;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.send-accounting-btn:hover {
+  background: #374151;
+}
+
+.export-note {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .allocation-header,
+  .allocation-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .allocation-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .chair-only-badge {
+    width: fit-content;
+  }
+
+  .allocation-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

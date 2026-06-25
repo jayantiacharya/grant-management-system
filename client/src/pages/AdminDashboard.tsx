@@ -45,14 +45,25 @@ export default function AdminDashboard() {
           <p>Weber State University — Grant Management System</p>
         </div>
 
-        {/* Admin Quick Actions */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
-          <button
-            onClick={() => navigate("/admin/criteria")}
-            className="submit-btn"
-          >
-            📋 Manage Review Criteria
-          </button>
+        {/* Navigation links */}
+        <div
+          className="dash-grid"
+          style={{ display: "flex", flexDirection: "column" }}
+        >
+          <nav className="admin-nav">
+            <Link to="/admin/arcc" className="submit-btn">
+              ARCC Committee
+            </Link>
+            <Link to="/admin/criteria" className="submit-btn">
+              Manage Review Criteria
+            </Link>
+            <Link to="/admin/college" className="submit-btn">
+              College Management
+            </Link>
+            <Link to="/admin/department" className="submit-btn">
+              Department Management
+            </Link>
+          </nav>
         </div>
 
         {/* Grant Applications */}
@@ -75,21 +86,6 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
-
-        {/* Navigation links to dedicated pages */}
-        <div className="dash-grid">
-          <nav className="admin-nav">
-            <Link to="/admin/college" className="submit-btn">
-              College Management
-            </Link>
-            <Link to="/admin/department" className="submit-btn">
-              Department Management
-            </Link>
-            <Link to="/admin/arcc" className="submit-btn">
-              ARCC Committee
-            </Link>
-          </nav>
-        </div>
       </main>
     </div>
   );
