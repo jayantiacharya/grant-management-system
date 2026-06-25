@@ -66,7 +66,9 @@ Two contexts back these pages, both persisted to `localStorage`: `AuthContext` h
 session (`user`, `token`, and the `isDean` flag resolved at login; `isArcc` is populated
 from a per-page fetch), and
 `GrantContext` holds the shared grant draft and budget items across `NewGrant`,
-`EditGrant`, and `BudgetWorksheet`. Page-to-page navigation is in [Navigation](#navigation).
+`EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, optional back
+link, profile, sign out) renders on every page, and `CriteriaForm` backs criteria
+management. Page-to-page navigation is in [Navigation](#navigation).
 
 ## Server and data map
 
@@ -114,7 +116,8 @@ What each route group handles:
 
 - **`/api/auth`** — register, login, get / update user.
 - **`/api/grants`** — submit, edit, get-grant, user-grants, all (admin), and `review*`.
-- **`/api/admin`** — colleges, departments, arcc, user-options, checkDeptChair.
+- **`/api/admin`** — list colleges / departments / users / user-options; create and
+  update colleges and departments; read and update the ARCC committee; checkDeptChair.
 - **`/api/criteria`** — CRUD (writes admin-only).
 - **`/api/college-grants`** — dean list / get / approve-reject.
 
@@ -254,9 +257,10 @@ Role detection is mixed: `isDean` is resolved at login and kept in `AuthContext`
 
 - **Admin all-grants list** — the "Grant Applications" rows are plain text with no
   click-through to a read-only `/review/:id`.
-- **No shared role-aware header** — navigation is per page rather than from one
-  `DashHeader`. ARCC and dept-chair entries are buttons on Dashboard / Review (dept-chair
-  gated by a per-page `checkDeptChair` fetch), and the dean reaches `/college-grants`
+- **Header is not role-aware** — `DashHeader` renders on every page (brand/home, back,
+  profile, sign out) but surfaces no role-specific navigation. ARCC and dept-chair entries
+  are buttons on Dashboard / Review (dept-chair gated by a per-page `checkDeptChair`
+  fetch), and the dean reaches `/college-grants`
   through a post-login redirect with no persistent nav link back. `isDean` is resolved at
   login and `isArcc` is page-fetched into `AuthContext`, so a single header could resolve
   all three role flags in one place.

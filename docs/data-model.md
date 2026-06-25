@@ -106,11 +106,14 @@ _[Open in mermaid.live](https://mermaid.live/edit#pako:eNqtVlGP2zYM_iuEnlLs7vaeP
   criterion `_id` to the picked rating. One entry per reviewer (upserted on re-submit).
   The 0-to-100 rating is computed client-side for display, not stored on the entry.
 - **Department chair approval** — `Department.chair` holds a user's email; the chair of
-  the submitter's department approves/denies via `Grant.reviewStatus`.
+  the submitter's department approves/denies via `Grant.reviewStatus`. No route writes
+  `Department.chair`; it is a read-only gating field, set out-of-band (the admin
+  create/edit pages send it but the `/api/admin` handlers do not persist it yet).
 - **College dean review** — `College.dean` holds a user's email. A dean reviews a grant
   only when a budget item references that college (`budgetItems[].collegeId`) with a
   positive college amount; the outcome lives in `Grant.collegeReviewStatus` (plus
-  `collegeReviewedBy` / `collegeReviewedAt`).
+  `collegeReviewedBy` / `collegeReviewedAt`). Like `Department.chair`, `College.dean` is
+  read-only with no write route; it is set out-of-band.
 
 ## Sources
 
