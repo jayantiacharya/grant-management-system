@@ -6,8 +6,8 @@ import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import "./Review.css";
 
-function formatStatus(status?: string) {
-  const value = status ?? "pending";
+function formatStatus(departmentReviewStatus?: string) {
+  const value = departmentReviewStatus ?? "pending";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -75,7 +75,7 @@ export default function Review() {
                       : ""}
                   </span>
                   <div className="review-row-actions">
-                    <span>{formatStatus(grant.reviewStatus)}</span>
+                    <span>{formatStatus(grant.departmentReviewStatus)}</span>
                     <button
                       type="button"
                       className="review-btn review-btn-secondary"

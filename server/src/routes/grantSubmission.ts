@@ -7,8 +7,9 @@ import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
 import {
   GRANT_STATUS,
-  validateAcknowledgements,
+  GRANT_APPROVAL_STATUS,
   validateGrantPayload,
+  validateAcknowledgements,
 } from "./grantValidation.js";
 
 const router = Router();
@@ -55,6 +56,13 @@ async function isDeptChair(userEmail: string): Promise<boolean> {
     .collection("department")
     .findOne({ chair: userEmail });
   return !!department;
+}
+
+function hasCollegeFundingRequest(budgetItems: unknown[]): boolean {
+  return budgetItems.some((item: any) => {
+    const amount = parseFloat(item?.amountFromCollege) || 0;
+    return amount > 0;
+  });
 }
 
 async function isArccMember(userId: string): Promise<boolean> {
@@ -190,6 +198,8 @@ router.post(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const newGrant = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
@@ -205,11 +215,15 @@ router.post(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
+      departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : "N/A",
       reviewStatus: isDraft ? null : "pending",
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -511,15 +525,18 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     const { userId } = req.user!;
     const { id } = req.params;
-    const { reviewStatus } = req.body;
+    const { departmentReviewStatus } = req.body;
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid grant id" });
     }
 
-    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
+    if (
+      departmentReviewStatus !== "approved" &&
+      departmentReviewStatus !== "denied"
+    ) {
       return res.status(400).json({
-        message: "reviewStatus must be approved or denied",
+        message: "departmentReviewStatus must be approved or denied",
       });
     }
 
@@ -534,16 +551,19 @@ router.put(
       const db_connect = dbo.getDb();
       const result = await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { departmentReviewStatus } },
+        );
       if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      return res.json({ reviewStatus });
+      return res.json({ departmentReviewStatus });
     } catch (err) {
-      console.error("Failed to update review status:", err);
+      console.error("Failed to update departmentreview status:", err);
       return res
         .status(500)
-        .json({ message: "Failed to update review status" });
+        .json({ message: "Failed to update department review status" });
     }
   },
 );
@@ -671,6 +691,8 @@ router.put(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const update: Record<string, any> = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
@@ -685,7 +707,10 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : "N/A",
       status: normalizedStatus,
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||

@@ -167,18 +167,22 @@ export default function ReviewDetail() {
       setMessage("Failed to download file.");
     }
   };
-  const updateStatus = async (reviewStatus: "approved" | "denied") => {
+  const updateStatus = async (
+    departmentReviewStatus: "approved" | "denied",
+  ) => {
     if (!grantId) return;
     setLoading(true);
     setMessage("");
     try {
       await axios.put(
         `http://localhost:5000/api/grants/review/approval/${grantId}`,
-        { reviewStatus },
+        { departmentReviewStatus },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setGrant((prev: any) => (prev ? { ...prev, reviewStatus } : prev));
-      setMessage(`Grant ${reviewStatus}.`);
+      setGrant((prev: any) =>
+        prev ? { ...prev, departmentReviewStatus } : prev,
+      );
+      setMessage(`Grant ${departmentReviewStatus}.`);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message ?? "Failed to update status.");
@@ -406,7 +410,9 @@ export default function ReviewDetail() {
               <button
                 type="button"
                 className="review-btn review-btn-primary"
-                disabled={loading || grant.reviewStatus === "approved"}
+                disabled={
+                  loading || grant.departmentReviewStatus === "approved"
+                }
                 onClick={() => updateStatus("approved")}
               >
                 Approve
@@ -414,7 +420,7 @@ export default function ReviewDetail() {
               <button
                 type="button"
                 className="review-btn review-btn-primary"
-                disabled={loading || grant.reviewStatus === "denied"}
+                disabled={loading || grant.departmentReviewStatus === "denied"}
                 onClick={() => updateStatus("denied")}
               >
                 Deny

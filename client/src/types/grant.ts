@@ -6,5 +6,12 @@ export const GRANT_STATUS = {
   DRAFT: "draft",
   SUBMITTED: "submitted",
 } as const;
+export const GRANT_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  DENIED: "denied",
+} as const;
 
 export type GrantStatus = (typeof GRANT_STATUS)[keyof typeof GRANT_STATUS];
+export type GrantApprovalStatus =
+  (typeof GRANT_APPROVAL_STATUS)[keyof typeof GRANT_APPROVAL_STATUS];
