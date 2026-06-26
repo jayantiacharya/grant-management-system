@@ -5,19 +5,7 @@ estimate (S/M/L). Current as of June 2026.
 
 ## Findings (ranked)
 
-### 1. NewGrant / EditGrant duplication ✓ DONE
-
-Extracted `src/components/GrantForm/GrantForm.tsx` (mode: `'new' | 'edit'`). `NewGrant`
-and `EditGrant` are now thin wrappers (~5 lines each). `UserOption` moved to
-`src/types/grant.ts`. Validation drift (file-required check, `handleChange` functional
-update) fixed in the unified component.
-
-Remaining sub-items not tackled (lower payoff, can be done later):
-- `GrantFormErrors` / `MAX_FILES` still local to `GrantForm.tsx` (not in `constants.ts`)
-- `useUserOptions` hook not extracted (only one call site now)
-- `useGrantSubmit` hook not extracted (logic is clear inside `GrantForm`)
-
-### 2. API base URL hardcoded ~56 times
+### 1. API base URL hardcoded ~56 times
 
 `http://localhost:5000` is pasted into every page and test; the `Authorization: Bearer`
 header is re-typed at every call site. No env var, no Vite proxy.
@@ -25,11 +13,11 @@ header is re-typed at every call site. No env var, no Vite proxy.
 - Create one `client/src/api/client.ts` axios instance: `baseURL` from `VITE_API_URL`,
   a request interceptor that injects the token. New file, additive.
 - Migrate every call site, including the review pages (`Review`, `ReviewDetail`,
-  `DeptReview`, `CollegeGrants`) and `NewGrant` / `EditGrant`.
+  `DeptReview`, `CollegeGrants`) and `GrantForm`.
 
 Effort: M. High leverage; kills ~56 URL strings and every manual auth header.
 
-### 3. Server boilerplate
+### 2. Server boilerplate
 
 - try/catch + `res.status(500)` repeated ~24x → an `asyncHandler` wrapper / error
   middleware.
@@ -42,7 +30,7 @@ Effort: M. High leverage; kills ~56 URL strings and every manual auth header.
 The middleware/helpers are new files (additive); apply them across `grantSubmission.ts`,
 `admin.ts`, and `collegeGrants.ts`. Effort: M.
 
-### 4. Types / shared model
+### 3. Types / shared model
 
 - `GRANT_STATUS` defined twice (`client/src/types/grant.ts` +
   `server/.../grantValidation.ts`), a drift risk; extract a shared status module and
@@ -54,14 +42,13 @@ The middleware/helpers are new files (additive); apply them across `grantSubmiss
 
 Effort: M.
 
-### 5. Form-page duplication
+### 4. Form-page duplication
 
 Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setForm]` +
 `handleChange` spread + try/catch/finally + error display. Extract a
-`useForm(initial, onSubmit)` hook. Doubles as a clean template for the `<GrantForm>` work
-(item 1). Effort: M.
+`useForm(initial, onSubmit)` hook. Effort: M.
 
-### 6. Smaller cleanup
+### 5. Smaller cleanup
 
 - `DeptReview.tsx` default export is named `Review` (copy-paste leftover; imported as
   `DepartmentReview` in `App.tsx`). Effort: S.
@@ -71,13 +58,12 @@ Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setF
 - Test gaps: 8 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
   has zero tests. Effort: M.
 
-### 7. Styling: migrate to CSS Modules
+### 6. Styling: migrate to CSS Modules
 
 The client styles three different ways: seven global stylesheets (`Dashboard.css` is the
 large shared one imported across most pages, plus `App.css`, `index.css`, `Auth.css`,
 `Review.css`, `ArccCommittee.css`, `AllocationPage.css`), inline `style={{...}}` objects
-scattered across eight components (`CriteriaForm`, `DashHeader`, `AdminDashboard`,
-`Dashboard`, `EditGrant`, `NewGrant`, `Register`, `CriteriaManagement`), plus a large
+in `CriteriaForm`, `DashHeader`, `AdminDashboard`, `Dashboard`, `Register`, and a large
 inline `styles` object in `CriteriaManagement.tsx`. Global class names are not scoped, so
 they leak across pages.
 
@@ -92,13 +78,11 @@ into their component's module. Vite supports CSS Modules out of the box. Effort:
 
 Rough sequencing by payoff:
 
-1. **Item 5, `useForm` hook** across the five form pages — sets the pattern for
-   `<GrantForm>`.
-2. ~~**Item 1, GrantForm extraction**~~ — done.
-3. **Item 2, axios client** (`api/client.ts`) applied to every call site.
-4. **Item 3, server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
+1. **Item 4, `useForm` hook** across the five form pages.
+2. **Item 1, axios client** (`api/client.ts`) applied to every call site.
+3. **Item 2, server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
    `requireDeptChair`) across all routes.
-5. **Item 4**, shared `GRANT_STATUS` / status-enum module.
-6. **Item 6**, build-script fix, server eslint config, the `DeptReview` export rename, and
+4. **Item 3**, shared `GRANT_STATUS` / status-enum module.
+5. **Item 5**, build-script fix, server eslint config, the `DeptReview` export rename, and
    tests for `grantValidation.ts` / `college.ts` / `department.ts`.
-7. **Item 7, CSS Modules migration** — incremental, per page; no functional risk.
+6. **Item 6, CSS Modules migration** — incremental, per page; no functional risk.
