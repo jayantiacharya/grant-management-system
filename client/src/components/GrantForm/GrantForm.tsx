@@ -101,6 +101,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     };
 
     fetchGrant();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, grantId, mode]);
 
   // load user options for project director select
@@ -531,7 +532,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                     type="file"
                     id="irbApprovalFile"
                     name="irbApprovalFile"
-                    required
+                    required={mode === "new"}
                   />
                   {errors.irbApprovalFile && (
                     <span className="field-error">
