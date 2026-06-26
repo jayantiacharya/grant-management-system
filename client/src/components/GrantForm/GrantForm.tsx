@@ -101,6 +101,8 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     };
 
     fetchGrant();
+    // beginEditingGrant and user are intentionally excluded: both are stable
+    // context values that should not retrigger a fetch on re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, grantId, mode]);
 

@@ -5,23 +5,17 @@ estimate (S/M/L). Current as of June 2026.
 
 ## Findings (ranked)
 
-### 1. NewGrant / EditGrant duplication
+### 1. NewGrant / EditGrant duplication ✓ DONE
 
-Both form pages are large and share a big block of identical form JSX plus duplicated
-logic.
+Extracted `src/components/GrantForm/GrantForm.tsx` (mode: `'new' | 'edit'`). `NewGrant`
+and `EditGrant` are now thin wrappers (~5 lines each). `UserOption` moved to
+`src/types/grant.ts`. Validation drift (file-required check, `handleChange` functional
+update) fixed in the unified component.
 
-- Same field JSX (title, director, subjects, files, budget) in both → extract a
-  presentational `<GrantForm>`.
-- Copy-pasted types/consts: `UserOption`, `GrantFormErrors`, `MAX_FILES=3` → move to
-  `types/grant.ts` + a `constants.ts`.
-- Same "fetch user-options" effect in both → `useUserOptions(token)` hook.
-- Same submit flow (multipart-vs-JSON, validate, navigate) → `useGrantSubmit(grantId?)`.
-- Bug-risk divergences to fix while unifying: the two forms have drifted on validation
-  (e.g. the file-required-when-`usesSubjects=yes` check) and on whether `handleChange`
-  uses a functional update or a raw spread. Reconcile these while extracting the shared
-  form.
-
-Effort: L. Highest payoff.
+Remaining sub-items not tackled (lower payoff, can be done later):
+- `GrantFormErrors` / `MAX_FILES` still local to `GrantForm.tsx` (not in `constants.ts`)
+- `useUserOptions` hook not extracted (only one call site now)
+- `useGrantSubmit` hook not extracted (logic is clear inside `GrantForm`)
 
 ### 2. API base URL hardcoded ~56 times
 
@@ -100,7 +94,7 @@ Rough sequencing by payoff:
 
 1. **Item 5, `useForm` hook** across the five form pages — sets the pattern for
    `<GrantForm>`.
-2. **Item 1, GrantForm extraction** from NewGrant / EditGrant — highest-leverage DRY win.
+2. ~~**Item 1, GrantForm extraction**~~ — done.
 3. **Item 2, axios client** (`api/client.ts`) applied to every call site.
 4. **Item 3, server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
    `requireDeptChair`) across all routes.
