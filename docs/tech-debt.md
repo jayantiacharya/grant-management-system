@@ -35,37 +35,20 @@ header is re-typed at every call site. No env var, no Vite proxy.
 
 Effort: M. High leverage; kills ~56 URL strings and every manual auth header.
 
-### 3. Unauthenticated admin endpoints
-
-Most `/api/admin/*` routes have no `verifyToken`:
-
-- `GET /users` returns all users incl. PII (email, birthday, dept).
-- `POST /updateArcc` lets anyone unauthenticated rewrite ARCC committee membership
-  (privilege escalation).
-- `GET /arcc`, `createCollege`, `updateCollege`, `createDepartment`, `updateDepartment`
-  are all open.
-
-A real functional hole, not a hardening nit. The client even calls `/arcc` with no token
-(`Dashboard.tsx:31`). Fix: add `verifyToken` + an admin check. The `checkDeptChair`
-endpoint does use `verifyToken`; the older `/users`, `/updateArcc`, `/arcc`, college and
-department routes do not.
-
-Effort: M.
-
-### 4. Server boilerplate
+### 3. Server boilerplate
 
 - try/catch + `res.status(500)` repeated ~24x → an `asyncHandler` wrapper / error
   middleware.
 - Inline auth checks (`isArccMember` x4, `role !== "admin"` x3, a local `requireAdmin`
-  in `criteria.ts`, plus `isDeptChair`) → real `requireAdmin` / `requireArcc` /
-  `requireDeptChair` middleware.
+  duplicated in both `criteria.ts` and `admin.ts`, plus `isDeptChair`) → real
+  `requireAdmin` / `requireArcc` / `requireDeptChair` middleware.
 - Collection-name string literals (`"grant"` x10, `"user"`, `"arcc"`, ...) and
   `ObjectId.isValid` x9 scattered → constants + a `validateId` middleware.
 
 The middleware/helpers are new files (additive); apply them across `grantSubmission.ts`,
 `admin.ts`, and `collegeGrants.ts`. Effort: M.
 
-### 5. Types / shared model
+### 4. Types / shared model
 
 - `GRANT_STATUS` defined twice (`client/src/types/grant.ts` +
   `server/.../grantValidation.ts`), a drift risk; extract a shared status module and
@@ -77,14 +60,14 @@ The middleware/helpers are new files (additive); apply them across `grantSubmiss
 
 Effort: M.
 
-### 6. Form-page duplication
+### 5. Form-page duplication
 
 Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setForm]` +
 `handleChange` spread + try/catch/finally + error display. Extract a
 `useForm(initial, onSubmit)` hook. Doubles as a clean template for the `<GrantForm>` work
 (item 1). Effort: M.
 
-### 7. Smaller cleanup
+### 6. Smaller cleanup
 
 - `DeptReview.tsx` default export is named `Review` (copy-paste leftover; imported as
   `DepartmentReview` in `App.tsx`). Effort: S.
@@ -94,7 +77,7 @@ Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setF
 - Test gaps: 8 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
   has zero tests. Effort: M.
 
-### 8. Styling: migrate to CSS Modules
+### 7. Styling: migrate to CSS Modules
 
 The client styles three different ways: seven global stylesheets (`Dashboard.css` is the
 large shared one imported across most pages, plus `App.css`, `index.css`, `Auth.css`,
@@ -115,14 +98,13 @@ into their component's module. Vite supports CSS Modules out of the box. Effort:
 
 Rough sequencing by payoff:
 
-1. **Item 3, admin-endpoint auth** — the one real functional/security hole; do it first.
-2. **Item 6, `useForm` hook** across the five form pages — sets the pattern for
+1. **Item 5, `useForm` hook** across the five form pages — sets the pattern for
    `<GrantForm>`.
-3. **Item 1, GrantForm extraction** from NewGrant / EditGrant — highest-leverage DRY win.
-4. **Item 2, axios client** (`api/client.ts`) applied to every call site.
-5. **Item 4, server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
+2. **Item 1, GrantForm extraction** from NewGrant / EditGrant — highest-leverage DRY win.
+3. **Item 2, axios client** (`api/client.ts`) applied to every call site.
+4. **Item 3, server middleware** (`asyncHandler`, `requireAdmin`, `requireArcc`,
    `requireDeptChair`) across all routes.
-6. **Item 5**, shared `GRANT_STATUS` / status-enum module.
-7. **Item 7**, build-script fix, server eslint config, the `DeptReview` export rename, and
+5. **Item 4**, shared `GRANT_STATUS` / status-enum module.
+6. **Item 6**, build-script fix, server eslint config, the `DeptReview` export rename, and
    tests for `grantValidation.ts` / `college.ts` / `department.ts`.
-8. **Item 8, CSS Modules migration** — incremental, per page; no functional risk.
+7. **Item 7, CSS Modules migration** — incremental, per page; no functional risk.

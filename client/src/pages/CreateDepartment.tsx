@@ -7,8 +7,10 @@ import "./Dashboard.css";
 import "./ArccCommittee.css";
 
 export default function CreateDepartment() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
+
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
   const [colleges, setColleges] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -34,7 +36,10 @@ export default function CreateDepartment() {
   };
 
   const fetchUsers = async () => {
-    const { data } = await axios.get("http://localhost:5000/api/admin/users");
+    const { data } = await axios.get(
+      "http://localhost:5000/api/admin/users",
+      authHeader,
+    );
     setUsers(data);
   };
 
@@ -54,19 +59,27 @@ export default function CreateDepartment() {
 
     try {
       if (editingId) {
-        await axios.post("http://localhost:5000/api/admin/updateDepartment", {
-          id: editingId,
-          name: departmentName,
-          college: selectedCollege,
-          chair: selectedChair,
-        });
+        await axios.post(
+          "http://localhost:5000/api/admin/updateDepartment",
+          {
+            id: editingId,
+            name: departmentName,
+            college: selectedCollege,
+            chair: selectedChair,
+          },
+          authHeader,
+        );
         setMessage("Department updated successfully.");
       } else {
-        await axios.post("http://localhost:5000/api/admin/createDepartment", {
-          name: departmentName,
-          college: selectedCollege,
-          chair: selectedChair,
-        });
+        await axios.post(
+          "http://localhost:5000/api/admin/createDepartment",
+          {
+            name: departmentName,
+            college: selectedCollege,
+            chair: selectedChair,
+          },
+          authHeader,
+        );
         setMessage("Department created successfully.");
       }
 

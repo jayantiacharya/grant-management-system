@@ -28,7 +28,9 @@ export default function Dashboard() {
 
   const checkArccMembership = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/admin/arcc");
+      const { data } = await axios.get("http://localhost:5000/api/admin/arcc", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const isArcc = data.memberIds?.includes(user?.id) || false;
       updateUserArccStatus(isArcc);
     } catch (error) {
