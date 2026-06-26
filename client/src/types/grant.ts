@@ -8,3 +8,8 @@ export const GRANT_STATUS = {
 } as const;
 
 export type GrantStatus = (typeof GRANT_STATUS)[keyof typeof GRANT_STATUS];
+
+export type UserOption = {
+  id: string;
+  email: string;
+};
