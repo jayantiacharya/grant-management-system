@@ -39,6 +39,7 @@ export default function AdminDashboard() {
           My Grants
         </button>
       </DashHeader>
+
       <main className="dash-main">
         <div className="dash-welcome">
           <h2>Welcome back</h2>
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
         {grants.length > 0 && (
           <div className="grant-form-card" style={{ marginBottom: "2rem" }}>
             <h2>Grant Applications</h2>
+
             {grants.map((grant: any) => (
               <div
                 key={grant._id}
@@ -82,11 +84,17 @@ export default function AdminDashboard() {
             <Link to="/admin/college" className="submit-btn">
               College Management
             </Link>
+
             <Link to="/admin/department" className="submit-btn">
               Department Management
             </Link>
+
             <Link to="/admin/arcc" className="submit-btn">
               ARCC Committee
+            </Link>
+
+            <Link to="/admin/allocation" className="submit-btn">
+              Allocation Page
             </Link>
           </nav>
         </div>

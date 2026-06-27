@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./AllocationPage.css";
 
 type GrantAllocation = {
@@ -8,13 +9,16 @@ type GrantAllocation = {
   arccAmountRequested: number;
   otherSourcesAmount: number;
   reviewerScores: number[];
-  status: string;
 };
 
-const currentCycleAmount = 50000;
-const cutoffPercentage = 75;
+type AllocationRule = {
+  id: number;
+  minRating: string;
+  maxRating: string;
+  allocationPercent: string;
+};
 
-const grants: GrantAllocation[] = [
+const initialGrants: GrantAllocation[] = [
   {
     id: 1,
     grantTitle: "STEM Lab Equipment",
@@ -23,7 +27,6 @@ const grants: GrantAllocation[] = [
     arccAmountRequested: 8000,
     otherSourcesAmount: 2500,
     reviewerScores: [88, 90, 84, 92, 86],
-    status: "Eligible",
   },
   {
     id: 2,
@@ -33,30 +36,112 @@ const grants: GrantAllocation[] = [
     arccAmountRequested: 5000,
     otherSourcesAmount: 1500,
     reviewerScores: [72, 75, 70, 74, 69],
-    status: "Below Cutoff",
   },
 ];
 
 export default function AllocationPage() {
-  const totalArccRequested = grants.reduce(
-    (total, grant) => total + grant.arccAmountRequested,
-    0,
-  );
+  const [currentCycleAmount, setCurrentCycleAmount] = useState("50000");
+  const [leftoverAmount, setLeftoverAmount] = useState("37000");
+  const [cutoffPercentage, setCutoffPercentage] = useState("75");
+  const [allocationFinalized, setAllocationFinalized] = useState(false);
 
-  const leftoverAmount = currentCycleAmount - totalArccRequested;
+  const [rules, setRules] = useState<AllocationRule[]>([
+    { id: 1, minRating: "90", maxRating: "100", allocationPercent: "100" },
+    { id: 2, minRating: "80", maxRating: "89.99", allocationPercent: "75" },
+    { id: 3, minRating: "75", maxRating: "79.99", allocationPercent: "50" },
+  ]);
 
   const getAggregateFinalRating = (scores: number[]) => {
     if (scores.length === 0) return 0;
+    return scores.reduce((total, score) => total + score, 0) / scores.length;
+  };
 
-    const totalScore = scores.reduce((total, score) => total + score, 0);
-    return totalScore / scores.length;
+  const getAllocationPercent = (rating: number) => {
+    const rule = rules.find(
+      (rule) =>
+        rating >= Number(rule.minRating) && rating <= Number(rule.maxRating),
+    );
+
+    return rule ? Number(rule.allocationPercent) : 0;
+  };
+
+  const getAllocatedAmount = (grant: GrantAllocation) => {
+    const rating = getAggregateFinalRating(grant.reviewerScores);
+
+    if (rating < Number(cutoffPercentage)) return 0;
+
+    const allocationPercent = getAllocationPercent(rating);
+    return (grant.arccAmountRequested * allocationPercent) / 100;
+  };
+
+  const eligibleGrants = initialGrants.filter(
+    (grant) =>
+      getAggregateFinalRating(grant.reviewerScores) >= Number(cutoffPercentage),
+  );
+
+  const rejectedGrants = initialGrants.filter(
+    (grant) =>
+      getAggregateFinalRating(grant.reviewerScores) < Number(cutoffPercentage),
+  );
+
+  const handleRuleChange = (
+    id: number,
+    field: keyof Omit<AllocationRule, "id">,
+    value: string,
+  ) => {
+    setRules((currentRules) =>
+      currentRules.map((rule) =>
+        rule.id === id ? { ...rule, [field]: value } : rule,
+      ),
+    );
+  };
+
+  const handleAddRule = () => {
+    setRules((currentRules) => [
+      ...currentRules,
+      {
+        id: Date.now(),
+        minRating: "",
+        maxRating: "",
+        allocationPercent: "",
+      },
+    ]);
+  };
+
+  const handleRemoveRule = (id: number) => {
+    setRules((currentRules) => currentRules.filter((rule) => rule.id !== id));
   };
 
   const handleSendToAccounting = () => {
-    alert(
-      "Accounting spreadsheet export will be connected later when backend/export logic is ready.",
-    );
+    alert("Export will connect to backend once accounting endpoint is ready.");
   };
+
+  const renderGrantRows = (grants: GrantAllocation[], rejected = false) =>
+    grants.map((grant) => {
+      const aggregateFinalRating = getAggregateFinalRating(
+        grant.reviewerScores,
+      );
+      const allocatedAmount = getAllocatedAmount(grant);
+
+      return (
+        <tr key={grant.id}>
+          <td>{grant.grantTitle}</td>
+          <td>{grant.submittedBy}</td>
+          <td>{grant.principalInvestigator}</td>
+          <td>${grant.arccAmountRequested.toLocaleString()}</td>
+          <td>${grant.otherSourcesAmount.toLocaleString()}</td>
+          <td>{aggregateFinalRating.toFixed(1)}%</td>
+          <td>${allocatedAmount.toLocaleString()}</td>
+          <td>
+            {rejected
+              ? "Rejected"
+              : allocatedAmount > 0
+                ? "Accepted"
+                : "Pending"}
+          </td>
+        </tr>
+      );
+    });
 
   return (
     <div className="allocation-page">
@@ -73,67 +158,139 @@ export default function AllocationPage() {
         </div>
 
         <div className="allocation-summary">
-          <div className="summary-box">
+          <label className="summary-box">
             <span>Current Cycle Amount</span>
-            <strong>${currentCycleAmount.toLocaleString()}</strong>
-          </div>
+            <input
+              type="number"
+              value={currentCycleAmount}
+              disabled={allocationFinalized}
+              onChange={(e) => setCurrentCycleAmount(e.target.value)}
+            />
+          </label>
 
-          <div className="summary-box">
+          <label className="summary-box">
             <span>Leftover Amount</span>
-            <strong>${leftoverAmount.toLocaleString()}</strong>
-          </div>
+            <input
+              type="number"
+              value={leftoverAmount}
+              disabled={allocationFinalized}
+              onChange={(e) => setLeftoverAmount(e.target.value)}
+            />
+          </label>
 
-          <div className="summary-box">
+          <label className="summary-box">
             <span>Cutoff Percentage</span>
-            <strong>{cutoffPercentage}%</strong>
-          </div>
+            <input
+              type="number"
+              value={cutoffPercentage}
+              disabled={allocationFinalized}
+              onChange={(e) => setCutoffPercentage(e.target.value)}
+            />
+          </label>
         </div>
 
-        <table className="allocation-table">
-          <thead>
-            <tr>
-              <th>Grant Title</th>
-              <th>Submitted By</th>
-              <th>Principal Investigator</th>
-              <th>ARCC Amount Requested</th>
-              <th>Other Sources</th>
-              <th>Aggregate Final Rating</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+        <section className="criteria-card">
+          <div className="section-header">
+            <h2>Allocation Criteria</h2>
+            <button disabled={allocationFinalized} onClick={handleAddRule}>
+              Add Criteria
+            </button>
+          </div>
 
-          <tbody>
-            {grants.map((grant) => {
-              const aggregateFinalRating = getAggregateFinalRating(
-                grant.reviewerScores,
-              );
+          {rules.map((rule) => (
+            <div className="criteria-row" key={rule.id}>
+              <input
+                type="number"
+                value={rule.minRating}
+                disabled={allocationFinalized}
+                onChange={(e) =>
+                  handleRuleChange(rule.id, "minRating", e.target.value)
+                }
+                placeholder="Min Rating"
+              />
 
-              return (
-                <tr key={grant.id}>
-                  <td>{grant.grantTitle}</td>
-                  <td>{grant.submittedBy}</td>
-                  <td>{grant.principalInvestigator}</td>
-                  <td>${grant.arccAmountRequested.toLocaleString()}</td>
-                  <td>${grant.otherSourcesAmount.toLocaleString()}</td>
-                  <td>{aggregateFinalRating.toFixed(1)}%</td>
-                  <td>{grant.status}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              <input
+                type="number"
+                value={rule.maxRating}
+                disabled={allocationFinalized}
+                onChange={(e) =>
+                  handleRuleChange(rule.id, "maxRating", e.target.value)
+                }
+                placeholder="Max Rating"
+              />
+
+              <input
+                type="number"
+                value={rule.allocationPercent}
+                disabled={allocationFinalized}
+                onChange={(e) =>
+                  handleRuleChange(rule.id, "allocationPercent", e.target.value)
+                }
+                placeholder="Allocation %"
+              />
+
+              <button
+                disabled={allocationFinalized}
+                onClick={() => handleRemoveRule(rule.id)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h2>Eligible / Approved Grants</h2>
+
+          <table className="allocation-table">
+            <thead>
+              <tr>
+                <th>Grant Title</th>
+                <th>Submitted By</th>
+                <th>Principal Investigator</th>
+                <th>ARCC Requested</th>
+                <th>Other Sources</th>
+                <th>Final Rating</th>
+                <th>Allocated Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>{renderGrantRows(eligibleGrants)}</tbody>
+          </table>
+        </section>
+
+        <section className="table-section">
+          <h2>Rejected Grants</h2>
+
+          <table className="allocation-table">
+            <thead>
+              <tr>
+                <th>Grant Title</th>
+                <th>Submitted By</th>
+                <th>Principal Investigator</th>
+                <th>ARCC Requested</th>
+                <th>Other Sources</th>
+                <th>Final Rating</th>
+                <th>Allocated Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>{renderGrantRows(rejectedGrants, true)}</tbody>
+          </table>
+        </section>
 
         <div className="allocation-actions">
-          <button
-            className="send-accounting-btn"
-            onClick={handleSendToAccounting}
-          >
-            Send to Accounting
-          </button>
+          <button onClick={handleSendToAccounting}>Send to Accounting</button>
 
-          <p className="export-note">
-            Spreadsheet/export functionality will be connected later.
-          </p>
+          <button
+            className="finish-btn"
+            disabled={allocationFinalized}
+            onClick={() => setAllocationFinalized(true)}
+          >
+            {allocationFinalized ? "Allocation Finalized" : "Finish Allocation"}
+          </button>
         </div>
       </div>
     </div>
