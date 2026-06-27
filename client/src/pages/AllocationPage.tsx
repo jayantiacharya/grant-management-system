@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DashHeader from "../components/DashHeader";
 import "./AllocationPage.css";
 
 type GrantAllocation = {
@@ -144,155 +145,165 @@ export default function AllocationPage() {
     });
 
   return (
-    <div className="allocation-page">
-      <div className="allocation-card">
-        <div className="allocation-header">
-          <div>
-            <h1>Allocation Page</h1>
-            <p className="allocation-subtitle">
-              ARCC committee chair allocation overview and final funding list.
-            </p>
+    <div className="dashboard-page">
+      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+
+      <main className="allocation-page">
+        <div className="allocation-card">
+          <div className="allocation-header">
+            <div>
+              <h1>Allocation Page</h1>
+              <p className="allocation-subtitle">
+                ARCC committee chair allocation overview and final funding list.
+              </p>
+            </div>
+
+            <span className="chair-only-badge">ARCC Committee Chair Only</span>
           </div>
 
-          <span className="chair-only-badge">ARCC Committee Chair Only</span>
-        </div>
+          <div className="allocation-summary">
+            <label className="summary-box">
+              <span>Current Cycle Amount</span>
+              <input
+                type="number"
+                value={currentCycleAmount}
+                disabled={allocationFinalized}
+                onChange={(e) => setCurrentCycleAmount(e.target.value)}
+              />
+            </label>
 
-        <div className="allocation-summary">
-          <label className="summary-box">
-            <span>Current Cycle Amount</span>
-            <input
-              type="number"
-              value={currentCycleAmount}
-              disabled={allocationFinalized}
-              onChange={(e) => setCurrentCycleAmount(e.target.value)}
-            />
-          </label>
+            <label className="summary-box">
+              <span>Leftover Amount</span>
+              <input
+                type="number"
+                value={leftoverAmount}
+                disabled={allocationFinalized}
+                onChange={(e) => setLeftoverAmount(e.target.value)}
+              />
+            </label>
 
-          <label className="summary-box">
-            <span>Leftover Amount</span>
-            <input
-              type="number"
-              value={leftoverAmount}
-              disabled={allocationFinalized}
-              onChange={(e) => setLeftoverAmount(e.target.value)}
-            />
-          </label>
-
-          <label className="summary-box">
-            <span>Cutoff Percentage</span>
-            <input
-              type="number"
-              value={cutoffPercentage}
-              disabled={allocationFinalized}
-              onChange={(e) => setCutoffPercentage(e.target.value)}
-            />
-          </label>
-        </div>
-
-        <section className="criteria-card">
-          <div className="section-header">
-            <h2>Allocation Criteria</h2>
-            <button disabled={allocationFinalized} onClick={handleAddRule}>
-              Add Criteria
-            </button>
+            <label className="summary-box">
+              <span>Cutoff Percentage</span>
+              <input
+                type="number"
+                value={cutoffPercentage}
+                disabled={allocationFinalized}
+                onChange={(e) => setCutoffPercentage(e.target.value)}
+              />
+            </label>
           </div>
 
-          {rules.map((rule) => (
-            <div className="criteria-row" key={rule.id}>
-              <input
-                type="number"
-                value={rule.minRating}
-                disabled={allocationFinalized}
-                onChange={(e) =>
-                  handleRuleChange(rule.id, "minRating", e.target.value)
-                }
-                placeholder="Min Rating"
-              />
-
-              <input
-                type="number"
-                value={rule.maxRating}
-                disabled={allocationFinalized}
-                onChange={(e) =>
-                  handleRuleChange(rule.id, "maxRating", e.target.value)
-                }
-                placeholder="Max Rating"
-              />
-
-              <input
-                type="number"
-                value={rule.allocationPercent}
-                disabled={allocationFinalized}
-                onChange={(e) =>
-                  handleRuleChange(rule.id, "allocationPercent", e.target.value)
-                }
-                placeholder="Allocation %"
-              />
-
-              <button
-                disabled={allocationFinalized}
-                onClick={() => handleRemoveRule(rule.id)}
-              >
-                Remove
+          <section className="criteria-card">
+            <div className="section-header">
+              <h2>Allocation Criteria</h2>
+              <button disabled={allocationFinalized} onClick={handleAddRule}>
+                Add Criteria
               </button>
             </div>
-          ))}
-        </section>
 
-        <section>
-          <h2>Eligible / Approved Grants</h2>
+            {rules.map((rule) => (
+              <div className="criteria-row" key={rule.id}>
+                <input
+                  type="number"
+                  value={rule.minRating}
+                  disabled={allocationFinalized}
+                  onChange={(e) =>
+                    handleRuleChange(rule.id, "minRating", e.target.value)
+                  }
+                  placeholder="Min Rating"
+                />
 
-          <table className="allocation-table">
-            <thead>
-              <tr>
-                <th>Grant Title</th>
-                <th>Submitted By</th>
-                <th>Principal Investigator</th>
-                <th>ARCC Requested</th>
-                <th>Other Sources</th>
-                <th>Final Rating</th>
-                <th>Allocated Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+                <input
+                  type="number"
+                  value={rule.maxRating}
+                  disabled={allocationFinalized}
+                  onChange={(e) =>
+                    handleRuleChange(rule.id, "maxRating", e.target.value)
+                  }
+                  placeholder="Max Rating"
+                />
 
-            <tbody>{renderGrantRows(eligibleGrants)}</tbody>
-          </table>
-        </section>
+                <input
+                  type="number"
+                  value={rule.allocationPercent}
+                  disabled={allocationFinalized}
+                  onChange={(e) =>
+                    handleRuleChange(
+                      rule.id,
+                      "allocationPercent",
+                      e.target.value,
+                    )
+                  }
+                  placeholder="Allocation %"
+                />
 
-        <section className="table-section">
-          <h2>Rejected Grants</h2>
+                <button
+                  disabled={allocationFinalized}
+                  onClick={() => handleRemoveRule(rule.id)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </section>
 
-          <table className="allocation-table">
-            <thead>
-              <tr>
-                <th>Grant Title</th>
-                <th>Submitted By</th>
-                <th>Principal Investigator</th>
-                <th>ARCC Requested</th>
-                <th>Other Sources</th>
-                <th>Final Rating</th>
-                <th>Allocated Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+          <section>
+            <h2>Eligible / Approved Grants</h2>
 
-            <tbody>{renderGrantRows(rejectedGrants, true)}</tbody>
-          </table>
-        </section>
+            <table className="allocation-table">
+              <thead>
+                <tr>
+                  <th>Grant Title</th>
+                  <th>Submitted By</th>
+                  <th>Principal Investigator</th>
+                  <th>ARCC Requested</th>
+                  <th>Other Sources</th>
+                  <th>Final Rating</th>
+                  <th>Allocated Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
 
-        <div className="allocation-actions">
-          <button onClick={handleSendToAccounting}>Send to Accounting</button>
+              <tbody>{renderGrantRows(eligibleGrants)}</tbody>
+            </table>
+          </section>
 
-          <button
-            className="finish-btn"
-            disabled={allocationFinalized}
-            onClick={() => setAllocationFinalized(true)}
-          >
-            {allocationFinalized ? "Allocation Finalized" : "Finish Allocation"}
-          </button>
+          <section className="table-section">
+            <h2>Rejected Grants</h2>
+
+            <table className="allocation-table">
+              <thead>
+                <tr>
+                  <th>Grant Title</th>
+                  <th>Submitted By</th>
+                  <th>Principal Investigator</th>
+                  <th>ARCC Requested</th>
+                  <th>Other Sources</th>
+                  <th>Final Rating</th>
+                  <th>Allocated Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>{renderGrantRows(rejectedGrants, true)}</tbody>
+            </table>
+          </section>
+
+          <div className="allocation-actions">
+            <button onClick={handleSendToAccounting}>Send to Accounting</button>
+
+            <button
+              className="finish-btn"
+              disabled={allocationFinalized}
+              onClick={() => setAllocationFinalized(true)}
+            >
+              {allocationFinalized
+                ? "Allocation Finalized"
+                : "Finish Allocation"}
+            </button>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

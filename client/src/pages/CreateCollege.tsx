@@ -72,39 +72,50 @@ export default function CreateCollege() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader />
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>College Management</h2>
-          <p>Create colleges or edit existing ones</p>
-          <button
-            type="button"
-            className="edit-btn"
-            onClick={() => navigate("/admin")}
-          >
-            Back to Admin
-          </button>
-        </div>
-        <div className="grant-form-card">
-          <h2>Colleges</h2>
-          {!colleges.length ? (
-            <p>No colleges yet.</p>
-          ) : (
-            <ul className="list">
-              {colleges.map((college: any) => (
-                <li
-                  key={college.id ?? college._id ?? college.name}
-                  className="row"
-                >
-                  <span>
-                    {college.name} — {college.dean || "Not assigned"}
-                  </span>
-                  <div className="actions">
+      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+
+      <main className="management-main">
+        <section className="management-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Management</p>
+            <h1>College Management</h1>
+            <p>
+              Create colleges, assign deans, and edit existing college records.
+            </p>
+          </div>
+        </section>
+
+        {message && <p className="form-message">{message}</p>}
+
+        <section className="management-grid">
+          <div className="management-card">
+            <div className="management-card-header">
+              <span className="management-icon">🏫</span>
+              <div>
+                <h2>Colleges</h2>
+                <p>Existing colleges in the system.</p>
+              </div>
+            </div>
+
+            {!colleges.length ? (
+              <p className="empty-message">No colleges yet.</p>
+            ) : (
+              <ul className="management-list">
+                {colleges.map((college: any) => (
+                  <li
+                    key={college.id ?? college._id ?? college.name}
+                    className="management-row"
+                  >
+                    <span>
+                      <strong>{college.name}</strong>
+                      <small>{college.dean || "Dean not assigned"}</small>
+                    </span>
+
                     <button
                       type="button"
                       className="edit-btn"
                       onClick={() => {
-                        setEditingId(String(college.id ?? ""));
+                        setEditingId(String(college.id ?? college._id ?? ""));
                         setCollegeName(college.name);
                         setSelectedDean(college.dean ?? "");
                         setMessage("");
@@ -112,62 +123,74 @@ export default function CreateCollege() {
                     >
                       Edit
                     </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="grant-form-card">
-          <h2>{editingId ? "Edit College" : "Create College"}</h2>
-          <form className="grant-form" onSubmit={handleSubmit}>
-            <div>
-              <label>College Name</label>
-              <input
-                type="text"
-                value={collegeName}
-                onChange={(e) => setCollegeName(e.target.value)}
-                placeholder="Enter college name"
-                required
-              />
-            </div>
-
-            <div>
-              <label>Select Dean</label>
-              <select
-                value={selectedDean}
-                onChange={(e) => setSelectedDean(e.target.value)}
-                required
-              >
-                <option value="">Choose Dean</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.email}>
-                    {u.email}
-                  </option>
+                  </li>
                 ))}
-              </select>
+              </ul>
+            )}
+          </div>
+
+          <div className="management-card">
+            <div className="management-card-header">
+              <span className="management-icon">✏️</span>
+              <div>
+                <h2>{editingId ? "Edit College" : "Create College"}</h2>
+                <p>
+                  {editingId
+                    ? "Update the selected college information."
+                    : "Add a new college and assign a dean."}
+                </p>
+              </div>
             </div>
 
-            <button type="submit" className="submit-btn">
-              {editingId ? "Save changes" : "Create College"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                className="edit-btn"
-                onClick={() => {
-                  setEditingId("");
-                  setCollegeName("");
-                  setSelectedDean("");
-                  setMessage("");
-                }}
-              >
-                Cancel edit
+            <form className="grant-form" onSubmit={handleSubmit}>
+              <div>
+                <label>College Name</label>
+                <input
+                  type="text"
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
+                  placeholder="Enter college name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label>Select Dean</label>
+                <select
+                  value={selectedDean}
+                  onChange={(e) => setSelectedDean(e.target.value)}
+                  required
+                >
+                  <option value="">Choose Dean</option>
+                  {users.map((u: any) => (
+                    <option key={u.id} value={u.email}>
+                      {u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" className="submit-btn">
+                {editingId ? "Save Changes" : "Create College"}
               </button>
-            )}
-          </form>
-          {message && <p className="form-message">{message}</p>}
-        </div>
+
+              {editingId && (
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={() => {
+                    setEditingId("");
+                    setCollegeName("");
+                    setSelectedDean("");
+                    setMessage("");
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </form>
+          </div>
+        </section>
       </main>
     </div>
   );

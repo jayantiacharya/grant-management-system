@@ -40,64 +40,105 @@ export default function AdminDashboard() {
         </button>
       </DashHeader>
 
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>Welcome back</h2>
-          <p>Weber State University — Grant Management System</p>
-        </div>
-
-        {/* Admin Quick Actions */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
-          <button
-            onClick={() => navigate("/admin/criteria")}
-            className="submit-btn"
-          >
-            📋 Manage Review Criteria
-          </button>
-        </div>
-
-        {/* Grant Applications */}
-        {grants.length > 0 && (
-          <div className="grant-form-card" style={{ marginBottom: "2rem" }}>
-            <h2>Grant Applications</h2>
-
-            {grants.map((grant: any) => (
-              <div
-                key={grant._id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "0.75rem 0",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
-                <strong>{grant.title}</strong>
-              </div>
-            ))}
+      <main className="admin-main">
+        <section className="admin-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Dashboard</p>
+            <h1>Welcome back</h1>
+            <p>
+              Manage grant applications, colleges, departments, review criteria,
+              ARCC committee members, and allocation decisions.
+            </p>
           </div>
-        )}
+        </section>
 
-        {/* Navigation links to dedicated pages */}
-        <div className="dash-grid">
-          <nav className="admin-nav">
-            <Link to="/admin/college" className="submit-btn">
-              College Management
+        <section className="admin-layout">
+          <div className="admin-panel grant-panel">
+            <div className="admin-panel-header">
+              <div>
+                <p className="admin-eyebrow">Grant Applications</p>
+                <h2>Application Status Overview</h2>
+              </div>
+            </div>
+
+            <div className="grant-status-list">
+              {grants.length > 0 ? (
+                grants.map((grant: any) => (
+                  <div key={grant._id} className="grant-status-item">
+                    <span>{grant.title}</span>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="grant-status-item">G1: Draft Grant</div>
+                  <div className="grant-status-item">
+                    G2: Submitted, Awaiting Review
+                  </div>
+                  <div className="grant-status-item">
+                    G3: Submitted with Committee Reviews
+                  </div>
+                  <div className="grant-status-item">
+                    G4: Dept and College Approved
+                  </div>
+                  <div className="grant-status-item">
+                    G5: Department Rejected
+                  </div>
+                  <div className="grant-status-item">
+                    G6: Pending Dean Review
+                  </div>
+                  <div className="grant-status-item">
+                    G7: ARCC Member Own Grant
+                  </div>
+                  <div className="grant-status-item">
+                    G8: Draft with IRB File
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="admin-actions-panel">
+            <Link to="/admin/criteria" className="admin-action-card">
+              <span className="admin-action-icon">📋</span>
+              <div>
+                <h3>Review Criteria</h3>
+                <p>Create and manage grant review criteria.</p>
+              </div>
             </Link>
 
-            <Link to="/admin/department" className="submit-btn">
-              Department Management
+            <Link to="/admin/college" className="admin-action-card">
+              <span className="admin-action-icon">🏫</span>
+              <div>
+                <h3>College Management</h3>
+                <p>Create colleges and assign deans.</p>
+              </div>
             </Link>
 
-            <Link to="/admin/arcc" className="submit-btn">
-              ARCC Committee
+            <Link to="/admin/department" className="admin-action-card">
+              <span className="admin-action-icon">🏢</span>
+              <div>
+                <h3>Department Management</h3>
+                <p>Create departments and assign chairs.</p>
+              </div>
             </Link>
 
-            <Link to="/admin/allocation" className="submit-btn">
-              Allocation Page
+            <Link to="/admin/arcc" className="admin-action-card">
+              <span className="admin-action-icon">👥</span>
+              <div>
+                <h3>ARCC Committee</h3>
+                <p>Manage committee members and chair roles.</p>
+              </div>
             </Link>
-          </nav>
-        </div>
+
+            <Link to="/admin/allocation" className="admin-action-card primary">
+              <span className="admin-action-icon">💰</span>
+              <div>
+                <h3>Allocation Page</h3>
+                <p>Apply cutoff rules and allocate grant funding.</p>
+              </div>
+            </Link>
+          </div>
+        </section>
       </main>
     </div>
   );
