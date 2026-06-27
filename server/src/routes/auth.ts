@@ -136,6 +136,11 @@ router.route("/login").post(async (req: Request, res: Response) => {
     { expiresIn: "7d" },
   );
 
+  // Check if this user is a college dean
+  const deanCollege = await db_connect
+    .collection("college")
+    .findOne({ dean: user.email });
+
   // Include all user fields in login response too for consistency
   res.json({
     token,
@@ -148,6 +153,7 @@ router.route("/login").post(async (req: Request, res: Response) => {
       birthday: user.birthday,
       college: user.college,
       department: user.department,
+      isDean: !!deanCollege,
     },
   });
 });

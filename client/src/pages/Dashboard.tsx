@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-import { GRANT_STATUS } from "../types/grant";
+import { GRANT_STATUS, GRANT_APPROVAL_STATUS } from "../types/grant";
 import DashHeader from "../components/DashHeader";
 
 import "./Dashboard.css";
@@ -12,6 +12,14 @@ export default function Dashboard() {
   const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState([]);
+  const [isReviewer, setIsReviewer] = useState(false);
+
+  // Redirect deans straight to their grants review page
+  useEffect(() => {
+    if (user?.isDean) {
+      navigate("/college-grants", { replace: true });
+    }
+  }, [user?.isDean, navigate]);
 
   const fetchGrants = async () => {
     try {
@@ -36,17 +44,34 @@ export default function Dashboard() {
     }
   };
 
+  const checkDeptChair = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/admin/checkDeptChair/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (data.isChair) {
+        setIsReviewer(true);
+      }
+    } catch (error) {
+      console.error("Failed to check department chair status:", error);
+    }
+  };
+
   useEffect(() => {
     fetchGrants();
     if (user?.id) {
       checkArccMembership();
+      checkDeptChair();
     }
   }, [user?.id]);
 
   return (
     <div className="dashboard-page">
       <DashHeader>
-        {user?.isArcc && (
+        {(user?.isArcc || isReviewer) && (
           <button onClick={() => navigate("/review")} className="logout-btn">
             Review
           </button>
@@ -74,6 +99,25 @@ export default function Dashboard() {
                     }}
                   >
                     <strong>{grant.title}</strong>
+                    {grant.departmentReviewStatus ===
+                    GRANT_APPROVAL_STATUS.APPROVED ? (
+                      <span className="grant-status">Department Approved</span>
+                    ) : grant.departmentReviewStatus ===
+                      GRANT_APPROVAL_STATUS.DENIED ? (
+                      <span className="grant-status">Department Denied</span>
+                    ) : (
+                      <span className="grant-status">Department Pending</span>
+                    )}
+                    {grant.collegeReviewStatus !== "N/A" &&
+                      (grant.collegeReviewStatus ===
+                      GRANT_APPROVAL_STATUS.APPROVED ? (
+                        <span className="grant-status">College Approved</span>
+                      ) : grant.collegeReviewStatus ===
+                        GRANT_APPROVAL_STATUS.DENIED ? (
+                        <span className="grant-status">College Denied</span>
+                      ) : (
+                        <span className="grant-status">College Pending</span>
+                      ))}
 
                     {grant.status === GRANT_STATUS.SUBMITTED ? (
                       <span className="grant-status">Submitted</span>
@@ -90,13 +134,15 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={() => navigate("/grants/new")}
-          >
-            Submit a new grant proposal
-          </button>
+          {!user?.isDean && (
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/grants/new")}
+            >
+              Submit a new grant proposal
+            </button>
+          )}
         </div>
       </main>
     </div>

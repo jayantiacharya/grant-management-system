@@ -122,6 +122,7 @@ export default function CriteriaManagement() {
               >
                 ×
               </button>
+
               <CriteriaForm
                 initialData={editingCriteria || undefined}
                 onSubmit={(data) => {
