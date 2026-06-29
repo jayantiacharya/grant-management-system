@@ -221,9 +221,11 @@ router.post(
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
       departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
+      departmentReviededAt: null,
       collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
         ? GRANT_APPROVAL_STATUS.PENDING
         : "N/A",
+      collegeReviewedAt: null,
       reviewStatus: isDraft ? null : "pending",
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -549,16 +551,20 @@ router.put(
       }
 
       const db_connect = dbo.getDb();
-      const result = await db_connect
-        .collection("grant")
-        .updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { departmentReviewStatus } },
-        );
+      const reviewedAt = new Date();
+      const result = await db_connect.collection("grant").updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: { departmentReviewStatus, departmentReviewedAt: reviewedAt },
+        },
+      );
       if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      return res.json({ departmentReviewStatus });
+      return res.json({
+        departmentReviewStatus,
+        departmentReviewedAt: reviewedAt,
+      });
     } catch (err) {
       console.error("Failed to update departmentreview status:", err);
       return res
