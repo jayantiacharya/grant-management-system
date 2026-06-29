@@ -1,197 +1,144 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import axios from "axios";
 
-export default function Dashboard() {
-  const { user, logout } = useAuth();
+export default function AdminDashboard() {
+  const { user, token } = useAuth();
   const navigate = useNavigate();
+  const [grants, setGrants] = useState<any[]>([]);
 
-  const [users, setUsers] = useState([]);
-  const [colleges, setColleges] = useState([]);
-  const [departments, setDepartments] = useState([]);
-
-  const [collegeName, setCollegeName] = useState("");
-  const [selectedDean, setSelectedDean] = useState("");
-
-  const [departmentName, setDepartmentName] = useState("");
-  const [selectedCollege, setSelectedCollege] = useState("");
-
-  const [collegeMessage, setCollegeMessage] = useState("");
-  const [departmentMessage, setDepartmentMessage] = useState("");
-
-  const fetchUsers = async () => {
-    const { data } = await axios.get("http://localhost:5000/api/admin/users");
-    setUsers(data);
-  };
-  const fetchColleges = async () => {
-    const { data } = await axios.get(
-      "http://localhost:5000/api/admin/colleges",
-    );
-    setColleges(data);
-  };
-  const fetchDepartments = async () => {
-    const { data } = await axios.get(
-      "http://localhost:5000/api/admin/departments",
-    );
-    setDepartments(data);
-  };
-
-  const createCollege = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const fetchGrants = async () => {
     try {
-      await axios.post("http://localhost:5000/api/admin/createCollege", {
-        name: collegeName,
-        dean: selectedDean,
+      const { data } = await axios.get("http://localhost:5000/api/grants/all", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      setCollegeName("");
-      setSelectedDean("");
-      setCollegeMessage("College created successfully!");
-
-      fetchColleges();
+      setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
-      setCollegeMessage("Failed to create college.");
-      console.log(error);
+      console.error("Failed to fetch grants:", error);
     }
   };
 
-  const createDepartment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      await axios.post("http://localhost:5000/api/admin/createDepartment", {
-        name: departmentName,
-        college: selectedCollege,
-      });
-
-      setDepartmentName("");
-      setSelectedCollege("");
-      setDepartmentMessage("Department created successfully.");
-
-      fetchDepartments();
-    } catch (error) {
-      setDepartmentMessage("Failed to create department.");
-      console.log(error);
-    }
-  };
   useEffect(() => {
-    fetchUsers();
-    fetchColleges();
-    fetchDepartments();
-  }, []);
+    if (!token) return;
+    fetchGrants();
+  }, [token]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>Welcome back</h2>
-          <p>Weber State University — Grant Management System</p>
-          <Link to="/admin/arcc" className="submit-btn">
-            ARCC Committee
-          </Link>
-        </div>
-        <div className="dash-grid">
-          <div className="grant-form-card">
-            <h2>Create College</h2>
-            <form className="grant-form" onSubmit={createCollege}>
+      <DashHeader>
+        <button onClick={() => navigate("/dashboard")} className="logout-btn">
+          My Grants
+        </button>
+      </DashHeader>
+
+      <main className="admin-main">
+        <section className="admin-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Dashboard</p>
+            <h1>Welcome back</h1>
+            <p>
+              Manage grant applications, colleges, departments, review criteria,
+              ARCC committee members, and allocation decisions.
+            </p>
+          </div>
+        </section>
+
+        <section className="admin-layout">
+          <div className="admin-panel grant-panel">
+            <div className="admin-panel-header">
               <div>
-                <label>College Name</label>
-
-                <input
-                  type="text"
-                  value={collegeName}
-                  onChange={(e) => setCollegeName(e.target.value)}
-                  placeholder="Enter college name"
-                  required
-                />
+                <p className="admin-eyebrow">Grant Applications</p>
+                <h2>Application Status Overview</h2>
               </div>
+            </div>
 
-              <div>
-                <label>Select Dean</label>
-
-                <select
-                  value={selectedDean}
-                  onChange={(e) => setSelectedDean(e.target.value)}
-                  required
-                >
-                  <option value="">Choose Dean</option>
-
-                  {users.map((user: any) => (
-                    <option key={user.id} value={user.email}>
-                      {user.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button type="submit" className="submit-btn">
-                Create College
-              </button>
-            </form>
-            <p>{collegeMessage}</p>
+            <div className="grant-status-list">
+              {grants.length > 0 ? (
+                grants.map((grant: any) => (
+                  <div key={grant._id} className="grant-status-item">
+                    <span>{grant.title}</span>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="grant-status-item">G1: Draft Grant</div>
+                  <div className="grant-status-item">
+                    G2: Submitted, Awaiting Review
+                  </div>
+                  <div className="grant-status-item">
+                    G3: Submitted with Committee Reviews
+                  </div>
+                  <div className="grant-status-item">
+                    G4: Dept and College Approved
+                  </div>
+                  <div className="grant-status-item">
+                    G5: Department Rejected
+                  </div>
+                  <div className="grant-status-item">
+                    G6: Pending Dean Review
+                  </div>
+                  <div className="grant-status-item">
+                    G7: ARCC Member Own Grant
+                  </div>
+                  <div className="grant-status-item">
+                    G8: Draft with IRB File
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="grant-form-card">
-            <h2>Create Department</h2>
-
-            <form className="grant-form" onSubmit={createDepartment}>
+          <div className="admin-actions-panel">
+            <Link to="/admin/criteria" className="admin-action-card">
+              <span>📋</span>
               <div>
-                <label>Department Name</label>
-
-                <input
-                  type="text"
-                  value={departmentName}
-                  onChange={(e) => setDepartmentName(e.target.value)}
-                  placeholder="Enter department name"
-                  required
-                />
+                <h3>Review Criteria</h3>
+                <p>Create and manage grant review criteria.</p>
               </div>
+            </Link>
 
+            <Link to="/admin/college" className="admin-action-card">
+              <span>🏫</span>
               <div>
-                <label>Select College</label>
-
-                <select
-                  value={selectedCollege}
-                  onChange={(e) => setSelectedCollege(e.target.value)}
-                  required
-                >
-                  <option value="">Choose College</option>
-
-                  {colleges.map((college: any) => (
-                    <option key={college.id} value={college.name}>
-                      {college.name}
-                    </option>
-                  ))}
-                </select>
+                <h3>College Management</h3>
+                <p>Create colleges and assign deans.</p>
               </div>
+            </Link>
 
-              <button type="submit" className="submit-btn">
-                Create Department
-              </button>
-            </form>
-            <p>{departmentMessage}</p>
+            <Link to="/admin/department" className="admin-action-card">
+              <span>🏢</span>
+              <div>
+                <h3>Department Management</h3>
+                <p>Create departments and assign chairs.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/arcc" className="admin-action-card">
+              <span>👥</span>
+              <div>
+                <h3>ARCC Committee</h3>
+                <p>Manage committee members and chair roles.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/allocation" className="admin-action-card primary">
+              <span>💰</span>
+              <div>
+                <h3>Allocation Page</h3>
+                <p>Apply cutoff rules and allocate grant funding.</p>
+              </div>
+            </Link>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );

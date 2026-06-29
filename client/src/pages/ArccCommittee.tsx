@@ -2,14 +2,47 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 import "./ArccCommittee.css";
 
+type ArccUser = {
+  id: string;
+  email: string;
+  department: string;
+};
+
 export default function ArccCommittee() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
+
+  const [allUsers, setAllUsers] = useState<ArccUser[]>([]);
+  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [chairId, setChairId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+
+  const fetchUsers = async () => {
+    const { data } = await axios.get("http://localhost:5000/api/admin/users");
+
+    const mapped = (Array.isArray(data) ? data : [])
+      .filter((u) => u?.id && u?.email)
+      .map((u) => ({
+        id: String(u.id),
+        email: String(u.email),
+        department: u.department ? String(u.department) : "",
+      }));
+
+    setAllUsers(mapped);
+  };
+
+  const fetchArcc = async () => {
+    const { data } = await axios.get("http://localhost:5000/api/admin/arcc");
+
+    setChairId(data?.chairId ? String(data.chairId) : null);
+    setMemberIds(
+      Array.isArray(data?.memberIds) ? data.memberIds.map(String) : [],
+    );
+  };
 
   useEffect(() => {
     if (user?.role !== "admin") {
@@ -17,138 +50,107 @@ export default function ArccCommittee() {
       return;
     }
 
-    axios
-      .get("http://localhost:5000/api/admin/users")
-      .then((res) => {
-        const users = Array.isArray(res.data) ? res.data : [];
-        const allUsers = users
-          .filter((u) => u?.id && u?.email)
-          .map((u) => ({
-            id: String(u.id),
-            email: String(u.email),
-            department: u.department ? String(u.department) : "",
-          }));
-
-        // set the first 2 users for mock data
-        const initialMembers = allUsers.slice(0, Math.min(2, allUsers.length));
-        const chairId = initialMembers[0]?.id ?? null;
-
-        setData({
-          chairId,
-          members: initialMembers,
-          allUsers,
-        });
-        setMessage("");
-      })
-      .catch((err) => {
-        if (axios.isCancel(err)) return;
-        setMessage("Failed to load ARCC committee data.");
-        setData({
-          chairId: null,
-          members: [],
-          allUsers: [],
-        });
-      });
+    fetchUsers();
+    fetchArcc();
   }, [user, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const members = memberIds
+    .map((id) => allUsers.find((u) => u.id === id))
+    .filter(Boolean) as ArccUser[];
 
-  const addMember = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      if (prev.members.some((m) => m.id === userId)) return prev;
-      const newUser = prev.allUsers.find((u) => u.id === userId);
-      if (!newUser) return prev;
-      return { ...prev, members: [...prev.members, newUser] };
+  const addMember = async (userId: string) => {
+    if (memberIds.includes(userId)) return;
+
+    const next = [...memberIds, userId];
+    setMemberIds(next);
+
+    await axios.post("http://localhost:5000/api/admin/updateArcc", {
+      chairId,
+      memberIds: next,
     });
-    setMessage("");
   };
 
-  const removeMember = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const nextMembers = prev.members.filter((m) => m.id !== userId);
-      return {
-        ...prev,
-        members: nextMembers,
-        chairId: prev.chairId === userId ? null : prev.chairId,
-      };
+  const removeMember = async (userId: string) => {
+    const next = memberIds.filter((id) => id !== userId);
+    const nextChair = chairId === userId ? null : chairId;
+
+    setMemberIds(next);
+    setChairId(nextChair);
+
+    await axios.post("http://localhost:5000/api/admin/updateArcc", {
+      chairId: nextChair,
+      memberIds: next,
     });
-    setMessage("");
   };
 
-  const setChair = (userId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const isMember = prev.members.some((m) => m.id === userId);
-      const userToAdd = prev.allUsers.find((u) => u.id === userId);
-      const nextMembers =
-        !isMember && userToAdd ? [...prev.members, userToAdd] : prev.members;
-      return { ...prev, chairId: userId, members: nextMembers };
+  const setChair = async (userId: string) => {
+    const next = memberIds.includes(userId)
+      ? memberIds
+      : [...memberIds, userId];
+
+    setChairId(userId);
+    setMemberIds(next);
+
+    await axios.post("http://localhost:5000/api/admin/updateArcc", {
+      chairId: userId,
+      memberIds: next,
     });
-    setMessage("");
   };
 
-  const memberIds = new Set(data?.members.map((m) => m.id) ?? []);
+  const memberSet = new Set(memberIds);
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-        <div className="dash-user">
-          <span>{user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>ARCC Committee</h2>
-          <p>Manage review committee members and chair</p>
-          <button
-            type="button"
-            className="edit-btn"
-            onClick={() => navigate("/admin")}
-          >
-            Back to Admin
-          </button>
-        </div>
+      <DashHeader back={{ label: "← Back to Admin", to: "/admin" }} />
+
+      <main className="management-main">
+        <section className="management-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Management</p>
+            <h1>ARCC Committee</h1>
+            <p>Manage committee members and assign chair.</p>
+          </div>
+        </section>
+
         {message && <p className="form-message">{message}</p>}
-        <div className="arcc-grid">
-          <div className="grant-form-card">
-            <h2>Committee Members</h2>
-            {!data?.members.length ? (
-              <p>No committee members yet.</p>
+
+        <section className="management-grid">
+          <div className="management-card">
+            <div className="management-card-header">
+              <span>👥</span>
+              <div>
+                <h2>Committee Members</h2>
+                <p>Current members and chair selection</p>
+              </div>
+            </div>
+
+            {!members.length ? (
+              <p>No members yet.</p>
             ) : (
-              <ul className="list">
-                {data.members.map((member) => (
-                  <li key={member.id} className="row">
+              <ul className="management-list">
+                {members.map((m) => (
+                  <li key={m.id} className="management-row">
                     <span>
-                      {data.chairId === member.id ? "(Chair) " : ""}
-                      {member.email}{" "}
-                      {member.department ? `- ${member.department}` : ""}
+                      <strong>
+                        {chairId === m.id ? "(Chair) " : ""}
+                        {m.email}
+                      </strong>
+                      <small>{m.department || "No department"}</small>
                     </span>
-                    <div className="actions">
-                      <label className="chair-label">
+
+                    <div className="management-actions">
+                      <label>
                         <input
                           type="radio"
-                          name="chair"
-                          checked={data.chairId === member.id}
-                          onChange={() => setChair(member.id)}
+                          checked={chairId === m.id}
+                          onChange={() => setChair(m.id)}
                         />
                         Chair
                       </label>
+
                       <button
-                        type="button"
+                        onClick={() => removeMember(m.id)}
                         className="edit-btn"
-                        onClick={() => removeMember(member.id)}
                       >
                         Remove
                       </button>
@@ -159,45 +161,44 @@ export default function ArccCommittee() {
             )}
           </div>
 
-          <div className="grant-form-card">
-            <h2>All Users</h2>
-            {!data?.allUsers.length ? (
+          <div className="management-card">
+            <div className="management-card-header">
+              <span>➕</span>
+              <div>
+                <h2>All Users</h2>
+                <p>Add/remove committee members</p>
+              </div>
+            </div>
+
+            {!allUsers.length ? (
               <p>No users found.</p>
             ) : (
-              <ul className="list">
-                {data.allUsers.map((u) => {
-                  const isMember = memberIds.has(u.id);
+              <ul className="management-list">
+                {allUsers.map((u) => {
+                  const isMember = memberSet.has(u.id);
+
                   return (
-                    <li key={u.id} className="row">
+                    <li key={u.id} className="management-row">
                       <span>
-                        {u.email} {u.department ? `- ${u.department}` : ""}
+                        <strong>{u.email}</strong>
+                        <small>{u.department || "No department"}</small>
                       </span>
-                      <div className="actions">
-                        {isMember ? (
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={() => removeMember(u.id)}
-                          >
-                            Remove
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={() => addMember(u.id)}
-                          >
-                            Add
-                          </button>
-                        )}
-                      </div>
+
+                      <button
+                        className="edit-btn"
+                        onClick={() =>
+                          isMember ? removeMember(u.id) : addMember(u.id)
+                        }
+                      >
+                        {isMember ? "Remove" : "Add"}
+                      </button>
                     </li>
                   );
                 })}
               </ul>
             )}
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );

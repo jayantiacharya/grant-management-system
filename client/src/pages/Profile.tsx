@@ -1,13 +1,12 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [colleges, setColleges] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -59,14 +58,6 @@ export default function Profile() {
     fetchUserData(user.id);
   }, [user?.id]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-  const handleBack = () => {
-    navigate("/dashboard");
-  };
-
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -96,21 +87,12 @@ export default function Profile() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-header">
-        <div className="dash-brand">
-          <span className="dash-logo">GMS</span>
-          <span>Grant Management</span>
-        </div>
-
-        <div className="dash-user">
-          <button onClick={handleBack} className="logout-btn">
-            Back
-          </button>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
-        </div>
-      </header>
+      <DashHeader
+        back={{
+          label: "Back",
+          to: user?.role === "admin" ? "/admin" : "/dashboard",
+        }}
+      />
 
       <main className="dash-main">
         {!isEditing ? (
