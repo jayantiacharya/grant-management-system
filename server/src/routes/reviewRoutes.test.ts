@@ -43,7 +43,19 @@ const committee = { key: "committee", memberIds: ["arcc1"] };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findOne.mockResolvedValue(committee);
+
+  findOne.mockImplementation((query: any) => {
+    if (query?.key === "committee") {
+      return Promise.resolve(committee);
+    }
+
+    if (query?.chair) {
+      return Promise.resolve(null);
+    }
+
+    return Promise.resolve(null);
+  });
+
   updateOne.mockResolvedValue({ matchedCount: 1 });
   findToArray.mockResolvedValue([]);
 });
@@ -55,7 +67,9 @@ describe("GET /api/grants/review", () => {
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: ["other"] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: ["other"] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .get("/api/grants/review")
       .set("Authorization", `Bearer ${memberToken}`);
@@ -83,7 +97,9 @@ describe("GET /api/grants/review/:id", () => {
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: [] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: [] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .get(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`);
@@ -113,42 +129,126 @@ describe("GET /api/grants/review/:id", () => {
 });
 
 describe("PUT /api/grants/review/:id", () => {
-  it("400 when reviewStatus is not approved or denied", async () => {
+  // One criterion accepting scores of 10 or 0; validateReviewScores keys off
+  // criterion._id.toString(), so a string id is fine for the mock.
+  const criteria = [
+    {
+      _id: "crit1",
+      maxScore: 10,
+      ratingSuggestions: [{ score: 10 }, { score: 0 }],
+    },
+  ];
+
+  it("400 when comments is missing", async () => {
     const res = await request(app)
       .put(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ reviewStatus: "pending" });
+      .send({ scores: { crit1: 10 } });
     expect(res.status).toBe(400);
     expect(updateOne).not.toHaveBeenCalled();
   });
 
   it("403 when the caller is not an ARCC member", async () => {
-    findOne.mockResolvedValueOnce({ key: "committee", memberIds: [] });
+    findOne
+      .mockResolvedValueOnce({ key: "committee", memberIds: [] })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .put(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ reviewStatus: "approved" });
+      .send({ scores: { crit1: 10 }, comments: "ok" });
     expect(res.status).toBe(403);
   });
 
-  it("404 when the grant is missing", async () => {
-    updateOne.mockResolvedValueOnce({ matchedCount: 0 });
+  it("400 when no review criteria are configured", async () => {
+    findToArray.mockResolvedValueOnce([]);
     const res = await request(app)
       .put(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ reviewStatus: "denied" });
+      .send({ scores: { crit1: 10 }, comments: "ok" });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("400 when a criterion has no score", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    const res = await request(app)
+      .put(`/api/grants/review/${OID}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({ scores: {}, comments: "ok" });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("400 when a score is not an allowed rating", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    const res = await request(app)
+      .put(`/api/grants/review/${OID}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({ scores: { crit1: 7 }, comments: "ok" });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("400 when scores include an unknown criterion", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    const res = await request(app)
+      .put(`/api/grants/review/${OID}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({ scores: { crit1: 10, bogus: 5 }, comments: "ok" });
+    expect(res.status).toBe(400);
+    expect(updateOne).not.toHaveBeenCalled();
+  });
+
+  it("404 when the grant is missing", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    findOne
+      .mockResolvedValueOnce(committee) // ARCC membership lookup
+      .mockResolvedValueOnce(null); // grant lookup
+    const res = await request(app)
+      .put(`/api/grants/review/${OID}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({ scores: { crit1: 10 }, comments: "ok" });
     expect(res.status).toBe(404);
   });
 
-  it("200 stores the new review status", async () => {
+  it("200 stores the reviewer's review", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    findOne
+      .mockResolvedValueOnce(committee) // ARCC membership lookup
+      .mockResolvedValueOnce({ _id: OID, reviews: [] }); // grant lookup
     const res = await request(app)
       .put(`/api/grants/review/${OID}`)
       .set("Authorization", `Bearer ${memberToken}`)
-      .send({ reviewStatus: "approved" });
+      .send({ scores: { crit1: 10 }, comments: "  solid  " });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ reviewStatus: "approved" });
+    expect(res.body.reviewerId).toBe("arcc1");
+    expect(res.body.scores).toEqual({ crit1: 10 });
+    expect(res.body.comments).toBe("solid"); // trimmed
     const [filter, update] = updateOne.mock.calls[0];
     expect(filter._id.toString()).toBe(OID);
-    expect(update.$set.reviewStatus).toBe("approved");
+    expect(update.$set.reviews).toHaveLength(1);
+    expect(update.$set.reviews[0].reviewerId).toBe("arcc1");
+  });
+
+  it("replaces this reviewer's existing review instead of adding a second", async () => {
+    findToArray.mockResolvedValueOnce(criteria);
+    findOne.mockResolvedValueOnce(committee).mockResolvedValueOnce({
+      _id: OID,
+      reviews: [
+        { reviewerId: "arcc1", scores: { crit1: 0 }, comments: "old" },
+        { reviewerId: "other", scores: { crit1: 10 }, comments: "keep" },
+      ],
+    });
+    const res = await request(app)
+      .put(`/api/grants/review/${OID}`)
+      .set("Authorization", `Bearer ${memberToken}`)
+      .send({ scores: { crit1: 10 }, comments: "updated" });
+    expect(res.status).toBe(200);
+    const [, update] = updateOne.mock.calls[0];
+    expect(update.$set.reviews).toHaveLength(2);
+    const mine = update.$set.reviews.find(
+      (r: { reviewerId: string }) => r.reviewerId === "arcc1",
+    );
+    expect(mine.comments).toBe("updated");
   });
 });

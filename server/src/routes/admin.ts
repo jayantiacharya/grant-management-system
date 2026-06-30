@@ -227,4 +227,18 @@ router.route("/updateArcc").post(verifyToken, async (req: AuthRequest, res) => {
   });
 });
 
+router.get(
+  "/checkDeptChair/",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const userEmail = req.user!.email;
+    let db_connect = dbo.getDb();
+    const department = await db_connect
+      .collection("department")
+      .findOne({ chair: userEmail });
+
+    res.json({ isChair: !!department });
+  },
+);
+
 export default router;

@@ -55,6 +55,12 @@ describe("POST /api/grants/submit - validation parity (JSON)", () => {
     description: "Build it",
     projectDirectorId: "u1",
     studentsImpacted: 1,
+    accountNumber: "ACC-001",
+    acknowledgement1: true,
+    acknowledgement2: true,
+    acknowledgement3: true,
+    acknowledgement4: true,
+    signature: "Jane Director",
   };
 
   it("400 when affectsMultipleDepartments=yes but departmentCount < 2", async () => {
@@ -104,6 +110,12 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("description", "Build it")
       .field("projectDirectorId", "u1")
       .field("studentsImpacted", "1")
+      .field("accountNumber", "ACC-001")
+      .field("acknowledgement1", "true")
+      .field("acknowledgement2", "true")
+      .field("acknowledgement3", "true")
+      .field("acknowledgement4", "true")
+      .field("signature", "Jane Director")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "no")
       .attach("files", Buffer.from("hello"), "proposal.pdf");
@@ -127,6 +139,12 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("description", "Build it")
       .field("projectDirectorId", "u1")
       .field("studentsImpacted", "1")
+      .field("accountNumber", "ACC-001")
+      .field("acknowledgement1", "true")
+      .field("acknowledgement2", "true")
+      .field("acknowledgement3", "true")
+      .field("acknowledgement4", "true")
+      .field("signature", "Jane Director")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "yes")
       .field("irbApproved", "yes")
@@ -148,6 +166,12 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("description", "Build it")
       .field("projectDirectorId", "u1")
       .field("studentsImpacted", "1")
+      .field("accountNumber", "ACC-001")
+      .field("acknowledgement1", "true")
+      .field("acknowledgement2", "true")
+      .field("acknowledgement3", "true")
+      .field("acknowledgement4", "true")
+      .field("signature", "Jane Director")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "yes")
       .field("irbApproved", "yes");
@@ -165,6 +189,12 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
         description: "Build it",
         projectDirectorId: "u1",
         studentsImpacted: 1,
+        accountNumber: "ACC-001",
+        acknowledgement1: true,
+        acknowledgement2: true,
+        acknowledgement3: true,
+        acknowledgement4: true,
+        signature: "Jane Director",
       });
     expect(res.status).toBe(201);
     expect(res.body.files).toEqual([]);
