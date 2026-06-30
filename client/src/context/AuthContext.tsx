@@ -5,6 +5,7 @@ interface User {
   email: string;
   role: string;
   isArcc?: boolean;
+  isDean?: boolean;
 }
 
 interface AuthContextType {

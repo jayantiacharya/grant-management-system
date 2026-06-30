@@ -78,6 +78,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
             title: grant.title || "",
             description: grant.description || "",
             projectDirectorId: grant.projectDirectorId || user?.id || "",
+            accountNumber: grant.accountNumber || "",
             studentsImpacted:
               grant.studentsImpacted == null
                 ? ""
@@ -91,6 +92,11 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
             matchingFundsTotal: grant.matchingFundsTotal
               ? String(grant.matchingFundsTotal)
               : "",
+            acknowledgement1: grant.acknowledgements?.acknowledgement1 ?? false,
+            acknowledgement2: grant.acknowledgements?.acknowledgement2 ?? false,
+            acknowledgement3: grant.acknowledgements?.acknowledgement3 ?? false,
+            acknowledgement4: grant.acknowledgements?.acknowledgement4 ?? false,
+            signature: grant.signature || "",
           },
           Array.isArray(grant.budgetItems) ? grant.budgetItems : [],
         );
@@ -179,6 +185,9 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     if (!data.description.trim()) next.description = "Description is required.";
     if (!data.projectDirectorId)
       next.projectDirectorId = "Select a project director.";
+    if (!data.accountNumber.trim()) {
+      next.accountNumber = "Account # is required.";
+    }
     const n = Number(data.studentsImpacted);
     if (data.studentsImpacted === "" || !Number.isInteger(n) || n < 0) {
       next.studentsImpacted =
@@ -213,6 +222,21 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
         next.irbApprovalFile = "IRB approval document is required.";
       }
     }
+    if (!data.acknowledgement1) {
+      next.acknowledgement1 = "You must acknowledge this item.";
+    }
+    if (!data.acknowledgement2) {
+      next.acknowledgement2 = "You must acknowledge this item.";
+    }
+    if (!data.acknowledgement3) {
+      next.acknowledgement3 = "You must acknowledge this item.";
+    }
+    if (!data.acknowledgement4) {
+      next.acknowledgement4 = "You must acknowledge this item.";
+    }
+    if (!data.signature.trim()) {
+      next.signature = "Full name signature is required.";
+    }
     return next;
   };
 
@@ -238,6 +262,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
         body.append("title", formData.title);
         body.append("description", formData.description);
         body.append("projectDirectorId", formData.projectDirectorId);
+        body.append("accountNumber", formData.accountNumber);
         if (formData.studentsImpacted !== "") {
           body.append("studentsImpacted", formData.studentsImpacted);
         }
@@ -255,6 +280,11 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
         body.append("timeline", formData.timeline);
         body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
         body.append("matchingFundsTotal", formData.matchingFundsTotal);
+        body.append("acknowledgement1", String(formData.acknowledgement1));
+        body.append("acknowledgement2", String(formData.acknowledgement2));
+        body.append("acknowledgement3", String(formData.acknowledgement3));
+        body.append("acknowledgement4", String(formData.acknowledgement4));
+        body.append("signature", formData.signature);
         body.append("budgetItems", JSON.stringify(budgetItems));
         selectedFiles.forEach((file) => body.append("files", file));
         if (irbApprovalFile) body.append("irbApprovalFile", irbApprovalFile);
@@ -284,6 +314,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
           title: formData.title,
           description: formData.description,
           projectDirectorId: formData.projectDirectorId,
+          accountNumber: formData.accountNumber,
           studentsImpacted:
             formData.studentsImpacted === ""
               ? null
@@ -299,6 +330,11 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
           timeline: formData.timeline,
           hasMatchingFunds: formData.hasMatchingFunds,
           matchingFundsTotal: formData.matchingFundsTotal,
+          acknowledgement1: formData.acknowledgement1,
+          acknowledgement2: formData.acknowledgement2,
+          acknowledgement3: formData.acknowledgement3,
+          acknowledgement4: formData.acknowledgement4,
+          signature: formData.signature,
           budgetItems,
           status,
         };
@@ -415,6 +451,22 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                   <span className="field-error">
                     {errors.projectDirectorId}
                   </span>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="accountNumber">Account #</label>
+                <input
+                  type="text"
+                  id="accountNumber"
+                  name="accountNumber"
+                  value={formData.accountNumber}
+                  onChange={handleChange}
+                  placeholder="Enter account number"
+                  required
+                />
+                {errors.accountNumber && (
+                  <span className="field-error">{errors.accountNumber}</span>
                 )}
               </div>
 
@@ -647,6 +699,126 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                 {errors.files && (
                   <span className="field-error">{errors.files}</span>
                 )}
+              </div>
+
+              <div>
+                <h3>Acknowledgements &amp; Signature</h3>
+                <div className="acknowledgement-list">
+                  <div className="acknowledgement-item">
+                    <label htmlFor="acknowledgement1">
+                      Acknowledgement 1
+                      <input
+                        type="checkbox"
+                        id="acknowledgement1"
+                        checked={formData.acknowledgement1}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            acknowledgement1: e.target.checked,
+                          }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            acknowledgement1: undefined,
+                          }));
+                        }}
+                      />
+                    </label>
+                    {errors.acknowledgement1 && (
+                      <span className="field-error">
+                        {errors.acknowledgement1}
+                      </span>
+                    )}
+                  </div>
+                  <div className="acknowledgement-item">
+                    <label htmlFor="acknowledgement2">
+                      Acknowledgement 2
+                      <input
+                        type="checkbox"
+                        id="acknowledgement2"
+                        checked={formData.acknowledgement2}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            acknowledgement2: e.target.checked,
+                          }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            acknowledgement2: undefined,
+                          }));
+                        }}
+                      />
+                    </label>
+                    {errors.acknowledgement2 && (
+                      <span className="field-error">
+                        {errors.acknowledgement2}
+                      </span>
+                    )}
+                  </div>
+                  <div className="acknowledgement-item">
+                    <label htmlFor="acknowledgement3">
+                      Acknowledgement 3
+                      <input
+                        type="checkbox"
+                        id="acknowledgement3"
+                        checked={formData.acknowledgement3}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            acknowledgement3: e.target.checked,
+                          }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            acknowledgement3: undefined,
+                          }));
+                        }}
+                      />
+                    </label>
+                    {errors.acknowledgement3 && (
+                      <span className="field-error">
+                        {errors.acknowledgement3}
+                      </span>
+                    )}
+                  </div>
+                  <div className="acknowledgement-item">
+                    <label htmlFor="acknowledgement4">
+                      Acknowledgement 4
+                      <input
+                        type="checkbox"
+                        id="acknowledgement4"
+                        checked={formData.acknowledgement4}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            acknowledgement4: e.target.checked,
+                          }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            acknowledgement4: undefined,
+                          }));
+                        }}
+                      />
+                    </label>
+                    {errors.acknowledgement4 && (
+                      <span className="field-error">
+                        {errors.acknowledgement4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="signature">Full Name Signature</label>
+                  <input
+                    type="text"
+                    id="signature"
+                    name="signature"
+                    value={formData.signature}
+                    onChange={handleChange}
+                    placeholder="Type your full legal name"
+                  />
+                  {errors.signature && (
+                    <span className="field-error">{errors.signature}</span>
+                  )}
+                </div>
               </div>
 
               <div className="grant-form-actions">

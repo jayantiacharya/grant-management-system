@@ -8,8 +8,15 @@ export const GRANT_STATUS = {
   DRAFT: "draft",
   SUBMITTED: "submitted",
 } as const;
+export const GRANT_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  DENIED: "denied",
+} as const;
 
 export type GrantStatus = (typeof GRANT_STATUS)[keyof typeof GRANT_STATUS];
+export type GrantApprovalStatus =
+  (typeof GRANT_APPROVAL_STATUS)[keyof typeof GRANT_APPROVAL_STATUS];
 
 export type GrantFileMeta = {
   originalName: string;
@@ -49,6 +56,7 @@ export function validateGrantPayload(
   const {
     title,
     description,
+    accountNumber,
     studentsImpacted,
     affectsMultipleDepartments,
     departmentCount,
@@ -86,6 +94,15 @@ export function validateGrantPayload(
         ok: false,
         status: 400,
         message: "title and description are required",
+      };
+    }
+    const normalizedAccountNumber =
+      typeof accountNumber === "string" ? accountNumber.trim() : "";
+    if (!normalizedAccountNumber) {
+      return {
+        ok: false,
+        status: 400,
+        message: "accountNumber is required",
       };
     }
     if (!studentsValid) {
@@ -137,4 +154,37 @@ export function validateGrantPayload(
     parsedStudents,
     parsedDepartmentCount,
   };
+}
+
+function parseAcknowledgementBool(value: unknown): boolean {
+  return value === true || value === "true";
+}
+
+export function validateAcknowledgements(
+  body: Record<string, unknown>,
+): ValidateError | { ok: true; signature: string } {
+  const ackKeys = [
+    "acknowledgement1",
+    "acknowledgement2",
+    "acknowledgement3",
+    "acknowledgement4",
+  ] as const;
+
+  for (const key of ackKeys) {
+    if (!parseAcknowledgementBool(body[key])) {
+      return {
+        ok: false,
+        status: 400,
+        message: "all acknowledgements must be accepted",
+      };
+    }
+  }
+
+  const signature =
+    typeof body.signature === "string" ? body.signature.trim() : "";
+  if (!signature) {
+    return { ok: false, status: 400, message: "signature is required" };
+  }
+
+  return { ok: true, signature };
 }

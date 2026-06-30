@@ -5,7 +5,12 @@ import fs from "fs";
 import dbo from "../middleware/conn.js";
 import { ObjectId } from "mongodb";
 import { verifyToken, AuthRequest } from "../middleware/auth.js";
-import { GRANT_STATUS, validateGrantPayload } from "./grantValidation.js";
+import {
+  GRANT_STATUS,
+  GRANT_APPROVAL_STATUS,
+  validateGrantPayload,
+  validateAcknowledgements,
+} from "./grantValidation.js";
 
 const router = Router();
 
@@ -45,6 +50,21 @@ function parseBudgetItems(raw: unknown): unknown[] {
   return [];
 }
 
+async function isDeptChair(userEmail: string): Promise<boolean> {
+  const db_connect = dbo.getDb();
+  const department = await db_connect
+    .collection("department")
+    .findOne({ chair: userEmail });
+  return !!department;
+}
+
+function hasCollegeFundingRequest(budgetItems: unknown[]): boolean {
+  return budgetItems.some((item: any) => {
+    const amount = parseFloat(item?.amountFromCollege) || 0;
+    return amount > 0;
+  });
+}
+
 async function isArccMember(userId: string): Promise<boolean> {
   const db_connect = dbo.getDb();
   const arcc = await db_connect
@@ -54,6 +74,58 @@ async function isArccMember(userId: string): Promise<boolean> {
     ? arcc.memberIds.map(String)
     : [];
   return memberIds.includes(String(userId));
+}
+
+type CriteriaDoc = {
+  _id: ObjectId;
+  maxScore: number;
+  ratingSuggestions?: { score: number }[];
+};
+
+function validateReviewScores(
+  scores: unknown,
+  criteria: CriteriaDoc[],
+): scores is Record<string, number> {
+  if (!scores || typeof scores !== "object" || Array.isArray(scores)) {
+    return false;
+  }
+
+  if (!criteria.some((c) => (c.ratingSuggestions ?? []).length > 0)) {
+    return false;
+  }
+
+  const scoreRecord = scores as Record<string, unknown>;
+
+  for (const criterion of criteria) {
+    const allowedScores = (criterion.ratingSuggestions ?? []).map(
+      (suggestion) => suggestion.score,
+    );
+    if (allowedScores.length === 0) continue;
+
+    const criteriaId = criterion._id.toString();
+    const selectedScore = scoreRecord[criteriaId];
+
+    if (selectedScore === undefined || selectedScore === null) {
+      return false;
+    }
+
+    if (typeof selectedScore !== "number" || !Number.isFinite(selectedScore)) {
+      return false;
+    }
+
+    if (!allowedScores.includes(selectedScore)) {
+      return false;
+    }
+  }
+
+  for (const key of Object.keys(scoreRecord)) {
+    const criterion = criteria.find((c) => c._id.toString() === key);
+    if (!criterion || (criterion.ratingSuggestions ?? []).length === 0) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 router.post(
@@ -101,6 +173,17 @@ router.post(
     const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
       validation;
 
+    let signature = "";
+    if (!isDraft) {
+      const ackValidation = validateAcknowledgements(req.body);
+      if (!ackValidation.ok) {
+        return res
+          .status(ackValidation.status)
+          .json({ message: ackValidation.message });
+      }
+      signature = ackValidation.signature;
+    }
+
     const db_connect = dbo.getDb();
 
     const resolvedDirectorId = projectDirectorId || userId;
@@ -115,22 +198,32 @@ router.post(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const newGrant = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
       submittedEmail: email,
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
+      departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : "N/A",
       reviewStatus: isDraft ? null : "pending",
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -138,6 +231,26 @@ router.post(
       matchingFundsTotal: req.body.matchingFundsTotal
         ? parseFloat(req.body.matchingFundsTotal)
         : 0,
+      acknowledgements: {
+        acknowledgement1:
+          req.body.acknowledgement1 === true ||
+          req.body.acknowledgement1 === "true",
+        acknowledgement2:
+          req.body.acknowledgement2 === true ||
+          req.body.acknowledgement2 === "true",
+        acknowledgement3:
+          req.body.acknowledgement3 === true ||
+          req.body.acknowledgement3 === "true",
+        acknowledgement4:
+          req.body.acknowledgement4 === true ||
+          req.body.acknowledgement4 === "true",
+      },
+      signature: isDraft
+        ? typeof req.body.signature === "string"
+          ? req.body.signature.trim()
+          : ""
+        : signature,
+      signedAt: isDraft ? null : new Date(),
     };
 
     try {
@@ -180,7 +293,10 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
   const { userId } = req.user!;
 
   try {
-    if (!(await isArccMember(userId))) {
+    if (
+      !(await isArccMember(userId)) &&
+      !(await isDeptChair(req.user!.email))
+    ) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -198,6 +314,47 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
 });
 
 router.get(
+  "/review/department",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const userEmail = req.user!.email;
+
+    try {
+      const db_connect = dbo.getDb();
+
+      const department = await db_connect
+        .collection("department")
+        .findOne({ chair: userEmail });
+
+      if (!department) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const usersInDept = await db_connect
+        .collection("user")
+        .find({ department: department.name })
+        .toArray();
+
+      const userEmails = usersInDept.map((u) => u.email);
+
+      const grants = await db_connect
+        .collection("grant")
+        .find({
+          submittedEmail: { $in: userEmails },
+          status: { $ne: GRANT_STATUS.DRAFT },
+        })
+        .sort({ submittedAt: -1 })
+        .toArray();
+
+      return res.json(grants);
+    } catch (err) {
+      console.error("Failed to fetch department grants for review:", err);
+      return res.status(500).json({ message: "Failed to fetch grants" });
+    }
+  },
+);
+
+router.get(
   "/review/:id/files/:savedName",
   verifyToken,
   async (req: AuthRequest, res: Response) => {
@@ -209,7 +366,10 @@ router.get(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -250,7 +410,10 @@ router.get(
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -275,40 +438,135 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     const { userId } = req.user!;
     const { id } = req.params;
-    const { reviewStatus } = req.body;
+    const { scores, comments } = req.body;
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid grant id" });
     }
 
-    if (reviewStatus !== "approved" && reviewStatus !== "denied") {
+    if (typeof comments !== "string") {
+      return res.status(400).json({ message: "comments must be a string" });
+    }
+
+    try {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const db_connect = dbo.getDb();
+      const criteria = (await db_connect
+        .collection("criteria")
+        .find({})
+        .toArray()) as CriteriaDoc[];
+
+      if (!criteria.some((c) => (c.ratingSuggestions ?? []).length > 0)) {
+        return res.status(400).json({
+          message: "No scorable review criteria configured",
+        });
+      }
+
+      if (!validateReviewScores(scores, criteria)) {
+        return res.status(400).json({
+          message:
+            "scores must include one valid rating for each scorable criterion",
+        });
+      }
+
+      const grant = await db_connect
+        .collection("grant")
+        .findOne({ _id: new ObjectId(id) });
+      if (!grant) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+
+      const reviewEntry = {
+        reviewerId: String(userId),
+        scores,
+        comments: comments.trim(),
+        submittedAt: new Date(),
+      };
+
+      const existingReviews = Array.isArray(grant.reviews) ? grant.reviews : [];
+      const existingIndex = existingReviews.findIndex(
+        (review: { reviewerId?: string }) =>
+          String(review.reviewerId) === String(userId),
+      );
+
+      const updatedReviews =
+        existingIndex >= 0
+          ? existingReviews.map((review: unknown, index: number) =>
+              index === existingIndex ? reviewEntry : review,
+            )
+          : [...existingReviews, reviewEntry];
+
+      const result = await db_connect
+        .collection("grant")
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { reviews: updatedReviews } },
+        );
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "Grant not found" });
+      }
+
+      return res.json(reviewEntry);
+    } catch (err) {
+      console.error("Failed to submit grant review:", err);
+      return res.status(500).json({ message: "Failed to submit grant review" });
+    }
+  },
+);
+router.put(
+  "/review/approval/:id",
+  verifyToken,
+  async (req: AuthRequest, res: Response) => {
+    const { userId } = req.user!;
+    const { id } = req.params;
+    const { departmentReviewStatus } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid grant id" });
+    }
+
+    if (
+      departmentReviewStatus !== "approved" &&
+      departmentReviewStatus !== "denied"
+    ) {
       return res.status(400).json({
-        message: "reviewStatus must be approved or denied",
+        message: "departmentReviewStatus must be approved or denied",
       });
     }
 
     try {
-      if (!(await isArccMember(userId))) {
+      if (
+        !(await isArccMember(userId)) &&
+        !(await isDeptChair(req.user!.email))
+      ) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
       const db_connect = dbo.getDb();
       const result = await db_connect
         .collection("grant")
-        .updateOne({ _id: new ObjectId(id) }, { $set: { reviewStatus } });
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { departmentReviewStatus } },
+        );
       if (result.matchedCount === 0) {
         return res.status(404).json({ message: "Grant not found" });
       }
-      return res.json({ reviewStatus });
+      return res.json({ departmentReviewStatus });
     } catch (err) {
-      console.error("Failed to update review status:", err);
+      console.error("Failed to update departmentreview status:", err);
       return res
         .status(500)
-        .json({ message: "Failed to update review status" });
+        .json({ message: "Failed to update department review status" });
     }
   },
 );
-
 router.get(
   "/get-grant/:id",
   verifyToken,
@@ -410,6 +668,17 @@ router.put(
     const { isDraft, normalizedStatus, parsedStudents, parsedDepartmentCount } =
       validation;
 
+    let signature = "";
+    if (!isDraft) {
+      const ackValidation = validateAcknowledgements(req.body);
+      if (!ackValidation.ok) {
+        return res
+          .status(ackValidation.status)
+          .json({ message: ackValidation.message });
+      }
+      signature = ackValidation.signature;
+    }
+
     const resolvedDirectorId = projectDirectorId || userId;
 
     const directorExists = await db_connect
@@ -422,17 +691,26 @@ router.put(
       });
     }
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const update: Record<string, any> = {
       title: req.body.title ?? "",
       description: req.body.description ?? "",
       projectDirectorId: resolvedDirectorId,
+      accountNumber:
+        typeof req.body.accountNumber === "string"
+          ? req.body.accountNumber.trim()
+          : "",
       studentsImpacted: parsedStudents,
       affectsMultipleDepartments: affectsMultipleDepartments ?? null,
       departmentCount: parsedDepartmentCount,
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
-      budgetItems: parseBudgetItems(budgetItems),
+      budgetItems: parsedBudgetItems,
+      collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
+        ? GRANT_APPROVAL_STATUS.PENDING
+        : "N/A",
       status: normalizedStatus,
       hasMatchingFunds:
         req.body.hasMatchingFunds === "true" ||
@@ -440,10 +718,29 @@ router.put(
       matchingFundsTotal: req.body.matchingFundsTotal
         ? parseFloat(req.body.matchingFundsTotal)
         : 0,
+      acknowledgements: {
+        acknowledgement1:
+          req.body.acknowledgement1 === true ||
+          req.body.acknowledgement1 === "true",
+        acknowledgement2:
+          req.body.acknowledgement2 === true ||
+          req.body.acknowledgement2 === "true",
+        acknowledgement3:
+          req.body.acknowledgement3 === true ||
+          req.body.acknowledgement3 === "true",
+        acknowledgement4:
+          req.body.acknowledgement4 === true ||
+          req.body.acknowledgement4 === "true",
+      },
+      signature: isDraft
+        ? typeof req.body.signature === "string"
+          ? req.body.signature.trim()
+          : ""
+        : signature,
+      signedAt: isDraft ? null : new Date(),
     };
     if (!isDraft) {
       update.submittedAt = new Date();
-      update.reviewStatus = "pending";
     }
     if (uploadedFiles.length > 0) {
       update.files = uploadedFiles;

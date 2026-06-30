@@ -185,6 +185,30 @@
   color: #6b7280;
 }
 
+.acknowledgement-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+}
+
+.grant-form .acknowledgement-item label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.grant-form .acknowledgement-item input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  margin-left: 1em;
+}
+
 .submit-btn {
   margin-top: 8px;
   background: #1f4373;
