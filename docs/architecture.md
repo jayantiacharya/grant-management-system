@@ -1,157 +1,221 @@
 # Architecture and navigation
 
-Diagrams are Mermaid; GitHub renders them inline, or paste the code blocks into [mermaid.live](https://mermaid.live).
+This describes the current state of the build: how the client, server, and data fit
+together, how a user navigates, and where the known gaps are. For what the system is
+ultimately meant to do, see [requirements.md](./requirements.md).
 
-## Project overview
+Diagrams are Mermaid; GitHub renders them inline, or paste the code blocks into
+[mermaid.live](https://mermaid.live).
+
+## System context
 
 ```mermaid
 flowchart LR
-    subgraph Browser ["Client (React + Vite, localhost:5173)"]
-        direction TB
+    User([User]) --> Client["Client<br/>React + Vite<br/>localhost:5173"]
+    Client -->|"axios + JWT"| API["Server<br/>Express<br/>localhost:5000"]
+    API --> DB[("MongoDB<br/>linkUpDatabase")]
+```
 
-        subgraph Routing ["App.tsx routing guards"]
-            PUB["PublicRoute<br/>(redirects signed-in users)"]
-            PROT["ProtectedRoute<br/>(requires token)"]
-            ADM["AdminRoute<br/>(requires role=admin)"]
-        end
+A React single-page app talks to an Express API over axios with a JWT bearer token;
+Express reads and writes a single MongoDB database through the raw Node driver.
 
-        subgraph Contexts
-            AUTHCTX["AuthContext<br/>user + token + isArcc<br/>(localStorage)"]
-            GRANTCTX["GrantContext<br/>shared grant draft + budget items<br/>activeGrantId (localStorage)"]
-        end
+## Client map
 
-        subgraph Shared ["Shared components"]
-            HEADER["DashHeader<br/>home / back / profile / sign out"]
-            CRITFORM["CriteriaForm"]
-        end
+Pages grouped by the route guard that wraps them. `PublicRoute` redirects signed-in
+users away; `ProtectedRoute` requires a token; `AdminRoute` additionally requires
+`role=admin`.
 
-        subgraph PublicPages ["Public pages"]
-            LOGIN["Login"]
-            REG["Register"]
-        end
-
-        subgraph UserPages ["Proposer pages"]
-            DASH["Dashboard<br/>my grants + status"]
-            NEW["NewGrant<br/>save draft / submit"]
-            EDIT["EditGrant<br/>locked after submit"]
-            BUDGET["BudgetWorksheet<br/>auto-totaled items"]
-            PROFILE["Profile"]
-        end
-
-        subgraph ReviewPages ["ARCC reviewer pages"]
-            REV["Review<br/>submitted grants queue"]
-            REVDET["ReviewDetail<br/>files + approve/deny"]
-        end
-
-        subgraph AdminPages ["Admin pages"]
-            ADASH["AdminDashboard<br/>all grants + mgmt links"]
-            COLLEGE["CreateCollege"]
-            DEPT["CreateDepartment"]
-            ARCCPG["ArccCommittee"]
-            CRIT["CriteriaManagement"]
-        end
+```mermaid
+flowchart TB
+    subgraph Contexts
+        AUTH["AuthContext<br/>user, token, isArcc, isDean"]
+        GRANT["GrantContext<br/>shared draft + budget, activeGrantId"]
     end
 
-    subgraph Server ["Server (Express, localhost:5000)"]
-        direction TB
-        APP["app.ts"]
-        VERIFY["middleware/auth.ts<br/>verifyToken (JWT)"]
-        CONN["middleware/conn.ts<br/>Mongo client<br/>(connects before listen)"]
-        VALID["grantValidation.ts<br/>draft vs submitted rules"]
+    subgraph Public ["Public (PublicRoute)"]
+        LOGIN[Login]
+        REG[Register]
+    end
+
+    subgraph Proposer ["Proposer (ProtectedRoute)"]
+        DASH[Dashboard]
+        NEW[NewGrant]
+        EDIT[EditGrant]
+        BUDGET[BudgetWorksheet]
+        PROFILE[Profile]
+    end
+
+    subgraph Review ["Review & approval (ProtectedRoute)"]
+        REV[Review]
+        REVDET[ReviewDetail]
+        DEPTREV[DeptReview]
+        CG[CollegeGrants]
+    end
+
+    subgraph Admin ["Admin (ProtectedRoute; Criteria + Allocation are AdminRoute)"]
+        ADASH[AdminDashboard]
+        COLLEGE[CreateCollege]
+        DEPT[CreateDepartment]
+        ARCCPG[ArccCommittee]
+        CRIT[CriteriaManagement]
+        ALLOC[AllocationPage]
+    end
+```
+
+Two contexts back these pages, both persisted to `localStorage`: `AuthContext` holds the
+session (`user`, `token`, and the `isDean` flag resolved at login; `isArcc` is populated
+from a per-page fetch), and
+`GrantContext` holds the shared grant draft and budget items across `NewGrant`,
+`EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, optional back
+link, profile, sign out) renders on every page, and `CriteriaForm` backs criteria
+management. Page-to-page navigation is in [Navigation](#navigation).
+
+## Server and data map
+
+```mermaid
+flowchart LR
+    APP["app.ts"]
+
+    subgraph Middleware
+        VERIFY["verifyToken (JWT)"]
         MULTER["multer<br/>uploads/ (3 files + IRB doc)"]
-
-        AUTHR["routes/auth.ts<br/>/api/auth<br/>register, login, get/update-user"]
-        GRANTR["routes/grantSubmission.ts<br/>/api/grants<br/>submit, edit, get-grant, user-grants,<br/>all (admin), review* (ARCC)"]
-        ADMINR["routes/admin.ts<br/>/api/admin<br/>colleges, departments, arcc,<br/>user-options"]
-        CRITR["routes/criteria.ts<br/>/api/criteria<br/>CRUD (writes admin-only)"]
+        VALID["grantValidation<br/>draft vs submitted rules"]
+        CONN["Mongo conn<br/>(connects before listen)"]
     end
 
-    subgraph Mongo ["MongoDB (linkUpDatabase)"]
+    subgraph Routes
+        AUTHR["/api/auth"]
+        GRANTR["/api/grants"]
+        ADMINR["/api/admin"]
+        CRITR["/api/criteria"]
+        CGR["/api/college-grants"]
+    end
+
+    subgraph Collections ["MongoDB (linkUpDatabase)"]
         CUSER[("user")]
-        CGRANT[("grant<br/>status, reviewStatus,<br/>budgetItems, files")]
-        CARCC[("arcc<br/>committee memberIds")]
+        CGRANT[("grant")]
+        CARCC[("arcc")]
         CCRIT[("criteria")]
         CCOLL[("college / department")]
     end
 
-    %% client wiring
-    PUB --- LOGIN & REG
-    PROT --- DASH & NEW & EDIT & BUDGET & PROFILE & REV & REVDET & ADASH & COLLEGE & DEPT & ARCCPG
-    ADM --- CRIT
-    AUTHCTX --- HEADER
-    GRANTCTX --- NEW & EDIT & BUDGET
-    CRITFORM --- CRIT
+    APP --> AUTHR & GRANTR & ADMINR & CRITR & CGR
+    GRANTR -.- VERIFY & VALID & MULTER
+    ADMINR -.- VERIFY
+    CRITR -.- VERIFY
+    CGR -.- VERIFY
 
-    %% page navigation (main flows)
-    DASH -->|"new / edit"| NEW & EDIT
-    NEW <-->|"budget round-trip"| BUDGET
-    EDIT <-->|"budget round-trip"| BUDGET
-    DASH -->|"ARCC members"| REV
-    REV --> REVDET
-    ADASH --> COLLEGE & DEPT & ARCCPG & CRIT
-
-    %% API calls
-    LOGIN & REG & PROFILE -->|"axios"| AUTHR
-    DASH & NEW & EDIT -->|"axios + Bearer"| GRANTR
-    REV & REVDET -->|"axios + Bearer"| GRANTR
-    ADASH -->|"grants/all (admin)"| GRANTR
-    COLLEGE & DEPT & ARCCPG -->|"axios + Bearer"| ADMINR
-    NEW & EDIT -->|"user-options"| ADMINR
-    CRIT -->|"axios + Bearer"| CRITR
-
-    %% server wiring
-    APP --> AUTHR & GRANTR & ADMINR & CRITR
-    GRANTR --- VERIFY & VALID & MULTER
-    CRITR --- VERIFY
-    ADMINR --- VERIFY
-
-    %% persistence
     AUTHR --> CUSER
     GRANTR --> CGRANT & CARCC & CUSER
     ADMINR --> CCOLL & CARCC & CUSER
     CRITR --> CCRIT
-    CONN --- Mongo
+    CGR --> CGRANT & CCOLL
 ```
 
-`review*` covers `/review`, `/review/:id`, `/review/:id/files/:savedName` (GET) and `/review/:id` (PUT).
+What each route group handles:
+
+- **`/api/auth`** — register, login, get / update user.
+- **`/api/grants`** — submit, edit, get-grant, user-grants, all (admin), and `review*`.
+- **`/api/admin`** — list colleges / departments / users / user-options; create and
+  update colleges and departments; read and update the ARCC committee; checkDeptChair.
+- **`/api/criteria`** — CRUD (writes admin-only).
+- **`/api/college-grants`** — dean list / get / approve-reject.
+
+`review*` covers `GET /review`, `GET /review/:id`, `GET /review/:id/files/:savedName`,
+`GET /review/department`, `PUT /review/:id` (stores a reviewer's per-criterion scores and
+comments), and `PUT /review/approval/:id` (sets approve/deny). The GET review endpoints
+and both PUTs are open to ARCC members and department chairs (`isArccMember || isDeptChair`).
 
 ## Grant lifecycle
+
+A grant carries several independent fields (`server/src/routes/grantSubmission.ts`,
+`server/src/routes/collegeGrants.ts`). `status` (`draft` / `submitted`) controls
+editability. Reviewing is split across three concurrent tracks that all live on the
+grant document, with no separate Review entity:
+
+- **`reviews[]`** — an embedded array, one entry per committee member, each holding
+  per-criterion `scores` and `comments`, upserted on re-submit. The field is created on
+  the first score, not at submit.
+- **`reviewStatus`** (`null` for a draft / `pending` once submitted / `approved` /
+  `denied`) — the approve/deny outcome, written by a department chair or ARCC member
+  through the approval route. A freshly submitted grant has `reviewStatus: "pending"` and
+  no `reviews` field yet.
+- **`collegeReviewStatus`** (`approved` / `rejected` / unset) — the college dean's
+  decision, written only for a grant that requests money from that dean's college; unset
+  reads as pending.
+
+Editing track (`status`):
 
 ```mermaid
 stateDiagram-v2
     [*] --> Draft : proposer saves
+    [*] --> Submitted : submit directly
     Draft --> Draft : edit, budget worksheet
     Draft --> Submitted : Submit (confirm dialog, locks)
-    Submitted --> Pending : reviewStatus pending
-    Pending --> Approved : ARCC approves
-    Pending --> Denied : ARCC denies
+    Submitted --> [*] : locked, 403 on edit
 
     note right of Draft
         proposer only
         editable, invisible to reviewers
     end note
-    note right of Pending
-        visible in /review queue
-        owner currently sees only "Submitted"
+```
+
+Review tracks (run once submitted, concurrently):
+
+```mermaid
+stateDiagram-v2
+    [*] --> Submitted : grant submitted (reviewStatus: pending, no reviews field)
+
+    state "Committee scoring" as Scoring
+    Submitted --> Scoring : each member upserts a review into reviews[]
+    Scoring --> Scoring : re-score (upsert)
+
+    Submitted --> Approved : dept chair / ARCC approves (reviewStatus)
+    Submitted --> Denied : dept chair / ARCC denies (reviewStatus)
+
+    Submitted --> CollegeApproved : dean approves (collegeReviewStatus)
+    Submitted --> CollegeRejected : dean rejects (collegeReviewStatus)
+
+    note right of Submitted
+        scoring, approve/deny, and dean review
+        are independent; a member may score
+        before any approval lands
     end note
 ```
 
-## Navigation today (dead ends marked)
+| status            | field written           | Trigger          | Actor                | Route                                 |
+| ----------------- | ----------------------- | ---------------- | -------------------- | ------------------------------------- |
+| (new) → draft     | none                    | save as draft    | owner                | `POST /api/grants/submit`             |
+| (new) → submitted | `reviewStatus: pending` | submit directly  | owner                | `POST /api/grants/submit`             |
+| draft → draft     | none                    | edit, save draft | owner                | `PUT /api/grants/edit/:id`            |
+| draft → submitted | `reviewStatus: pending` | submit           | owner                | `PUT /api/grants/edit/:id`            |
+| submitted         | `reviews[]` upsert      | score the rubric | ARCC member or chair | `PUT /api/grants/review/:id`          |
+| submitted         | `reviewStatus`          | approve / deny   | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
+| submitted         | `collegeReviewStatus`   | approve / reject | college dean         | `PUT /api/college-grants/:id`         |
+
+## Navigation
 
 ```mermaid
 flowchart TD
     subgraph proposer [Any user]
         D[/dashboard/] -->|Submit new| N[/grants/new/]
         D -->|Edit| E[/grants/edit/:id/]
-        N <-->|Open Budget Worksheet| B[/budget-worksheet/]
-        E <-->|Open Budget Worksheet| B
+        N <-->|Budget Worksheet| B[/budget-worksheet/]
+        E <-->|Budget Worksheet| B
         D -->|email btn| P[/profile/]
     end
 
-    subgraph arcc [ARCC member only]
-        D -->|Review btn, ONLY on dashboard| R[/review/]
-        R --> RD[/review/:id/]
+    subgraph review [ARCC + dept chair]
+        D -->|Review btn, if ARCC or dept chair| R[/review/]
+        R -->|View| RD[/"review/:id<br/>scoring or approve/deny"/]
+        R -->|if dept chair| DR[/department-review/]
+        DR -->|View| RD
     end
+
+    subgraph dean [College dean]
+        CG[/"college-grants<br/>approve / reject"/]
+    end
+    D -.->|auto-redirect if dean| CG
 
     subgraph admin [Admin]
         A[/admin/] --> AC[/admin/college/]
@@ -159,55 +223,125 @@ flowchart TD
         A --> AA[/admin/arcc/]
         A --> CR[/admin/criteria/]
         A -->|My Grants| D
-        A -.-> GL[Grant Applications list]
+        A --> GL[Grant Applications list]
+        A -.->|route only, no nav link| AL[/admin/allocation/]
     end
-
-    GL -. "titles only, nothing clickable" .-x DEAD1[no grant detail]
-    A -. "admin on committee never sees Review btn" .-x DEAD2[review unreachable from /admin]
-    RD -. "no link to rubric" .-x DEAD3[criteria invisible to reviewers]
-
-    style DEAD1 fill:#fdd,stroke:#c00
-    style DEAD2 fill:#fdd,stroke:#c00
-    style DEAD3 fill:#fdd,stroke:#c00
 ```
 
-## Proposed navigation
+`ReviewDetail` (`/review/:id`) gates its controls on how it was reached: navigations pass
+`state.fromApprovalView`, so the same page shows the rubric-scoring form when an ARCC
+reviewer opens it and the approve/deny controls when a department chair opens it from
+`/department-review`.
 
-Planned changes: ARCC membership moves into AuthContext so the header can show the Review button on every page (admins included); proposer dashboard shows pending/approved/denied per grant; admins open grants read-only through the review detail page, with approve/deny gated by actual committee membership.
+## Review surfaces
+
+Review rights are not a single flag. A user can be a proposer plus any of: **ARCC
+reviewer** (committee membership, `isArccMember`), **department chair**
+(`GET /api/admin/checkDeptChair`), **college dean** (email matches a college's `dean`),
+or **admin** (`role=admin`). Each role has its own surface:
+
+- **ARCC** `/review` → `/review/:id`: score the grant against the rubric criteria and
+  leave comments. Each member upserts one review; the rubric renders inline.
+- **Department chair** `/department-review` → `/review/:id`: grants in the chair's
+  department; reached from a button on `/review`.
+- **College dean** `/college-grants`: only grants with positive funding from the dean's
+  college; approve / reject inline (`collegeReviewStatus`), with no separate detail page.
+  Reached by an automatic redirect on login.
+- **Admin** `/admin`: management pages plus the all-grants list.
+
+Role detection is mixed: `isDean` is resolved at login and kept in `AuthContext`, while
+`isArcc` and department-chair status are fetched per page (`GET /api/admin/arcc` and
+`checkDeptChair`, from Dashboard and Review).
+
+## Known gaps
+
+- **Admin all-grants list** — the "Grant Applications" rows are plain text with no
+  click-through to a read-only `/review/:id`.
+- **Header is not role-aware** — `DashHeader` renders on every page (brand/home, back,
+  profile, sign out) but surfaces no role-specific navigation. ARCC and dept-chair entries
+  are buttons on Dashboard / Review (dept-chair gated by a per-page `checkDeptChair`
+  fetch), and the dean reaches `/college-grants`
+  through a post-login redirect with no persistent nav link back. `isDean` is resolved at
+  login and `isArcc` is page-fetched into `AuthContext`, so a single header could resolve
+  all three role flags in one place.
+- **No cross-reviewer consolidation** — each reviewer's per-criterion total is computed
+  client-side; there is no consolidated, normalized grant-level rating across all
+  reviewers for allocation to key off.
+- **Allocation page is UI only** — `/admin/allocation` renders placeholder data; the
+  cycle inputs and award math are not wired to real grants, and Send to Accounting does
+  not export a spreadsheet.
+
+## Roles and permissions
+
+Only two roles live on `user.role` (`user` or `admin`). The review rights are not roles,
+they are data-driven and checked per request:
+
+- **ARCC member** — membership in the singleton ARCC committee document, `isArccMember()`.
+- **Department chair** — a `department` doc whose `chair` equals the user's email,
+  `isDeptChair()` / `GET /api/admin/checkDeptChair`.
+- **College dean** — a `college` doc whose `dean` equals the user's email, resolved
+  server-side in `collegeGrants.ts`.
+
+A single user can hold several of these at once.
+
+| Capability                                           | user | ARCC | dept chair | dean | admin |
+| ---------------------------------------------------- | :--: | :--: | :--------: | :--: | :---: |
+| Register, log in, edit own profile                   | yes  | yes  |    yes     | yes  |  yes  |
+| Create / edit / submit own grants                    | yes  | yes  |    yes     | yes  |  yes  |
+| Score submitted grants vs rubric                     |  no  | yes  |    yes     |  no  |  no   |
+| Approve / deny (`reviewStatus`)                      |  no  | yes  |    yes     |  no  |  no   |
+| Approve / reject own college (`collegeReviewStatus`) |  no  |  no  |     no     | yes  |  no   |
+| Download grant files                                 | own  | yes  |    yes     | own  |  yes  |
+| View all grants                                      |  no  |  no  |     no     |  no  |  yes  |
+| Manage colleges / departments                        |  no  |  no  |     no     |  no  |  yes  |
+| Manage ARCC committee membership                     |  no  |  no  |     no     |  no  |  yes  |
+| Manage review criteria                               |  no  |  no  |     no     |  no  |  yes  |
+
+A department chair sees only grants from their own department; a dean sees only grants
+that request funding from their college.
+
+## Core sequences
+
+Submit a proposal:
 
 ```mermaid
-flowchart TD
-    subgraph header [DashHeader on every page]
-        H1[brand: role-aware home]
-        H2[My Grants]
-        H3[Review, shown to any ARCC member]
-        H4[Admin, shown to admins]
-        H5[email: profile]
-        H6[Sign out]
-    end
-
-    subgraph proposer [Proposer world]
-        D[/dashboard/] --> N[/grants/new/]
-        D --> E[/grants/edit/:id/]
-        N <--> B[/budget-worksheet/]
-        E <--> B
-        D --- BADGE[per-grant badge:<br/>draft / pending / approved / denied]
-    end
-
-    subgraph review [Review world]
-        R[/review/] --> RD[/review/:id/]
-        RD --> ACT{caller ARCC?}
-        ACT -->|yes| APPROVE[Approve / Deny]
-        ACT -->|no, admin read-only| VIEW[view only]
-    end
-
-    subgraph admin [Admin world]
-        A[/admin/] --> MGMT[college / department / committee / criteria]
-        A --> GL[Grant Applications]
-        GL -->|row click| RD
-    end
-
-    H3 --> R
-    H4 --> A
-    H2 --> D
+sequenceDiagram
+    actor Owner
+    participant Client
+    participant API as Express /api/grants
+    participant DB as MongoDB
+    Owner->>Client: fill form, click Submit
+    Client->>API: POST /submit (JWT)
+    API->>API: validate, set status, reviewStatus: pending
+    API->>DB: insert grant
+    DB-->>API: ok
+    API-->>Client: 201
+    Client-->>Owner: redirect to /dashboard
 ```
+
+Score a proposal (ARCC reviewer):
+
+```mermaid
+sequenceDiagram
+    actor Reviewer as ARCC member
+    participant Client
+    participant API as Express /api/grants
+    participant DB as MongoDB
+    Reviewer->>Client: open /review/:grantId
+    Client->>API: GET /api/criteria (render rubric)
+    Reviewer->>Client: pick a score per criterion, add comments
+    Client->>API: PUT /review/:id (JWT, {scores, comments})
+    API->>API: isArccMember || isDeptChair?
+    alt not authorized
+        API-->>Client: 403
+    else authorized
+        API->>API: validate scores against criteria
+        API->>DB: upsert reviewer entry into grant.reviews[]
+        DB-->>API: ok
+        API-->>Client: 200 (review entry)
+    end
+```
+
+Approval is a separate call: a department chair (or ARCC member) sets approve/deny via
+`PUT /api/grants/review/approval/:id` (`reviewStatus`), and a college dean approves /
+rejects via `PUT /api/college-grants/:id` (`collegeReviewStatus`).
