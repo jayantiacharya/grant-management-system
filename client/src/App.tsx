@@ -17,6 +17,7 @@ import ReviewDetail from "./pages/ReviewDetail";
 import BudgetWorksheet from "./pages/BudgetWorksheet";
 import CriteriaManagement from "./pages/admin/CriteriaManagement";
 import CollegeGrants from "./pages/CollegeGrants";
+import CollegeGrantDetail from "./pages/CollegeGrantDetail";
 import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
 
@@ -173,6 +174,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CollegeGrants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/college-grants/:grantId"
+              element={
+                <ProtectedRoute>
+                  <CollegeGrantDetail />
                 </ProtectedRoute>
               }
             />
