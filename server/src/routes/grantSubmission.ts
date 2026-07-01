@@ -221,7 +221,7 @@ router.post(
       status: normalizedStatus,
       submittedAt: isDraft ? null : new Date(),
       departmentReviewStatus: GRANT_APPROVAL_STATUS.PENDING,
-      departmentReviededAt: null,
+      departmentReviewedAt: null,
       collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
         ? GRANT_APPROVAL_STATUS.PENDING
         : "N/A",
