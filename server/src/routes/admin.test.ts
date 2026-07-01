@@ -28,6 +28,10 @@ const validToken = jwt.sign(
   { userId: "u1", email: "alice@wsu.edu", role: "user" },
   process.env.JWT_SECRET!,
 );
+const adminToken = jwt.sign(
+  { userId: "u2", email: "admin@wsu.edu", role: "admin" },
+  process.env.JWT_SECRET!,
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,9 +39,24 @@ beforeEach(() => {
 });
 
 describe("GET /api/admin/users", () => {
+  it("401 without Authorization", async () => {
+    const res = await request(app).get("/api/admin/users");
+    expect(res.status).toBe(401);
+  });
+
+  it("403 with non-admin token", async () => {
+    findToArray.mockResolvedValue([]);
+    const res = await request(app)
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${validToken}`);
+    expect(res.status).toBe(403);
+  });
+
   it("uses projection that excludes password", async () => {
     findToArray.mockResolvedValue([{ id: "u1", email: "alice@wsu.edu" }]);
-    await request(app).get("/api/admin/users");
+    await request(app)
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(lastFindOptions.value).toEqual({ projection: { password: 0 } });
   });
 
@@ -45,7 +64,9 @@ describe("GET /api/admin/users", () => {
     findToArray.mockResolvedValue([
       { id: "u1", email: "alice@wsu.edu", role: "user" },
     ]);
-    const res = await request(app).get("/api/admin/users");
+    const res = await request(app)
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
       { id: "u1", email: "alice@wsu.edu", role: "user" },
