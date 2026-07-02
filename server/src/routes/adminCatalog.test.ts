@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 
 const { findToArray, insertOne } = vi.hoisted(() => ({
@@ -21,6 +22,15 @@ vi.mock("../middleware/conn.js", () => ({
 import { createApp } from "../app.js";
 
 const app = createApp();
+
+const validToken = jwt.sign(
+  { userId: "u1", email: "alice@wsu.edu", role: "user" },
+  process.env.JWT_SECRET!,
+);
+const adminToken = jwt.sign(
+  { userId: "u2", email: "admin@wsu.edu", role: "admin" },
+  process.env.JWT_SECRET!,
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -67,9 +77,25 @@ describe("GET /api/admin/departments", () => {
 });
 
 describe("POST /api/admin/createCollege", () => {
+  it("401 without Authorization", async () => {
+    const res = await request(app)
+      .post("/api/admin/createCollege")
+      .send({ name: "Engineering", dean: "alice@wsu.edu" });
+    expect(res.status).toBe(401);
+  });
+
+  it("403 with non-admin token", async () => {
+    const res = await request(app)
+      .post("/api/admin/createCollege")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ name: "Engineering", dean: "alice@wsu.edu" });
+    expect(res.status).toBe(403);
+  });
+
   it("400 when name missing", async () => {
     const res = await request(app)
       .post("/api/admin/createCollege")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ dean: "alice@wsu.edu" });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/all fields required/i);
@@ -78,6 +104,7 @@ describe("POST /api/admin/createCollege", () => {
   it("400 when dean missing", async () => {
     const res = await request(app)
       .post("/api/admin/createCollege")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ name: "Engineering" });
     expect(res.status).toBe(400);
   });
@@ -85,6 +112,7 @@ describe("POST /api/admin/createCollege", () => {
   it("201 inserts college and returns status", async () => {
     const res = await request(app)
       .post("/api/admin/createCollege")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ name: "Engineering", dean: "alice@wsu.edu" });
     expect(res.status).toBe(201);
     expect(res.body.session).toMatch(/college created/i);
@@ -96,9 +124,25 @@ describe("POST /api/admin/createCollege", () => {
 });
 
 describe("POST /api/admin/createDepartment", () => {
+  it("401 without Authorization", async () => {
+    const res = await request(app)
+      .post("/api/admin/createDepartment")
+      .send({ name: "CS", college: "Engineering" });
+    expect(res.status).toBe(401);
+  });
+
+  it("403 with non-admin token", async () => {
+    const res = await request(app)
+      .post("/api/admin/createDepartment")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ name: "CS", college: "Engineering" });
+    expect(res.status).toBe(403);
+  });
+
   it("400 when name missing", async () => {
     const res = await request(app)
       .post("/api/admin/createDepartment")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ college: "Engineering" });
     expect(res.status).toBe(400);
   });
@@ -106,6 +150,7 @@ describe("POST /api/admin/createDepartment", () => {
   it("400 when college missing", async () => {
     const res = await request(app)
       .post("/api/admin/createDepartment")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ name: "CS" });
     expect(res.status).toBe(400);
   });
@@ -113,6 +158,7 @@ describe("POST /api/admin/createDepartment", () => {
   it("201 inserts department with name, college and chair", async () => {
     const res = await request(app)
       .post("/api/admin/createDepartment")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ name: "CS", college: "Engineering", chair: "Dr. Smith" });
     expect(res.status).toBe(201);
     expect(res.body.session).toMatch(/department created/i);

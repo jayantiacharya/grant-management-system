@@ -7,8 +7,10 @@ import "./Dashboard.css";
 import "./ArccCommittee.css";
 
 export default function CreateCollege() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
+
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
   const [colleges, setColleges] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -25,7 +27,10 @@ export default function CreateCollege() {
   };
 
   const fetchUsers = async () => {
-    const { data } = await axios.get("http://localhost:5000/api/admin/users");
+    const { data } = await axios.get(
+      "http://localhost:5000/api/admin/users",
+      authHeader,
+    );
     setUsers(data);
   };
 
@@ -44,17 +49,18 @@ export default function CreateCollege() {
 
     try {
       if (editingId) {
-        await axios.post("http://localhost:5000/api/admin/updateCollege", {
-          id: editingId,
-          name: collegeName,
-          dean: selectedDean,
-        });
+        await axios.post(
+          "http://localhost:5000/api/admin/updateCollege",
+          { id: editingId, name: collegeName, dean: selectedDean },
+          authHeader,
+        );
         setMessage("College updated successfully!");
       } else {
-        await axios.post("http://localhost:5000/api/admin/createCollege", {
-          name: collegeName,
-          dean: selectedDean,
-        });
+        await axios.post(
+          "http://localhost:5000/api/admin/createCollege",
+          { name: collegeName, dean: selectedDean },
+          authHeader,
+        );
         setMessage("College created successfully!");
       }
 

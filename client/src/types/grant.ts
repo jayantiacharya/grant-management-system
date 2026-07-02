@@ -15,3 +15,8 @@ export const GRANT_APPROVAL_STATUS = {
 export type GrantStatus = (typeof GRANT_STATUS)[keyof typeof GRANT_STATUS];
 export type GrantApprovalStatus =
   (typeof GRANT_APPROVAL_STATUS)[keyof typeof GRANT_APPROVAL_STATUS];
+
+export type UserOption = {
+  id: string;
+  email: string;
+};

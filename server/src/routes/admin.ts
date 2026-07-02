@@ -1,9 +1,17 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import { ObjectId } from "mongodb";
 import dbo from "../middleware/conn.js"; // Database connection
-import { AuthRequest, verifyToken } from "../middleware/auth.js";
+import { verifyToken, type AuthRequest } from "../middleware/auth.js";
 
 const router = Router();
+
+function requireAdmin(req: AuthRequest, res: Response): boolean {
+  if (req.user?.role !== "admin") {
+    res.status(403).json({ message: "Admin access required." });
+    return false;
+  }
+  return true;
+}
 
 router.route("/colleges").get(async (req, res) => {
   // const db = readDB();
@@ -32,7 +40,8 @@ router.route("/departments").get(async (req, res) => {
   );
 });
 
-router.route("/users").get(async (req, res) => {
+router.route("/users").get(verifyToken, async (req: AuthRequest, res) => {
+  if (!requireAdmin(req, res)) return;
   let db_connect = dbo.getDb();
   const users = await db_connect
     .collection("user")
@@ -50,125 +59,140 @@ router.get("/user-options", verifyToken, async (_req, res) => {
   res.json(users);
 });
 
-router.route("/createCollege").post(async (req, res) => {
-  let status = "";
-  let db_connect = dbo.getDb();
-  const { name, dean } = req.body;
+router
+  .route("/createCollege")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let status = "";
+    let db_connect = dbo.getDb();
+    const { name, dean } = req.body;
 
-  if (!name || !dean) {
-    return res.status(400).json({
-      message: "All fields required",
+    if (!name || !dean) {
+      return res.status(400).json({
+        message: "All fields required",
+      });
+    }
+
+    // const db = readDB();
+    let collegeObj = {
+      name: name,
+      dean: dean,
+    };
+    await db_connect.collection("college").insertOne(collegeObj);
+    status = "College created successfully";
+
+    // db.colleges.push(college);
+
+    // writeDB(db);
+    res.status(201).json({
+      session: status,
     });
-  }
-
-  // const db = readDB();
-  let collegeObj = {
-    name: name,
-    dean: dean,
-  };
-  await db_connect.collection("college").insertOne(collegeObj);
-  status = "College created successfully";
-
-  // db.colleges.push(college);
-
-  // writeDB(db);
-  res.status(201).json({
-    session: status,
   });
-});
 
-router.route("/updateCollege").post(async (req, res) => {
-  let status = "";
-  let db_connect = dbo.getDb();
-  const { id, name, dean } = req.body;
+router
+  .route("/updateCollege")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let status = "";
+    let db_connect = dbo.getDb();
+    const { id, name, dean } = req.body;
 
-  if (!id || !name || !dean) {
-    return res.status(400).json({
-      message: "All fields required",
+    if (!id || !name || !dean) {
+      return res.status(400).json({
+        message: "All fields required",
+      });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    try {
+      await db_connect
+        .collection("college")
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { name: name, dean: dean } },
+        );
+    } catch (err) {
+      console.error("updateCollege failed:", err);
+      return res.status(500).json({ message: "Failed to update college" });
+    }
+    status = "College updated successfully";
+
+    res.status(201).json({
+      session: status,
     });
-  }
-
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid id" });
-  }
-
-  try {
-    await db_connect
-      .collection("college")
-      .updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { name: name, dean: dean } },
-      );
-  } catch (err) {
-    console.error("updateCollege failed:", err);
-    return res.status(500).json({ message: "Failed to update college" });
-  }
-  status = "College updated successfully";
-
-  res.status(201).json({
-    session: status,
   });
-});
 
-router.route("/createDepartment").post(async (req, res) => {
-  let status = "";
-  let db_connect = dbo.getDb();
-  const { name, college, chair } = req.body;
+router
+  .route("/createDepartment")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let status = "";
+    let db_connect = dbo.getDb();
+    const { name, college, chair } = req.body;
 
-  if (!name || !college) {
-    return res.status(400).json({
-      message: "All fields required",
+    if (!name || !college) {
+      return res.status(400).json({
+        message: "All fields required",
+      });
+    }
+
+    let departObj = {
+      name: name,
+      college: college,
+      chair: chair,
+    };
+
+    await db_connect.collection("department").insertOne(departObj);
+    status = "Department created successfully";
+
+    res.status(201).json({
+      session: status,
     });
-  }
-
-  let departObj = {
-    name: name,
-    college: college,
-    chair: chair,
-  };
-
-  await db_connect.collection("department").insertOne(departObj);
-  status = "Department created successfully";
-
-  res.status(201).json({
-    session: status,
   });
-});
 
-router.route("/updateDepartment").post(async (req, res) => {
-  let status = "";
-  let db_connect = dbo.getDb();
-  const { id, name, college, chair } = req.body;
+router
+  .route("/updateDepartment")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let status = "";
+    let db_connect = dbo.getDb();
+    const { id, name, college, chair } = req.body;
 
-  if (!id || !name || !college) {
-    return res.status(400).json({
-      message: "All fields required",
+    if (!id || !name || !college) {
+      return res.status(400).json({
+        message: "All fields required",
+      });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    try {
+      await db_connect
+        .collection("department")
+        .updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { name: name, college: college, chair: chair } },
+        );
+    } catch (err) {
+      console.error("updateDepartment failed:", err);
+      return res.status(500).json({ message: "Failed to update department" });
+    }
+    status = "Department updated successfully";
+
+    res.status(201).json({
+      session: status,
     });
-  }
-
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid id" });
-  }
-
-  try {
-    await db_connect
-      .collection("department")
-      .updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { name: name, college: college, chair: chair } },
-      );
-  } catch (err) {
-    console.error("updateDepartment failed:", err);
-    return res.status(500).json({ message: "Failed to update department" });
-  }
-  status = "Department updated successfully";
-
-  res.status(201).json({
-    session: status,
   });
-});
 
-router.route("/arcc").get(async (req, res) => {
+// Readable by any authenticated user: the dashboard uses this to determine
+// whether the current user is on the committee. Writes (/updateArcc) stay
+// admin-only.
+router.route("/arcc").get(verifyToken, async (_req: AuthRequest, res) => {
   let db_connect = dbo.getDb();
   const doc = await db_connect.collection("arcc").findOne({ key: "committee" });
   res.json({
@@ -177,7 +201,8 @@ router.route("/arcc").get(async (req, res) => {
   });
 });
 
-router.route("/updateArcc").post(async (req, res) => {
+router.route("/updateArcc").post(verifyToken, async (req: AuthRequest, res) => {
+  if (!requireAdmin(req, res)) return;
   let status = "";
   let db_connect = dbo.getDb();
   const { chairId, memberIds } = req.body;

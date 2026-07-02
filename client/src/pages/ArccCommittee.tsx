@@ -13,7 +13,7 @@ type ArccUser = {
 };
 
 export default function ArccCommittee() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   const [allUsers, setAllUsers] = useState<ArccUser[]>([]);
@@ -21,9 +21,12 @@ export default function ArccCommittee() {
   const [chairId, setChairId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   const fetchUsers = async () => {
     const { data: users } = await axios.get(
       "http://localhost:5000/api/admin/users",
+      authHeader,
     );
     const mapped = (Array.isArray(users) ? users : [])
       .filter((u) => u?.id && u?.email)
@@ -38,6 +41,7 @@ export default function ArccCommittee() {
   const fetchArcc = async () => {
     const { data: arcc } = await axios.get(
       "http://localhost:5000/api/admin/arcc",
+      authHeader,
     );
     setChairId(arcc?.chairId ? String(arcc.chairId) : null);
     setMemberIds(
@@ -64,10 +68,11 @@ export default function ArccCommittee() {
     setMemberIds(nextMemberIds);
 
     try {
-      await axios.post("http://localhost:5000/api/admin/updateArcc", {
-        chairId,
-        memberIds: nextMemberIds,
-      });
+      await axios.post(
+        "http://localhost:5000/api/admin/updateArcc",
+        { chairId, memberIds: nextMemberIds },
+        authHeader,
+      );
       setMessage("");
     } catch {
       setMessage("Failed to save committee.");
@@ -81,10 +86,11 @@ export default function ArccCommittee() {
     setChairId(nextChairId);
 
     try {
-      await axios.post("http://localhost:5000/api/admin/updateArcc", {
-        chairId: nextChairId,
-        memberIds: nextMemberIds,
-      });
+      await axios.post(
+        "http://localhost:5000/api/admin/updateArcc",
+        { chairId: nextChairId, memberIds: nextMemberIds },
+        authHeader,
+      );
       setMessage("");
     } catch {
       setMessage("Failed to save committee.");
@@ -99,10 +105,11 @@ export default function ArccCommittee() {
     setMemberIds(nextMemberIds);
 
     try {
-      await axios.post("http://localhost:5000/api/admin/updateArcc", {
-        chairId: userId,
-        memberIds: nextMemberIds,
-      });
+      await axios.post(
+        "http://localhost:5000/api/admin/updateArcc",
+        { chairId: userId, memberIds: nextMemberIds },
+        authHeader,
+      );
       setMessage("");
     } catch {
       setMessage("Failed to save committee.");
