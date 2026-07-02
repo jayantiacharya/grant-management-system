@@ -50,7 +50,7 @@ router.get("/grants", async (_req: AuthRequest, res) => {
   try {
     const db = dbo.getDb();
 
-    const grants = await db.collection("grants").find({}).toArray();
+    const grants = await db.collection("grant").find({}).toArray();
     const reviews = await db.collection("reviews").find({}).toArray();
 
     const enriched = grants.map((grant: any) => {
@@ -112,7 +112,7 @@ router.post("/send-to-accounting", async (req: AuthRequest, res) => {
     const db = dbo.getDb();
 
     // DO NOT trust client payload → recompute from DB
-    const grants = await db.collection("grants").find({}).toArray();
+    const grants = await db.collection("grant").find({}).toArray();
     const reviews = await db.collection("reviews").find({}).toArray();
 
     const header = [

@@ -1,229 +1,200 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import DashHeader from "../components/DashHeader";
+import { useAuth } from "../context/AuthContext";
 import "./AllocationPage.css";
 
 type GrantAllocation = {
-  id: number;
+  id: string | number;
   grantTitle: string;
   submittedBy: string;
   principalInvestigator: string;
   arccAmountRequested: number;
   otherSourcesAmount: number;
-  reviewerScores: number[];
+  finalRating: number;
+  allocatedAmount: number;
+  status: string;
 };
 
-type AllocationRule = {
-  id: number;
-  minRating: string;
-  maxRating: string;
-  allocationPercent: string;
+type ApiGrant = {
+  id?: string | number;
+  _id?: string;
+  grantTitle?: string;
+  title?: string;
+  submittedBy?: string;
+  proposerName?: string;
+  principalInvestigator?: string;
+  projectDirector?: string;
+  arccAmountRequested?: number;
+  amountRequested?: number;
+  otherSourcesAmount?: number;
+  otherSources?: number;
+  finalRating?: number;
+  finalRatingPercentage?: number;
+  allocatedAmount?: number;
+  status?: string;
 };
-
-const initialGrants: GrantAllocation[] = [
-  {
-    id: 1,
-    grantTitle: "STEM Lab Equipment",
-    submittedBy: "John Smith",
-    principalInvestigator: "Dr. Emily Carter",
-    arccAmountRequested: 8000,
-    otherSourcesAmount: 2500,
-    reviewerScores: [88, 90, 84, 92, 86],
-  },
-  {
-    id: 2,
-    grantTitle: "Student Research Support",
-    submittedBy: "Sarah Johnson",
-    principalInvestigator: "Dr. Michael Brown",
-    arccAmountRequested: 5000,
-    otherSourcesAmount: 1500,
-    reviewerScores: [72, 75, 70, 74, 69],
-  },
-];
 
 export default function AllocationPage() {
+  const { token } = useAuth();
+
   const [currentCycleAmount, setCurrentCycleAmount] = useState("50000");
   const [leftoverAmount, setLeftoverAmount] = useState("37000");
   const [cutoffPercentage, setCutoffPercentage] = useState("75");
   const [allocationFinalized, setAllocationFinalized] = useState(false);
 
-  const [rules, setRules] = useState<AllocationRule[]>([
-    { id: 1, minRating: "90", maxRating: "100", allocationPercent: "100" },
-    { id: 2, minRating: "80", maxRating: "89.99", allocationPercent: "75" },
-    { id: 3, minRating: "75", maxRating: "79.99", allocationPercent: "50" },
-  ]);
-
-  // -------------------------
-  // Helpers
-  // -------------------------
-
-  const getAggregateFinalRating = (scores: number[]) => {
-    if (scores.length === 0) return 0;
-    return scores.reduce((a, b) => a + b, 0) / scores.length;
-  };
-
-  const getAllocationPercent = (rating: number) => {
-    const rule = rules.find(
-      (r) => rating >= Number(r.minRating) && rating <= Number(r.maxRating),
-    );
-
-    return rule ? Number(rule.allocationPercent) : 0;
-  };
-
-  const getAllocatedAmount = (grant: GrantAllocation) => {
-    const rating = getAggregateFinalRating(grant.reviewerScores);
-
-    if (rating < Number(cutoffPercentage)) return 0;
-
-    if (rating >= 90) return grant.arccAmountRequested;
-
-    const percent = getAllocationPercent(rating);
-    return (grant.arccAmountRequested * percent) / 100;
-  };
-
-  //SINGLE SOURCE OF TRUTH
-  const getStatus = (rating: number, allocatedAmount: number) => {
-    if (rating < Number(cutoffPercentage)) return "Rejected";
-    if (rating >= 90) return "Approved (Full)";
-    if (allocatedAmount > 0) return "Approved (Partial)";
-    return "Pending";
-  };
+  const [grants, setGrants] = useState<GrantAllocation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const formatMoney = (amount: number | string) =>
-    Number(amount).toLocaleString("en-US", {
+    Number(amount || 0).toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
     });
 
-  const eligibleGrants = initialGrants.filter(
-    (g) =>
-      getAggregateFinalRating(g.reviewerScores) >= Number(cutoffPercentage),
-  );
-
-  const rejectedGrants = initialGrants.filter(
-    (g) => getAggregateFinalRating(g.reviewerScores) < Number(cutoffPercentage),
-  );
-
-  // -------------------------
-  // Rules
-  // -------------------------
-
-  const handleRuleChange = (
-    id: number,
-    field: keyof Omit<AllocationRule, "id">,
-    value: string,
-  ) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+  const normalizeGrant = (grant: ApiGrant): GrantAllocation => {
+    const finalRating = Number(
+      grant.finalRatingPercentage ?? grant.finalRating ?? 0,
     );
+
+    const arccAmountRequested = Number(
+      grant.arccAmountRequested ?? grant.amountRequested ?? 0,
+    );
+
+    const otherSourcesAmount = Number(
+      grant.otherSourcesAmount ?? grant.otherSources ?? 0,
+    );
+
+    const allocatedAmount = Number(grant.allocatedAmount ?? 0);
+
+    return {
+      id: grant.id ?? grant._id ?? crypto.randomUUID(),
+      grantTitle: grant.grantTitle ?? grant.title ?? "Untitled Grant",
+      submittedBy: grant.submittedBy ?? grant.proposerName ?? "Not listed",
+      principalInvestigator:
+        grant.principalInvestigator ?? grant.projectDirector ?? "Not listed",
+      arccAmountRequested,
+      otherSourcesAmount,
+      finalRating,
+      allocatedAmount,
+      status:
+        grant.status ??
+        (finalRating < Number(cutoffPercentage)
+          ? "Rejected"
+          : allocatedAmount >= arccAmountRequested
+            ? "Approved (Full)"
+            : allocatedAmount > 0
+              ? "Approved (Partial)"
+              : "Pending"),
+    };
   };
 
-  const handleAddRule = () => {
-    setRules((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        minRating: "",
-        maxRating: "",
-        allocationPercent: "",
-      },
-    ]);
+  const fetchAllocationGrants = async () => {
+    if (!token) return;
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const { data } = await axios.get(
+        "http://localhost:5000/api/allocation/grants",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const apiGrants = Array.isArray(data) ? data : data.grants;
+
+      setGrants(Array.isArray(apiGrants) ? apiGrants.map(normalizeGrant) : []);
+
+      if (data.currentCycleAmount !== undefined) {
+        setCurrentCycleAmount(String(data.currentCycleAmount));
+      }
+
+      if (data.leftoverAmount !== undefined) {
+        setLeftoverAmount(String(data.leftoverAmount));
+      }
+
+      if (data.cutoffPercentage !== undefined) {
+        setCutoffPercentage(String(data.cutoffPercentage));
+      }
+    } catch (error) {
+      console.error("Failed to load allocation grants:", error);
+      setMessage("Failed to load allocation data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveRule = (id: number) => {
-    setRules((prev) => prev.filter((r) => r.id !== id));
+  useEffect(() => {
+    fetchAllocationGrants();
+  }, [token]);
+
+  const approvedGrants = grants.filter(
+    (grant) => grant.finalRating >= Number(cutoffPercentage),
+  );
+
+  const rejectedGrants = grants.filter(
+    (grant) => grant.finalRating < Number(cutoffPercentage),
+  );
+
+  const handleSendToAccounting = async () => {
+    if (!token) return;
+
+    try {
+      await axios.post(
+        "http://localhost:5000/api/allocation/send-to-accounting",
+        {
+          currentCycleAmount: Number(currentCycleAmount),
+          leftoverAmount: Number(leftoverAmount),
+          cutoffPercentage: Number(cutoffPercentage),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      alert("Allocation data sent to accounting successfully.");
+    } catch (error) {
+      console.error("Failed to send allocation data to accounting:", error);
+      alert("Failed to send allocation data to accounting.");
+    }
   };
 
-  // -------------------------
-  // CSV EXPORT
-  // -------------------------
-
-  const handleSendToAccounting = () => {
-    const headers = [
-      "Grant Title",
-      "Principal Investigator",
-      "Amount Requested",
-      "Allocated Amount",
-      "Final Rating",
-      "Status",
-    ];
-
-    const rows = initialGrants.map((grant) => {
-      const rating = getAggregateFinalRating(grant.reviewerScores);
-      const allocatedAmount = getAllocatedAmount(grant);
-      const status = getStatus(rating, allocatedAmount);
-
-      return [
-        grant.grantTitle,
-        grant.principalInvestigator,
-        grant.arccAmountRequested.toString(),
-        allocatedAmount.toString(),
-        rating.toFixed(1),
-        status,
-      ];
-    });
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((r) => r.join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "accounting_export.csv";
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const getStatusClass = (status: string) => {
+    if (status.toLowerCase().includes("rejected"))
+      return "status-badge rejected";
+    if (status.toLowerCase().includes("full")) return "status-badge approved";
+    if (status.toLowerCase().includes("partial")) return "status-badge partial";
+    return "status-badge pending";
   };
 
-  // -------------------------
-  // Render Table Rows
-  // -------------------------
-
-  const renderGrantRows = (grants: GrantAllocation[]) =>
-    grants.map((grant) => {
-      const rating = getAggregateFinalRating(grant.reviewerScores);
-      const allocatedAmount = getAllocatedAmount(grant);
-      const status = getStatus(rating, allocatedAmount);
-
+  const renderGrantRows = (grantRows: GrantAllocation[]) => {
+    if (grantRows.length === 0) {
       return (
-        <tr key={grant.id}>
-          <td>{grant.grantTitle}</td>
-          <td>{grant.submittedBy}</td>
-          <td>{grant.principalInvestigator}</td>
-          <td>{formatMoney(grant.arccAmountRequested)}</td>
-          <td>{formatMoney(grant.otherSourcesAmount)}</td>
-          <td>{rating.toFixed(1)}%</td>
-          <td>{formatMoney(allocatedAmount)}</td>
-          <td>
-            <span
-              className={
-                status === "Rejected"
-                  ? "status-badge rejected"
-                  : status === "Approved (Full)"
-                    ? "status-badge approved"
-                    : status === "Approved (Partial)"
-                      ? "status-badge partial"
-                      : "status-badge pending"
-              }
-            >
-              {status}
-            </span>
-          </td>
+        <tr>
+          <td colSpan={8}>No grants found.</td>
         </tr>
       );
-    });
+    }
 
-  // -------------------------
-  // UI
-  // -------------------------
+    return grantRows.map((grant) => (
+      <tr key={grant.id}>
+        <td>{grant.grantTitle}</td>
+        <td>{grant.submittedBy}</td>
+        <td>{grant.principalInvestigator}</td>
+        <td>{formatMoney(grant.arccAmountRequested)}</td>
+        <td>{formatMoney(grant.otherSourcesAmount)}</td>
+        <td>{grant.finalRating.toFixed(1)}%</td>
+        <td>{formatMoney(grant.allocatedAmount)}</td>
+        <td>
+          <span className={getStatusClass(grant.status)}>{grant.status}</span>
+        </td>
+      </tr>
+    ));
+  };
 
   return (
     <div className="dashboard-page">
@@ -233,10 +204,14 @@ export default function AllocationPage() {
         <div className="allocation-card">
           <h1>Allocation Page</h1>
 
+          {message && <p className="form-message">{message}</p>}
+          {loading && (
+            <p className="form-message">Loading allocation data...</p>
+          )}
+
           <div className="allocation-summary">
             <label className="summary-box">
               <span>Current Cycle Amount</span>
-
               <input
                 type="number"
                 value={currentCycleAmount}
@@ -247,7 +222,6 @@ export default function AllocationPage() {
 
             <label className="summary-box">
               <span>Leftover Amount</span>
-
               <input
                 type="number"
                 value={leftoverAmount}
@@ -258,7 +232,6 @@ export default function AllocationPage() {
 
             <label className="summary-box">
               <span>Cutoff Percentage</span>
-
               <input
                 type="number"
                 value={cutoffPercentage}
@@ -268,7 +241,6 @@ export default function AllocationPage() {
             </label>
           </div>
 
-          {/* Eligible */}
           <section>
             <h2>Approved Grants</h2>
 
@@ -286,11 +258,10 @@ export default function AllocationPage() {
                 </tr>
               </thead>
 
-              <tbody>{renderGrantRows(eligibleGrants)}</tbody>
+              <tbody>{renderGrantRows(approvedGrants)}</tbody>
             </table>
           </section>
 
-          {/* Rejected */}
           <section className="table-section">
             <h2>Rejected Grants</h2>
 
@@ -312,7 +283,6 @@ export default function AllocationPage() {
             </table>
           </section>
 
-          {/* Actions */}
           <div className="allocation-actions">
             <button onClick={handleSendToAccounting}>Send to Accounting</button>
 
