@@ -8,8 +8,10 @@ import Dashboard from "./pages/Dashboard";
 import NewGrant from "./pages/NewGrant";
 import EditGrant from "./pages/EditGrant";
 import Admin from "./pages/AdminDashboard";
+
 import CreateCollege from "./pages/CreateCollege";
 import CreateDepartment from "./pages/CreateDepartment";
+
 import ArccCommittee from "./pages/ArccCommittee";
 import Profile from "./pages/Profile";
 import Review from "./pages/Review";
@@ -21,9 +23,10 @@ import CollegeGrantDetail from "./pages/CollegeGrantDetail";
 import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
 
+/* ---------------- ROUTE GUARDS ---------------- */
+
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
-
   return token && user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
@@ -42,6 +45,8 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ---------------- APP ---------------- */
+
 export default function App() {
   return (
     <AuthProvider>
@@ -49,6 +54,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
             <Route
               path="/login"
               element={
@@ -57,6 +63,7 @@ export default function App() {
                 </PublicRoute>
               }
             />
+
             <Route
               path="/register"
               element={
@@ -65,6 +72,7 @@ export default function App() {
                 </PublicRoute>
               }
             />
+
             <Route
               path="/dashboard"
               element={
@@ -73,6 +81,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/grants/new"
               element={
@@ -81,6 +90,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/grants/edit/:grantId"
               element={
@@ -89,6 +99,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/budget-worksheet"
               element={
@@ -97,6 +108,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin"
               element={
@@ -105,6 +117,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin/college"
               element={
@@ -113,6 +126,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin/department"
               element={
@@ -121,6 +135,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin/arcc"
               element={
@@ -129,6 +144,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin/allocation"
               element={
@@ -137,6 +153,7 @@ export default function App() {
                 </AdminRoute>
               }
             />
+
             <Route
               path="/profile"
               element={
@@ -145,6 +162,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/review"
               element={
@@ -153,6 +171,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/review/:grantId"
               element={
@@ -161,6 +180,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin/criteria"
               element={
@@ -169,6 +189,7 @@ export default function App() {
                 </AdminRoute>
               }
             />
+
             <Route
               path="/college-grants"
               element={
@@ -177,6 +198,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/college-grants/:grantId"
               element={
