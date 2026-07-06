@@ -11,7 +11,7 @@ import "./Dashboard.css";
 export default function Dashboard() {
   const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
-  const [grants, setGrants] = useState([]);
+  const [grants, setGrants] = useState<any[]>([]);
   const [isReviewer, setIsReviewer] = useState(false);
 
   // Redirect deans straight to their grants review page
@@ -195,6 +195,15 @@ export default function Dashboard() {
               onClick={() => navigate("/grants/new")}
             >
               Submit a new grant proposal
+            </button>
+          )}
+          {!user?.isDean && (
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/approved-grants")}
+            >
+              View Approved Grants / File Report
             </button>
           )}
         </div>
