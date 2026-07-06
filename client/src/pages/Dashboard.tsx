@@ -21,11 +21,19 @@ export default function Dashboard() {
   }, [user?.isDean, navigate]);
 
   const fetchGrants = async () => {
+    if (!user?.email || !token) {
+      setGrants([]);
+      return;
+    }
+
     try {
       const { data } = await axios.get(
-        `http://localhost:5000/api/grants/user-grants/${user?.email}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        `http://localhost:5000/api/grants/user-grants/${user.email}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
+
       setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch grants:", error);
@@ -34,11 +42,14 @@ export default function Dashboard() {
   };
 
   const checkArccMembership = async () => {
+    if (!token || !user?.id) return;
+
     try {
       const { data } = await axios.get("http://localhost:5000/api/admin/arcc", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const isArcc = data.memberIds?.includes(user?.id) || false;
+
+      const isArcc = data.memberIds?.includes(user.id) || false;
       updateUserArccStatus(isArcc);
     } catch (error) {
       console.error("Failed to check ARCC membership:", error);
@@ -46,16 +57,17 @@ export default function Dashboard() {
   };
 
   const checkDeptChair = async () => {
+    if (!token) return;
+
     try {
       const { data } = await axios.get(
-        `http://localhost:5000/api/admin/checkDeptChair/`,
+        "http://localhost:5000/api/admin/checkDeptChair/",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      if (data.isChair) {
-        setIsReviewer(true);
-      }
+
+      setIsReviewer(Boolean(data.isChair));
     } catch (error) {
       console.error("Failed to check department chair status:", error);
     }
@@ -63,95 +75,155 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchGrants();
+
     if (user?.id) {
       checkArccMembership();
       checkDeptChair();
     }
-  }, [user?.id]);
+  }, [token, user?.email, user?.id]);
+
+  const getAllocationStatus = (grant: any) =>
+    String(grant.allocationStatus ?? "").toLowerCase();
+
+  const hasPositiveAward = (grant: any) =>
+    Number(grant.allocatedAmount ?? 0) > 0;
+
+  const isRejectedGrant = (grant: any) =>
+    grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
+    grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
+    getAllocationStatus(grant).includes("rejected");
+
+  // A grant is truly approved only after allocation gives it money.
+  const isApprovedGrant = (grant: any) =>
+    !isRejectedGrant(grant) && hasPositiveAward(grant);
 
   const savedGrants = grants.filter(
-    (grant) => grant.status !== GRANT_STATUS.SUBMITTED,
+    (grant) =>
+      grant.status !== GRANT_STATUS.SUBMITTED &&
+      !isApprovedGrant(grant) &&
+      !isRejectedGrant(grant),
   );
 
   const submittedGrants = grants.filter(
     (grant) =>
       grant.status === GRANT_STATUS.SUBMITTED &&
-      grant.departmentReviewStatus !== GRANT_APPROVAL_STATUS.APPROVED &&
-      grant.departmentReviewStatus !== GRANT_APPROVAL_STATUS.DENIED,
+      !isApprovedGrant(grant) &&
+      !isRejectedGrant(grant),
   );
 
-  const approvedGrants = grants.filter(
-    (grant) =>
-      grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ||
-      grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ||
-      grant.allocationStatus?.toLowerCase().includes("approved"),
-  );
+  const approvedGrants = grants.filter(isApprovedGrant);
 
-  const rejectedGrants = grants.filter(
-    (grant) =>
-      grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
-      grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
-      grant.allocationStatus?.toLowerCase().includes("rejected"),
-  );
+  const rejectedGrants = grants.filter(isRejectedGrant);
 
-  const renderGrantRow = (grant: any, showReportButton = false) => (
-    <div
-      key={grant._id}
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "0.75rem",
-        padding: "0.5rem 0",
-        borderBottom: "1px solid #eee",
-      }}
-    >
-      <strong>{grant.title}</strong>
+  const formatReportDueDate = (date?: string) => {
+    if (!date) return "";
 
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-        {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
-          <span className="grant-status">Department Approved</span>
-        ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
-          <span className="grant-status">Department Denied</span>
-        ) : (
-          <span className="grant-status">Department Pending</span>
-        )}
+    const parsedDate = new Date(date);
 
-        {grant.collegeReviewStatus !== "N/A" &&
-          (grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
-            <span className="grant-status">College Approved</span>
-          ) : grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
-            <span className="grant-status">College Denied</span>
+    if (Number.isNaN(parsedDate.getTime())) return "";
+
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(parsedDate);
+  };
+
+  const formatAmount = (amount: unknown) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(Number(amount ?? 0));
+
+  const renderGrantRow = (grant: any, showReportButton = false) => {
+    const reportDueDate = formatReportDueDate(grant.reportDueDate);
+
+    return (
+      <div
+        key={grant._id}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "0.75rem",
+          padding: "0.5rem 0",
+          borderBottom: "1px solid #eee",
+        }}
+      >
+        <strong>{grant.title}</strong>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+            <span className="grant-status">Department Approved</span>
+          ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+            <span className="grant-status">Department Denied</span>
           ) : (
-            <span className="grant-status">College Pending</span>
-          ))}
+            <span className="grant-status">Department Pending</span>
+          )}
 
-        {showReportButton ? (
-          <button
-            onClick={() => navigate(`/report/${grant._id}`)}
-            className="edit-btn"
-          >
-            Submit Report
-          </button>
-        ) : grant.status === GRANT_STATUS.SUBMITTED ? (
-          <span className="grant-status">Submitted</span>
-        ) : (
-          <button
-            onClick={() => navigate(`/grants/edit/${grant._id}`)}
-            className="edit-btn"
-          >
-            Edit
-          </button>
-        )}
+          {grant.collegeReviewStatus !== "N/A" &&
+            (grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+              <span className="grant-status">College Approved</span>
+            ) : grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+              <span className="grant-status">College Denied</span>
+            ) : (
+              <span className="grant-status">College Pending</span>
+            ))}
+
+          {showReportButton ? (
+            <>
+              <span className="grant-status">
+                Awarded: {formatAmount(grant.allocatedAmount)}
+              </span>
+
+              {reportDueDate && (
+                <span className="grant-status">
+                  Report Due: {reportDueDate}
+                </span>
+              )}
+
+              <button
+                type="button"
+                className="edit-btn"
+                onClick={() => navigate(`/report/${grant._id}`)}
+              >
+                Submit Report
+              </button>
+            </>
+          ) : grant.status === GRANT_STATUS.SUBMITTED ? (
+            <span className="grant-status">Submitted</span>
+          ) : (
+            <button
+              type="button"
+              className="edit-btn"
+              onClick={() => navigate(`/grants/edit/${grant._id}`)}
+            >
+              Edit
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="dashboard-page">
       <DashHeader>
         {(user?.isArcc || isReviewer) && (
-          <button onClick={() => navigate("/review")} className="logout-btn">
+          <button
+            type="button"
+            onClick={() => navigate("/review")}
+            className="logout-btn"
+          >
             Review
           </button>
         )}
@@ -164,6 +236,10 @@ export default function Dashboard() {
           <p className="grant-description">
             Submit a new grant proposal or review your existing submissions.
           </p>
+
+          {grants.length === 0 && (
+            <p className="grant-status">No grant submissions yet.</p>
+          )}
 
           {savedGrants.length > 0 && (
             <div>
