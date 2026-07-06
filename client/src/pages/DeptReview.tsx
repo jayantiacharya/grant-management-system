@@ -14,7 +14,7 @@ function formatStatus(departmentReviewStatus?: string) {
 export default function Review() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [grants, setGrants] = useState([]);
+  const [grants, setGrants] = useState<any[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {

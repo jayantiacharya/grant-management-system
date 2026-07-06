@@ -9,28 +9,35 @@ export default function AdminDashboard() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchGrants = async () => {
+    if (!token) return;
+
+    setLoading(true);
+
     try {
       const { data } = await axios.get("http://localhost:5000/api/grants/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch grants:", error);
+      setGrants([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!token) return;
-    fetchGrants();
-  }, [token]);
-
-  useEffect(() => {
     if (user?.role !== "admin") {
       navigate("/dashboard", { replace: true });
+      return;
     }
-  }, [user, navigate]);
+
+    fetchGrants();
+  }, [user, token, navigate]);
 
   return (
     <div className="dashboard-page">
@@ -62,37 +69,23 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grant-status-list">
-              {grants.length > 0 ? (
+              {loading ? (
+                <div className="grant-status-item">
+                  Loading grant applications...
+                </div>
+              ) : grants.length > 0 ? (
                 grants.map((grant: any) => (
-                  <div key={grant._id} className="grant-status-item">
-                    <span>{grant.title}</span>
+                  <div
+                    key={grant._id ?? grant.id}
+                    className="grant-status-item"
+                  >
+                    <span>{grant.title ?? "Untitled Grant"}</span>
                   </div>
                 ))
               ) : (
-                <>
-                  <div className="grant-status-item">G1: Draft Grant</div>
-                  <div className="grant-status-item">
-                    G2: Submitted, Awaiting Review
-                  </div>
-                  <div className="grant-status-item">
-                    G3: Submitted with Committee Reviews
-                  </div>
-                  <div className="grant-status-item">
-                    G4: Dept and College Approved
-                  </div>
-                  <div className="grant-status-item">
-                    G5: Department Rejected
-                  </div>
-                  <div className="grant-status-item">
-                    G6: Pending Dean Review
-                  </div>
-                  <div className="grant-status-item">
-                    G7: ARCC Member Own Grant
-                  </div>
-                  <div className="grant-status-item">
-                    G8: Draft with IRB File
-                  </div>
-                </>
+                <div className="grant-status-item">
+                  No grant applications yet.
+                </div>
               )}
             </div>
           </div>

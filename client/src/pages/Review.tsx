@@ -14,7 +14,7 @@ function formatReviewCount(reviews: unknown) {
 export default function Review() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [grants, setGrants] = useState([]);
+  const [grants, setGrants] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [deptChair, setDeptChair] = useState(false);
 

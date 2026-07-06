@@ -11,10 +11,9 @@ import "./Dashboard.css";
 export default function Dashboard() {
   const { user, token, updateUserArccStatus } = useAuth();
   const navigate = useNavigate();
-  const [grants, setGrants] = useState([]);
+  const [grants, setGrants] = useState<any[]>([]);
   const [isReviewer, setIsReviewer] = useState(false);
 
-  // Redirect deans straight to their grants review page
   useEffect(() => {
     if (user?.isDean) {
       navigate("/college-grants", { replace: true });
@@ -70,6 +69,84 @@ export default function Dashboard() {
     }
   }, [user?.id]);
 
+  const savedGrants = grants.filter(
+    (grant) => grant.status !== GRANT_STATUS.SUBMITTED,
+  );
+
+  const submittedGrants = grants.filter(
+    (grant) =>
+      grant.status === GRANT_STATUS.SUBMITTED &&
+      grant.departmentReviewStatus !== GRANT_APPROVAL_STATUS.APPROVED &&
+      grant.departmentReviewStatus !== GRANT_APPROVAL_STATUS.DENIED,
+  );
+
+  const approvedGrants = grants.filter(
+    (grant) =>
+      grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ||
+      grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ||
+      grant.allocationStatus?.toLowerCase().includes("approved"),
+  );
+
+  const rejectedGrants = grants.filter(
+    (grant) =>
+      grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
+      grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
+      grant.allocationStatus?.toLowerCase().includes("rejected"),
+  );
+
+  const renderGrantRow = (grant: any, showReportButton = false) => (
+    <div
+      key={grant._id}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "0.75rem",
+        padding: "0.5rem 0",
+        borderBottom: "1px solid #eee",
+      }}
+    >
+      <strong>{grant.title}</strong>
+
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+          <span className="grant-status">Department Approved</span>
+        ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+          <span className="grant-status">Department Denied</span>
+        ) : (
+          <span className="grant-status">Department Pending</span>
+        )}
+
+        {grant.collegeReviewStatus !== "N/A" &&
+          (grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+            <span className="grant-status">College Approved</span>
+          ) : grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+            <span className="grant-status">College Denied</span>
+          ) : (
+            <span className="grant-status">College Pending</span>
+          ))}
+
+        {showReportButton ? (
+          <button
+            onClick={() => navigate(`/report/${grant._id}`)}
+            className="edit-btn"
+          >
+            Submit Report
+          </button>
+        ) : grant.status === GRANT_STATUS.SUBMITTED ? (
+          <span className="grant-status">Submitted</span>
+        ) : (
+          <button
+            onClick={() => navigate(`/grants/edit/${grant._id}`)}
+            className="edit-btn"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="dashboard-page">
       <DashHeader>
@@ -79,63 +156,43 @@ export default function Dashboard() {
           </button>
         )}
       </DashHeader>
+
       <main className="dash-main">
         <div className="grant-form-card">
           <h2 className="grant-title">Welcome, {user?.email}</h2>
+
           <p className="grant-description">
             Submit a new grant proposal or review your existing submissions.
           </p>
-          {grants.length > 0 && (
-            <div>
-              <h3>Your Grant Submissions:</h3>
-              <div>
-                {grants.map((grant: any) => (
-                  <div
-                    key={grant._id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "0.5rem 0",
-                      borderBottom: "1px solid #eee",
-                    }}
-                  >
-                    <strong>{grant.title}</strong>
-                    {grant.departmentReviewStatus ===
-                    GRANT_APPROVAL_STATUS.APPROVED ? (
-                      <span className="grant-status">Department Approved</span>
-                    ) : grant.departmentReviewStatus ===
-                      GRANT_APPROVAL_STATUS.DENIED ? (
-                      <span className="grant-status">Department Denied</span>
-                    ) : (
-                      <span className="grant-status">Department Pending</span>
-                    )}
-                    {grant.collegeReviewStatus !== "N/A" &&
-                      (grant.collegeReviewStatus ===
-                      GRANT_APPROVAL_STATUS.APPROVED ? (
-                        <span className="grant-status">College Approved</span>
-                      ) : grant.collegeReviewStatus ===
-                        GRANT_APPROVAL_STATUS.DENIED ? (
-                        <span className="grant-status">College Denied</span>
-                      ) : (
-                        <span className="grant-status">College Pending</span>
-                      ))}
 
-                    {grant.status === GRANT_STATUS.SUBMITTED ? (
-                      <span className="grant-status">Submitted</span>
-                    ) : (
-                      <button
-                        onClick={() => navigate(`/grants/edit/${grant._id}`)}
-                        className="edit-btn"
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+          {savedGrants.length > 0 && (
+            <div>
+              <h3>Saved Grants</h3>
+              {savedGrants.map((grant) => renderGrantRow(grant))}
             </div>
           )}
+
+          {submittedGrants.length > 0 && (
+            <div>
+              <h3>Submitted Grants</h3>
+              {submittedGrants.map((grant) => renderGrantRow(grant))}
+            </div>
+          )}
+
+          {approvedGrants.length > 0 && (
+            <div>
+              <h3>Approved Grants</h3>
+              {approvedGrants.map((grant) => renderGrantRow(grant, true))}
+            </div>
+          )}
+
+          {rejectedGrants.length > 0 && (
+            <div>
+              <h3>Rejected Grants</h3>
+              {rejectedGrants.map((grant) => renderGrantRow(grant))}
+            </div>
+          )}
+
           {!user?.isDean && (
             <button
               type="button"

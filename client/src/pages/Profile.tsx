@@ -5,12 +5,36 @@ import axios from "axios";
 import DashHeader from "../components/DashHeader";
 import "./Dashboard.css";
 
+type College = {
+  _id: string;
+  name: string;
+};
+
+type Department = {
+  _id: string;
+  name: string;
+};
+
+type UserData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  college: string;
+};
+
 export default function Profile() {
   const { user } = useAuth();
 
-  const [colleges, setColleges] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [userData, setUserData] = useState({});
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [userData, setUserData] = useState<UserData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    department: "",
+    college: "",
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [userFormData, setUserFormData] = useState({
     firstName: "",
@@ -21,22 +45,26 @@ export default function Profile() {
     department: "",
     college: "",
   });
+
   const fetchColleges = async () => {
     const { data } = await axios.get(
       "http://localhost:5000/api/admin/colleges",
     );
-    setColleges(data);
+    setColleges(Array.isArray(data) ? data : []);
   };
+
   const fetchDepartments = async () => {
     const { data } = await axios.get(
       "http://localhost:5000/api/admin/departments",
     );
-    setDepartments(data);
+    setDepartments(Array.isArray(data) ? data : []);
   };
-  const fetchUserData = async (userId) => {
+
+  const fetchUserData = async (userId: string) => {
     const { data } = await axios.get(
       `http://localhost:5000/api/auth/get-user/${userId}`,
     );
+
     setUserData(data.user);
     setUserFormData({
       firstName: data.user.firstName || "",
@@ -53,6 +81,7 @@ export default function Profile() {
     fetchColleges();
     fetchDepartments();
   }, []);
+
   useEffect(() => {
     if (!user?.id) return;
     fetchUserData(user.id);
@@ -72,15 +101,18 @@ export default function Profile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!user?.id) return;
+
     if (userFormData.password !== userFormData.confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
     await axios.post("http://localhost:5000/api/auth/update-user", {
-      userId: user?.id,
+      userId: user.id,
       ...userFormData,
     });
+
     await fetchUserData(user.id);
     setIsEditing(false);
   };
@@ -114,6 +146,7 @@ export default function Profile() {
             <p>
               <strong>Department:</strong> {userData.department}
             </p>
+
             <button onClick={() => setIsEditing(true)}>Edit Profile</button>
           </div>
         ) : (
@@ -157,6 +190,7 @@ export default function Profile() {
               value={userFormData.confirmPassword}
               onChange={handleChange}
             />
+
             <select
               name="college"
               value={userFormData.college}

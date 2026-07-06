@@ -3,6 +3,15 @@ import { readDB, writeDB } from "../db.js";
 
 const router = Router();
 
+type Review = {
+  id: string;
+  grantId: string;
+  reviewerEmail: string;
+  score: number;
+  role: string;
+  comment: string;
+};
+
 /**
  * POST /api/reviews
  * Add a review for a grant
@@ -12,7 +21,11 @@ router.post("/", (req, res) => {
     const db = readDB();
     const { grantId, reviewerEmail, score, role, comment } = req.body;
 
-    const newReview = {
+    const reviews = Array.isArray((db as any).reviews)
+      ? ((db as any).reviews as Review[])
+      : [];
+
+    const newReview: Review = {
       id: Date.now().toString(),
       grantId,
       reviewerEmail,
@@ -21,7 +34,9 @@ router.post("/", (req, res) => {
       comment: comment || "",
     };
 
-    db.reviews.push(newReview);
+    reviews.push(newReview);
+    (db as any).reviews = reviews;
+
     writeDB(db);
 
     res.json(newReview);
@@ -37,9 +52,15 @@ router.post("/", (req, res) => {
 router.get("/:grantId", (req, res) => {
   const db = readDB();
 
-  const reviews = db.reviews.filter((r) => r.grantId === req.params.grantId);
+  const reviews = Array.isArray((db as any).reviews)
+    ? ((db as any).reviews as Review[])
+    : [];
 
-  res.json(reviews);
+  const grantReviews = reviews.filter(
+    (r: Review) => r.grantId === req.params.grantId,
+  );
+
+  res.json(grantReviews);
 });
 
 export default router;

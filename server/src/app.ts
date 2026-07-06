@@ -8,6 +8,7 @@ import MongoStore from "connect-mongo";
 import session from "express-session";
 import collegeGrantsRoutes from "./routes/collegeGrants.js";
 import allocationRoutes from "./routes/allocation.js";
+import reportRoutes from "./routes/reports.js";
 
 export function createApp(): Express {
   const app = express();
@@ -34,6 +35,7 @@ export function createApp(): Express {
   app.use("/api/criteria", criteriaRoutes);
   app.use("/api/college-grants", collegeGrantsRoutes);
   app.use("/api/allocation", allocationRoutes);
+  app.use("/api/reports", reportRoutes);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 

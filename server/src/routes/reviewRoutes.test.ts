@@ -83,7 +83,8 @@ describe("GET /api/grants/review", () => {
       .set("Authorization", `Bearer ${memberToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ _id: OID, title: "Submitted one" }]);
-    const [filter] = findMock.mock.calls[0];
+    const firstCall = findMock.mock.calls[0] as any[];
+    const [filter] = firstCall;
     expect(filter).toEqual({ status: { $ne: "draft" } });
   });
 });

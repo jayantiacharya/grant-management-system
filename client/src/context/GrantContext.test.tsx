@@ -21,6 +21,12 @@ const sampleForm: GrantFormData = {
   timeline: "",
   hasMatchingFunds: false,
   matchingFundsTotal: "",
+  accountNumber: "",
+  acknowledgement1: false,
+  acknowledgement2: false,
+  acknowledgement3: false,
+  acknowledgement4: false,
+  signature: "",
 };
 
 const sampleBudget = [
@@ -89,8 +95,6 @@ describe("GrantContext", () => {
     act(() => {
       result.current.setFormData({ ...sampleForm, title: "Edited locally" });
     });
-    // Returning from the budget worksheet refetches and reseeds; the edit
-    // must survive because the same grant is already loaded.
     act(() => {
       result.current.beginEditingGrant("g1", sampleForm, sampleBudget);
     });
@@ -111,7 +115,6 @@ describe("GrantContext", () => {
     });
     expect(result.current.activeGrantId).toBe("g2");
     expect(result.current.formData.title).toBe("Grant B");
-    // No stored budget on the new grant: one blank row, not grant A's items.
     expect(result.current.budgetItems).toEqual([emptyBudgetItem]);
   });
 

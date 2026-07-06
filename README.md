@@ -10,9 +10,9 @@ A grant management system for Weber State University that allows administrators 
 
 ## Tech Stack
 
-**Frontend:** React + TypeScript + Vite  
-**Backend:** Node.js + Express + TypeScript  
-**Database:** JSON file storage (MongoDB integration planned)  
+**Frontend:** React + TypeScript + Vite
+**Backend:** Node.js + Express + TypeScript
+**Database:** JSON file storage (MongoDB integration planned)
 **Authentication:** JWT with bcrypt password hashing
 
 ---
