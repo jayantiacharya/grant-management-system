@@ -93,7 +93,7 @@ export default function Dashboard() {
     grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ||
     getAllocationStatus(grant).includes("rejected");
 
-  // A grant is truly approved only after allocation gives it money.
+  // A grant is approved only after allocation gives it a positive award.
   const isApprovedGrant = (grant: any) =>
     !isRejectedGrant(grant) && hasPositiveAward(grant);
 
@@ -112,23 +112,7 @@ export default function Dashboard() {
   );
 
   const approvedGrants = grants.filter(isApprovedGrant);
-
   const rejectedGrants = grants.filter(isRejectedGrant);
-
-  const formatReportDueDate = (date?: string) => {
-    if (!date) return "";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) return "";
-
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(parsedDate);
-  };
 
   const formatAmount = (amount: unknown) =>
     new Intl.NumberFormat("en-US", {
@@ -136,84 +120,64 @@ export default function Dashboard() {
       currency: "USD",
     }).format(Number(amount ?? 0));
 
-  const renderGrantRow = (grant: any, showReportButton = false) => {
-    const reportDueDate = formatReportDueDate(grant.reportDueDate);
+  const renderGrantRow = (grant: any) => (
+    <div
+      key={grant._id}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "0.75rem",
+        padding: "0.5rem 0",
+        borderBottom: "1px solid #eee",
+      }}
+    >
+      <strong>{grant.title}</strong>
 
-    return (
       <div
-        key={grant._id}
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          gap: "0.5rem",
           alignItems: "center",
-          gap: "0.75rem",
-          padding: "0.5rem 0",
-          borderBottom: "1px solid #eee",
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
         }}
       >
-        <strong>{grant.title}</strong>
+        {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+          <span className="grant-status">Department Approved</span>
+        ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+          <span className="grant-status">Department Denied</span>
+        ) : (
+          <span className="grant-status">Department Pending</span>
+        )}
 
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-          {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
-            <span className="grant-status">Department Approved</span>
-          ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
-            <span className="grant-status">Department Denied</span>
+        {grant.collegeReviewStatus !== "N/A" &&
+          (grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
+            <span className="grant-status">College Approved</span>
+          ) : grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
+            <span className="grant-status">College Denied</span>
           ) : (
-            <span className="grant-status">Department Pending</span>
-          )}
+            <span className="grant-status">College Pending</span>
+          ))}
 
-          {grant.collegeReviewStatus !== "N/A" &&
-            (grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
-              <span className="grant-status">College Approved</span>
-            ) : grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
-              <span className="grant-status">College Denied</span>
-            ) : (
-              <span className="grant-status">College Pending</span>
-            ))}
-
-          {showReportButton ? (
-            <>
-              <span className="grant-status">
-                Awarded: {formatAmount(grant.allocatedAmount)}
-              </span>
-
-              {reportDueDate && (
-                <span className="grant-status">
-                  Report Due: {reportDueDate}
-                </span>
-              )}
-
-              <button
-                type="button"
-                className="edit-btn"
-                onClick={() => navigate(`/report/${grant._id}`)}
-              >
-                Submit Report
-              </button>
-            </>
-          ) : grant.status === GRANT_STATUS.SUBMITTED ? (
-            <span className="grant-status">Submitted</span>
-          ) : (
-            <button
-              type="button"
-              className="edit-btn"
-              onClick={() => navigate(`/grants/edit/${grant._id}`)}
-            >
-              Edit
-            </button>
-          )}
-        </div>
+        {isApprovedGrant(grant) ? (
+          <span className="grant-status">
+            Awarded: {formatAmount(grant.allocatedAmount)}
+          </span>
+        ) : grant.status === GRANT_STATUS.SUBMITTED ? (
+          <span className="grant-status">Submitted</span>
+        ) : (
+          <button
+            type="button"
+            className="edit-btn"
+            onClick={() => navigate(`/grants/edit/${grant._id}`)}
+          >
+            Edit
+          </button>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
 
   return (
     <div className="dashboard-page">
@@ -258,7 +222,7 @@ export default function Dashboard() {
           {approvedGrants.length > 0 && (
             <div>
               <h3>Approved Grants</h3>
-              {approvedGrants.map((grant) => renderGrantRow(grant, true))}
+              {approvedGrants.map((grant) => renderGrantRow(grant))}
             </div>
           )}
 

@@ -22,7 +22,6 @@ import CollegeGrants from "./pages/CollegeGrants";
 import CollegeGrantDetail from "./pages/CollegeGrantDetail";
 import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
-import SubmitReport from "./pages/SubmitReport";
 
 /* ---------------- ROUTE GUARDS ---------------- */
 
@@ -214,15 +213,6 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <DepartmentReview />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/report/:grantId"
-              element={
-                <ProtectedRoute>
-                  <SubmitReport />
                 </ProtectedRoute>
               }
             />
