@@ -20,11 +20,25 @@ vi.mock("../context/AuthContext", () => ({
 }));
 
 vi.mock("axios", () => ({
-  default: { post: vi.fn() },
+  default: { post: vi.fn(), get: vi.fn() },
 }));
 
 import axios from "axios";
 import Register from "./Register";
+
+const mockColleges = [
+  { id: "c1", name: "College of Science" },
+  { id: "c2", name: "College of Education" },
+];
+
+const mockDepartments = [
+  { id: "d1", name: "Chemistry & Biochemistry", college: "College of Science" },
+  {
+    id: "d2",
+    name: "Curriculum & Instruction",
+    college: "College of Education",
+  },
+];
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/first name/i), "Jane");
@@ -32,7 +46,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/date of birth/i), "1990-05-20");
   await user.type(screen.getByLabelText(/email/i), "jane@weber.edu");
   await user.selectOptions(
-    screen.getByLabelText(/college/i),
+    await screen.findByLabelText(/college/i),
     "College of Science",
   );
   await user.selectOptions(
@@ -46,16 +60,25 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({ login: mockLogin });
+  vi.mocked(axios.get).mockImplementation((url: string) => {
+    if (url.includes("/colleges")) {
+      return Promise.resolve({ data: mockColleges });
+    }
+    if (url.includes("/departments")) {
+      return Promise.resolve({ data: mockDepartments });
+    }
+    return Promise.reject(new Error(`Unexpected GET ${url}`));
+  });
 });
 
 describe("Register", () => {
-  it("renders all fields", () => {
+  it("renders all fields", async () => {
     render(<Register />);
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/date of birth/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/college/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/college/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/department/i)).toBeInTheDocument();
   });
 
@@ -65,7 +88,7 @@ describe("Register", () => {
     const dept = screen.getByLabelText(/department/i) as HTMLSelectElement;
     expect(dept).toBeDisabled();
     await user.selectOptions(
-      screen.getByLabelText(/college/i),
+      await screen.findByLabelText(/college/i),
       "College of Science",
     );
     expect(dept).not.toBeDisabled();
@@ -75,7 +98,7 @@ describe("Register", () => {
     const user = userEvent.setup();
     render(<Register />);
     await user.selectOptions(
-      screen.getByLabelText(/college/i),
+      await screen.findByLabelText(/college/i),
       "College of Science",
     );
     expect(
@@ -89,7 +112,7 @@ describe("Register", () => {
   it("resets the chosen department when the college changes", async () => {
     const user = userEvent.setup();
     render(<Register />);
-    const college = screen.getByLabelText(/college/i);
+    const college = await screen.findByLabelText(/college/i);
     const dept = screen.getByLabelText(/department/i) as HTMLSelectElement;
 
     await user.selectOptions(college, "College of Science");
@@ -125,7 +148,7 @@ describe("Register", () => {
     await user.type(screen.getByLabelText(/date of birth/i), "1990-05-20");
     await user.type(screen.getByLabelText(/email/i), "jane@weber.edu");
     await user.selectOptions(
-      screen.getByLabelText(/college/i),
+      await screen.findByLabelText(/college/i),
       "College of Science",
     );
     await user.selectOptions(
