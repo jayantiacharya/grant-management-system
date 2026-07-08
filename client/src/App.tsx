@@ -22,6 +22,8 @@ import CollegeGrants from "./pages/CollegeGrants";
 import CollegeGrantDetail from "./pages/CollegeGrantDetail";
 import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
+import ApprovedGrants from "./pages/ApprovedGrants";
+import GrantReport from "./pages/GrantReport";
 
 /* ---------------- ROUTE GUARDS ---------------- */
 
@@ -213,6 +215,22 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <DepartmentReview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/approved-grants"
+              element={
+                <ProtectedRoute>
+                  <ApprovedGrants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grant-reports/:grantId"
+              element={
+                <ProtectedRoute>
+                  <GrantReport />
                 </ProtectedRoute>
               }
             />

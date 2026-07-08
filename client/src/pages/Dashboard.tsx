@@ -242,6 +242,15 @@ export default function Dashboard() {
               Submit a new grant proposal
             </button>
           )}
+          {!user?.isDean && (
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate("/approved-grants")}
+            >
+              View Approved Grants / File Report
+            </button>
+          )}
         </div>
       </main>
     </div>

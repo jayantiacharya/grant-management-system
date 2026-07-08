@@ -1,0 +1,39 @@
+.ag-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.ag-title {
+  margin-bottom: 0.25rem;
+}
+.ag-hint {
+  color: #666;
+  margin-bottom: 1rem;
+}
+.ag-loading,
+.ag-error,
+.ag-empty {
+  padding: 1rem 0;
+}
+.ag-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+.ag-row-label {
+  flex: 1;
+}
+.ag-btn {
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
