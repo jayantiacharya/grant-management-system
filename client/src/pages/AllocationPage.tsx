@@ -504,10 +504,7 @@ export default function AllocationPage() {
             </div>
 
             {criteria.map((item, index) => (
-              <div
-                className="criteria-row"
-                key={`${index}-${item.toPercentage}`}
-              >
+              <div className="criteria-row" key={index}>
                 <label>
                   <span>From %</span>
                   <input

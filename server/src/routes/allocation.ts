@@ -16,6 +16,11 @@ type ReviewSummary = {
   totalPossibleScore: number;
 };
 
+type CriteriaDoc = {
+  maxScore?: number;
+  ratingSuggestions?: unknown[];
+};
+
 const DEFAULT_CURRENT_CYCLE_AMOUNT = 50000;
 const DEFAULT_CUTOFF_PERCENTAGE = 75;
 
@@ -42,7 +47,14 @@ function isARCCChair(req: AuthRequest) {
 
 function csvEscape(value: unknown) {
   if (value === null || value === undefined) return '""';
-  return `"${String(value).replace(/"/g, '""')}"`;
+
+  const stringValue = String(value);
+  const trimmedValue = stringValue.trimStart();
+  const safeValue = /^[=+\-@]/.test(trimmedValue)
+    ? `'${stringValue}`
+    : stringValue;
+
+  return `"${safeValue.replace(/"/g, '""')}"`;
 }
 
 function numberValue(value: unknown) {
@@ -101,6 +113,28 @@ function getEmbeddedReviews(grant: any) {
   return [];
 }
 
+function isScorableCriterion(criterion: CriteriaDoc) {
+  return (
+    Array.isArray(criterion.ratingSuggestions) &&
+    criterion.ratingSuggestions.length > 0
+  );
+}
+
+function getCriteriaPossibleScore(criteria: CriteriaDoc[]) {
+  return criteria
+    .filter(isScorableCriterion)
+    .reduce((sum, criterion) => sum + numberValue(criterion.maxScore), 0);
+}
+
+async function getRubricPossibleScore(db: any) {
+  const criteria = (await db
+    .collection("criteria")
+    .find({})
+    .toArray()) as CriteriaDoc[];
+
+  return getCriteriaPossibleScore(criteria);
+}
+
 function getReviewScore(review: any) {
   if (!review || typeof review !== "object") return 0;
 
@@ -128,7 +162,11 @@ function getReviewScore(review: any) {
   return 0;
 }
 
-function getReviewPossible(review: any, score: number) {
+function getReviewPossible(
+  review: any,
+  score: number,
+  rubricPossibleScore: number,
+) {
   if (!review || typeof review !== "object") return score > 0 ? score : 0;
 
   if (review.totalPossible !== undefined) {
@@ -145,7 +183,7 @@ function getReviewPossible(review: any, score: number) {
     const values = Object.values(review.scores).map(numberValue);
     const total = values.reduce((sum, value) => sum + value, 0);
 
-    return total > 0 ? 80 : 0;
+    return total > 0 ? rubricPossibleScore : 0;
   }
 
   if (Array.isArray(review.criteriaScores)) {
@@ -161,13 +199,13 @@ function getReviewPossible(review: any, score: number) {
   return score > 0 ? score : 0;
 }
 
-function calculateReviewSummary(grant: any) {
+function calculateReviewSummary(grant: any, rubricPossibleScore: number) {
   const reviews: any[] = getEmbeddedReviews(grant);
 
   const summary = reviews.reduce(
     (acc: ReviewSummary, review: any) => {
       const score = getReviewScore(review);
-      const possible = getReviewPossible(review, score);
+      const possible = getReviewPossible(review, score, rubricPossibleScore);
 
       acc.totalScore += score;
       acc.totalPossibleScore += possible;
@@ -264,10 +302,22 @@ function getAllocationStatus(
   return "Rejected";
 }
 
+function getFundedAllocationStatus(grant: any) {
+  const allocatedAmount = numberValue(grant.allocatedAmount);
+  const arccAmountRequested = numberValue(grant.arccAmountRequested);
+
+  return allocatedAmount >= arccAmountRequested
+    ? "Approved (Full)"
+    : "Approved (Partial)";
+}
+
 function getAwardPercentage(
   finalPercent: number,
   criteria: AllocationCriterion[],
+  cutoffPercentage: number,
 ) {
+  if (finalPercent < cutoffPercentage) return 0;
+
   const match = criteria.find(
     (rule) =>
       finalPercent >= Number(rule.fromPercentage) &&
@@ -277,13 +327,19 @@ function getAwardPercentage(
   return match ? numberValue(match.awardPercentage) : 0;
 }
 
-function buildGrantAllocation(grant: any, criteria: AllocationCriterion[]) {
-  const reviewSummary = calculateReviewSummary(grant);
+function buildGrantAllocation(
+  grant: any,
+  criteria: AllocationCriterion[],
+  cutoffPercentage: number,
+  rubricPossibleScore: number,
+) {
+  const reviewSummary = calculateReviewSummary(grant, rubricPossibleScore);
   const arccAmountRequested = getArccRequested(grant);
   const otherSourcesAmount = getOtherSourcesAmount(grant);
   const awardPercentage = getAwardPercentage(
     reviewSummary.finalPercent,
     criteria,
+    cutoffPercentage,
   );
 
   const allocatedAmount = Math.round(
@@ -363,9 +419,10 @@ function calculateSummary(grants: any[], currentCycleAmount: number) {
 
 function getNextReportDueDate() {
   const now = new Date();
-  const nextYear = now.getFullYear() + 1;
+  const firstFiscalYearEnd =
+    now.getUTCMonth() <= 5 ? now.getUTCFullYear() : now.getUTCFullYear() + 1;
 
-  return new Date(Date.UTC(nextYear, 5, 30)).toISOString();
+  return new Date(Date.UTC(firstFiscalYearEnd + 1, 5, 30)).toISOString();
 }
 
 function getGrantFilter(id: string) {
@@ -383,11 +440,19 @@ router.get("/grants", async (req: AuthRequest, res) => {
 
     const db = dbo.getDb();
     const settings = await getAllocationSettings(db);
+    const rubricPossibleScore = await getRubricPossibleScore(db);
 
     const rawGrants = await db.collection("grant").find({}).toArray();
 
     const grants = rawGrants
-      .map((grant: any) => buildGrantAllocation(grant, settings.criteria))
+      .map((grant: any) =>
+        buildGrantAllocation(
+          grant,
+          settings.criteria,
+          settings.cutoffPercentage,
+          rubricPossibleScore,
+        ),
+      )
       .sort((a, b) => b.finalPercent - a.finalPercent);
 
     const summary = calculateSummary(grants, settings.currentCycleAmount);
@@ -479,15 +544,29 @@ router.post("/send-to-accounting", async (req: AuthRequest, res) => {
     }
 
     const db = dbo.getDb();
+    const settings = await getAllocationSettings(db);
 
     const criteria = Array.isArray(req.body.criteria)
       ? req.body.criteria
-      : (await getAllocationSettings(db)).criteria;
+      : settings.criteria;
 
+    const cutoffPercentage =
+      req.body.cutoffPercentage !== undefined
+        ? numberValue(req.body.cutoffPercentage)
+        : settings.cutoffPercentage;
+
+    const rubricPossibleScore = await getRubricPossibleScore(db);
     const rawGrants = await db.collection("grant").find({}).toArray();
 
     const grants = rawGrants
-      .map((grant: any) => buildGrantAllocation(grant, criteria))
+      .map((grant: any) =>
+        buildGrantAllocation(
+          grant,
+          criteria,
+          cutoffPercentage,
+          rubricPossibleScore,
+        ),
+      )
       .filter((grant) => grant.allocatedAmount > 0);
 
     const header = [
@@ -514,7 +593,7 @@ router.post("/send-to-accounting", async (req: AuthRequest, res) => {
         csvEscape(grant.otherSourcesAmount),
         csvEscape(grant.finalPercent),
         csvEscape(grant.allocatedAmount),
-        csvEscape(grant.status),
+        csvEscape(getFundedAllocationStatus(grant)),
       ].join(","),
     );
 
