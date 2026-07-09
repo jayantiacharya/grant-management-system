@@ -43,6 +43,8 @@ flowchart TB
         EDIT[EditGrant]
         BUDGET[BudgetWorksheet]
         PROFILE[Profile]
+        APPROVED[ApprovedGrants]
+        REPORT[GrantReport]
     end
 
     subgraph Review ["Review & approval (ProtectedRoute)"]
@@ -89,6 +91,8 @@ flowchart LR
         ADMINR["/api/admin"]
         CRITR["/api/criteria"]
         CGR["/api/college-grants"]
+        ALLOCR["/api/allocation"]
+        GRPTR["/api/grant-reports"]
     end
 
     subgraph Collections ["MongoDB (linkUpDatabase)"]
@@ -97,19 +101,24 @@ flowchart LR
         CARCC[("arcc")]
         CCRIT[("criteria")]
         CCOLL[("college / department")]
+        CALLOC[("allocationSettings")]
     end
 
-    APP --> AUTHR & GRANTR & ADMINR & CRITR & CGR
+    APP --> AUTHR & GRANTR & ADMINR & CRITR & CGR & ALLOCR & GRPTR
     GRANTR -.- VERIFY & VALID & MULTER
     ADMINR -.- VERIFY
     CRITR -.- VERIFY
     CGR -.- VERIFY
+    ALLOCR -.- VERIFY
+    GRPTR -.- VERIFY & MULTER
 
     AUTHR --> CUSER
     GRANTR --> CGRANT & CARCC & CUSER
     ADMINR --> CCOLL & CARCC & CUSER
     CRITR --> CCRIT
     CGR --> CGRANT & CCOLL
+    ALLOCR --> CGRANT & CCRIT & CALLOC
+    GRPTR --> CGRANT & CARCC
 ```
 
 What each route group handles:
@@ -120,6 +129,13 @@ What each route group handles:
   update colleges and departments; read and update the ARCC committee; checkDeptChair.
 - **`/api/criteria`** — CRUD (writes admin-only).
 - **`/api/college-grants`** — dean list / get / approve-reject.
+- **`/api/allocation`** — the allocation cycle, gated to admin (the chair): list grants
+  with server-computed final ratings (scores from `grant.reviews[]` over the live rubric
+  total, cutoff applied), read / save cycle settings, finalize (writes awards and report
+  due dates onto grants), and the send-to-accounting CSV export.
+- **`/api/grant-reports`** — post-award reporting: the proposer's approved grants, report
+  detail, submit a report (multipart upload, appends to `grant.reports[]`, owner-only),
+  and report file download.
 
 `review*` covers `GET /review`, `GET /review/:id`, `GET /review/:id/files/:savedName`,
 `GET /review/department`, `PUT /review/:id` (stores a reviewer's per-criterion scores and
@@ -192,6 +208,8 @@ stateDiagram-v2
 | submitted         | `reviews[]` upsert      | score the rubric | ARCC member or chair | `PUT /api/grants/review/:id`          |
 | submitted         | `reviewStatus`          | approve / deny   | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
 | submitted         | `collegeReviewStatus`   | approve / reject | college dean         | `PUT /api/college-grants/:id`         |
+| submitted         | `allocatedAmount`, `allocationStatus`, `reportDueDate` | Finish Allocation | admin (chair) | `POST /api/allocation/finalize` |
+| submitted, funded | `reports[]` append      | submit post-award report | owner        | `POST /api/grant-reports/:id/submit`  |
 
 ## Navigation
 
@@ -203,6 +221,8 @@ flowchart TD
         N <-->|Budget Worksheet| B[/budget-worksheet/]
         E <-->|Budget Worksheet| B
         D -->|email btn| P[/profile/]
+        D -->|Approved Grants| AG[/approved-grants/]
+        AG -->|Submit / Update Report| GR[/"grant-reports/:grantId"/]
     end
 
     subgraph review [ARCC + dept chair]
@@ -224,7 +244,7 @@ flowchart TD
         A --> CR[/admin/criteria/]
         A -->|My Grants| D
         A --> GL[Grant Applications list]
-        A -.->|route only, no nav link| AL[/admin/allocation/]
+        A -->|Allocation card| AL[/admin/allocation/]
     end
 ```
 
@@ -264,12 +284,11 @@ Role detection is mixed: `isDean` is resolved at login and kept in `AuthContext`
   through a post-login redirect with no persistent nav link back. `isDean` is resolved at
   login and `isArcc` is page-fetched into `AuthContext`, so a single header could resolve
   all three role flags in one place.
-- **No cross-reviewer consolidation** — each reviewer's per-criterion total is computed
-  client-side; there is no consolidated, normalized grant-level rating across all
-  reviewers for allocation to key off.
-- **Allocation page is UI only** — `/admin/allocation` renders placeholder data; the
-  cycle inputs and award math are not wired to real grants, and Send to Accounting does
-  not export a spreadsheet.
+- **Two "approved" predicates** — the grant-reports routes treat a grant as approved
+  when department + college approval landed and the award is positive; the dashboard
+  only checks for a positive award. A grant funded despite a missing department or
+  college approval would show as approved on the dashboard but be rejected by the
+  report routes.
 
 ## Roles and permissions
 
@@ -296,6 +315,8 @@ A single user can hold several of these at once.
 | Manage colleges / departments                        |  no  |  no  |     no     |  no  |  yes  |
 | Manage ARCC committee membership                     |  no  |  no  |     no     |  no  |  yes  |
 | Manage review criteria                               |  no  |  no  |     no     |  no  |  yes  |
+| Run the allocation cycle (settings, finalize, CSV)   |  no  |  no  |     no     |  no  |  yes  |
+| Submit post-award reports                            | own  | own  |    own     | own  |  own  |
 
 A department chair sees only grants from their own department; a dean sees only grants
 that request funding from their college.

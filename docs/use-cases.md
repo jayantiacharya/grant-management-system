@@ -85,7 +85,8 @@ graph LR
    department-chair review, dean review), and the proposer sees each as pending, approved,
    or rejected, so they can chase an approver who has not yet acted.
 2. Once allocation is finalized, the grant moves to the approved or rejected section with
-   a terminal status. Approved grants also display their report due date.
+   a terminal status. Approved grants display their awarded amount, and an Approved
+   Grants page lists them with the last report date and a submit/update report action.
 3. Draft grants offer an edit option; submitted grants are read-only.
 
 ---
@@ -115,13 +116,12 @@ The chair does everything a committee member does, plus:
 
 1. On the allocation page (available only to the chair), the chair enters the current
    cycle amount, leftover amount, and cutoff percentage in editable text boxes.
-2. They click Apply Cutoff. Grants below the cutoff move to a Rejected Grants table;
-   grants above stay in the main table.
-3. The chair adjusts the cutoff and re-applies as many times as needed to accommodate
-   more applicants.
+2. The cutoff applies as it is edited: grants below the cutoff move to a Rejected Grants
+   table; grants above stay in the main table.
+3. The chair adjusts the cutoff as many times as needed to accommodate more applicants.
 4. For the eligible grants, the chair adds dynamic tier criteria: each tier maps a rating
-   range to a percentage of the requested amount. A full-funding threshold (e.g. 90%)
-   awards 100% of the request. An Allocated Amount column updates as tiers are configured.
+   range to a percentage of the requested amount (the top tier, e.g. 90-100%, awards
+   100% of the request). An Allocated Amount column updates as tiers are configured.
 5. When satisfied, the chair clicks Finish Allocation. This locks the allocation and sets
    each grant's final status (Accepted or Rejected). Accepted grants receive a calculated
    report due date (next June 30 after the allocation date, plus one year).
