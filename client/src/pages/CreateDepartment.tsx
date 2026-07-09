@@ -100,40 +100,56 @@ export default function CreateDepartment() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader />
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>Department Management</h2>
-          <p>Create departments or edit existing ones</p>
-          <button
-            type="button"
-            className="edit-btn"
-            onClick={() => navigate("/admin")}
-          >
-            Back to Admin
-          </button>
-        </div>
-        <div className="grant-form-card">
-          <h2>Departments</h2>
-          {!departments.length ? (
-            <p>No departments yet.</p>
-          ) : (
-            <ul className="list">
-              {departments.map((department: any) => (
-                <li
-                  key={department.id ?? department._id ?? department.name}
-                  className="row"
-                >
-                  <span>
-                    {department.name} — {department.college} —{" "}
-                    {department.chair || "Not assigned"}
-                  </span>
-                  <div className="actions">
+      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+
+      <main className="management-main">
+        <section className="management-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Management</p>
+            <h1>Department Management</h1>
+            <p>
+              Create departments, connect them to colleges, and assign
+              department chairs.
+            </p>
+          </div>
+        </section>
+
+        {message && <p className="form-message">{message}</p>}
+
+        <section className="management-grid">
+          <div className="management-card">
+            <div className="management-card-header">
+              <span className="management-icon">🏢</span>
+              <div>
+                <h2>Departments</h2>
+                <p>Existing departments in the system.</p>
+              </div>
+            </div>
+
+            {!departments.length ? (
+              <p className="empty-message">No departments yet.</p>
+            ) : (
+              <ul className="management-list">
+                {departments.map((department: any) => (
+                  <li
+                    key={department.id ?? department._id ?? department.name}
+                    className="management-row"
+                  >
+                    <span>
+                      <strong>{department.name}</strong>
+                      <small>
+                        {department.college || "College not assigned"} —{" "}
+                        {department.chair || "Chair not assigned"}
+                      </small>
+                    </span>
+
                     <button
                       type="button"
                       className="edit-btn"
                       onClick={() => {
-                        setEditingId(String(department.id ?? ""));
+                        setEditingId(
+                          String(department.id ?? department._id ?? ""),
+                        );
                         setDepartmentName(department.name);
                         setSelectedCollege(department.college ?? "");
                         setSelectedChair(department.chair ?? "");
@@ -142,79 +158,94 @@ export default function CreateDepartment() {
                     >
                       Edit
                     </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="grant-form-card">
-          <h2>{editingId ? "Edit Department" : "Create Department"}</h2>
-          <form className="grant-form" onSubmit={handleSubmit}>
-            <div>
-              <label>Department Name</label>
-              <input
-                type="text"
-                value={departmentName}
-                onChange={(e) => setDepartmentName(e.target.value)}
-                placeholder="Enter department name"
-                required
-              />
-            </div>
-
-            <div>
-              <label>Select College</label>
-              <select
-                value={selectedCollege}
-                onChange={(e) => setSelectedCollege(e.target.value)}
-                required
-              >
-                <option value="">Choose College</option>
-                {colleges.map((college: any) => (
-                  <option key={college.id ?? college.name} value={college.name}>
-                    {college.name}
-                  </option>
+                  </li>
                 ))}
-              </select>
-            </div>
-
-            <div>
-              <label>Department Chair</label>
-              <select
-                value={selectedChair}
-                onChange={(e) => setSelectedChair(e.target.value)}
-                required
-              >
-                <option value="">Choose Chair</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.email}>
-                    {u.email}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button type="submit" className="submit-btn">
-              {editingId ? "Save changes" : "Create Department"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                className="edit-btn"
-                onClick={() => {
-                  setEditingId("");
-                  setDepartmentName("");
-                  setSelectedCollege("");
-                  setSelectedChair("");
-                  setMessage("");
-                }}
-              >
-                Cancel edit
-              </button>
+              </ul>
             )}
-          </form>
-          {message && <p className="form-message">{message}</p>}
-        </div>
+          </div>
+
+          <div className="management-card">
+            <div className="management-card-header">
+              <span className="management-icon">✏️</span>
+              <div>
+                <h2>{editingId ? "Edit Department" : "Create Department"}</h2>
+                <p>
+                  {editingId
+                    ? "Update the selected department information."
+                    : "Add a new department and assign its college and chair."}
+                </p>
+              </div>
+            </div>
+
+            <form className="grant-form" onSubmit={handleSubmit}>
+              <div>
+                <label>Department Name</label>
+                <input
+                  type="text"
+                  value={departmentName}
+                  onChange={(e) => setDepartmentName(e.target.value)}
+                  placeholder="Enter department name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label>Select College</label>
+                <select
+                  value={selectedCollege}
+                  onChange={(e) => setSelectedCollege(e.target.value)}
+                  required
+                >
+                  <option value="">Choose College</option>
+                  {colleges.map((college: any) => (
+                    <option
+                      key={college.id ?? college.name}
+                      value={college.name}
+                    >
+                      {college.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>Department Chair</label>
+                <select
+                  value={selectedChair}
+                  onChange={(e) => setSelectedChair(e.target.value)}
+                  required
+                >
+                  <option value="">Choose Chair</option>
+                  {users.map((u: any) => (
+                    <option key={u.id} value={u.email}>
+                      {u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" className="submit-btn">
+                {editingId ? "Save Changes" : "Create Department"}
+              </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={() => {
+                    setEditingId("");
+                    setDepartmentName("");
+                    setSelectedCollege("");
+                    setSelectedChair("");
+                    setMessage("");
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </form>
+          </div>
+        </section>
       </main>
     </div>
   );

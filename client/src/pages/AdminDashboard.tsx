@@ -9,28 +9,35 @@ export default function AdminDashboard() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchGrants = async () => {
+    if (!token) return;
+
+    setLoading(true);
+
     try {
       const { data } = await axios.get("http://localhost:5000/api/grants/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setGrants(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch grants:", error);
+      setGrants([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!token) return;
-    fetchGrants();
-  }, [token]);
-
-  useEffect(() => {
     if (user?.role !== "admin") {
       navigate("/dashboard", { replace: true });
+      return;
     }
-  }, [user, navigate]);
+
+    fetchGrants();
+  }, [user, token, navigate]);
 
   return (
     <div className="dashboard-page">
@@ -39,53 +46,92 @@ export default function AdminDashboard() {
           My Grants
         </button>
       </DashHeader>
-      <main className="dash-main">
-        <div className="dash-welcome">
-          <h2>Welcome back</h2>
-          <p>Weber State University — Grant Management System</p>
-        </div>
 
-        {/* Navigation links */}
-        <div
-          className="dash-grid"
-          style={{ display: "flex", flexDirection: "column" }}
-        >
-          <nav className="admin-nav">
-            <Link to="/admin/arcc" className="submit-btn">
-              ARCC Committee
-            </Link>
-            <Link to="/admin/criteria" className="submit-btn">
-              Manage Review Criteria
-            </Link>
-            <Link to="/admin/college" className="submit-btn">
-              College Management
-            </Link>
-            <Link to="/admin/department" className="submit-btn">
-              Department Management
-            </Link>
-          </nav>
-        </div>
-
-        {/* Grant Applications */}
-        {grants.length > 0 && (
-          <div className="grant-form-card" style={{ marginBottom: "2rem" }}>
-            <h2>Grant Applications</h2>
-            {grants.map((grant: any) => (
-              <div
-                key={grant._id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "0.75rem 0",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
-                <strong>{grant.title}</strong>
-              </div>
-            ))}
+      <main className="admin-main">
+        <section className="admin-hero">
+          <div>
+            <p className="admin-eyebrow">Admin Dashboard</p>
+            <h1>Welcome back</h1>
+            <p>
+              Manage grant applications, colleges, departments, review criteria,
+              ARCC committee members, and allocation decisions.
+            </p>
           </div>
-        )}
+        </section>
+
+        <section className="admin-layout">
+          <div className="admin-panel grant-panel">
+            <div className="admin-panel-header">
+              <div>
+                <p className="admin-eyebrow">Grant Applications</p>
+                <h2>Application Status Overview</h2>
+              </div>
+            </div>
+
+            <div className="grant-status-list">
+              {loading ? (
+                <div className="grant-status-item">
+                  Loading grant applications...
+                </div>
+              ) : grants.length > 0 ? (
+                grants.map((grant: any) => (
+                  <div
+                    key={grant._id ?? grant.id}
+                    className="grant-status-item"
+                  >
+                    <span>{grant.title ?? "Untitled Grant"}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="grant-status-item">
+                  No grant applications yet.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="admin-actions-panel">
+            <Link to="/admin/criteria" className="admin-action-card">
+              <span>📋</span>
+              <div>
+                <h3>Review Criteria</h3>
+                <p>Create and manage grant review criteria.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/college" className="admin-action-card">
+              <span>🏫</span>
+              <div>
+                <h3>College Management</h3>
+                <p>Create colleges and assign deans.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/department" className="admin-action-card">
+              <span>🏢</span>
+              <div>
+                <h3>Department Management</h3>
+                <p>Create departments and assign chairs.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/arcc" className="admin-action-card">
+              <span>👥</span>
+              <div>
+                <h3>ARCC Committee</h3>
+                <p>Manage committee members and chair roles.</p>
+              </div>
+            </Link>
+
+            <Link to="/admin/allocation" className="admin-action-card primary">
+              <span>💰</span>
+              <div>
+                <h3>Allocation Page</h3>
+                <p>Apply cutoff rules and allocate grant funding.</p>
+              </div>
+            </Link>
+          </div>
+        </section>
       </main>
     </div>
   );

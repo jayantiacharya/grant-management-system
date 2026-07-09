@@ -7,10 +7,12 @@ import criteriaRoutes from "./routes/criteria.js";
 import MongoStore from "connect-mongo";
 import session from "express-session";
 import collegeGrantsRoutes from "./routes/collegeGrants.js";
+import allocationRoutes from "./routes/allocation.js";
 import grantReportsRoutes from "./routes/grantReports.js";
 
 export function createApp(): Express {
   const app = express();
+
   app.use(cors());
   app.use(express.json());
 
@@ -32,7 +34,9 @@ export function createApp(): Express {
   app.use("/api/admin", adminRoutes);
   app.use("/api/criteria", criteriaRoutes);
   app.use("/api/college-grants", collegeGrantsRoutes);
+  app.use("/api/allocation", allocationRoutes);
   app.use("/api/grant-reports", grantReportsRoutes);
+
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
   return app;
