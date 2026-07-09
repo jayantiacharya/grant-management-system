@@ -39,6 +39,11 @@ The middleware/helpers are new files (additive); apply them across `grantSubmiss
   shared `Grant` / `User` / `Criteria` DTOs; replace `any` everywhere, including the
   review pages and the `reviews[]` entry shape.
 - `reviewStatus` / `collegeReviewStatus` literals scattered, no enum.
+- Legacy `amountAwarded` field: grant-reports responses read
+  `allocatedAmount ?? amountAwarded`; once no grant docs carry the legacy field, drop
+  the fallback. The dashboard's "approved" predicate (positive award only) is also
+  slightly looser than grant-reports' (dept + college approval plus positive award).
+  Effort: S.
 
 Effort: M.
 
