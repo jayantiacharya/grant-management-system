@@ -29,24 +29,20 @@ const upload = multer({
   limits: { files: 1 },
 }).single("file");
 
+// Allocation finalize writes allocatedAmount; amountAwarded is the legacy field
+// some older grant docs still carry.
+function getAwardedAmount(grant: any): number | null {
+  const amount = Number(grant.allocatedAmount ?? grant.amountAwarded);
+  return Number.isFinite(amount) ? amount : null;
+}
+
 function isGrantApproved(grant: any): boolean {
   const deptApproved =
     grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED;
   const collegeOk =
     grant.collegeReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ||
     grant.collegeReviewStatus === "N/A";
-  return deptApproved && collegeOk;
-}
-
-async function isArccMember(userId: string): Promise<boolean> {
-  const db_connect = dbo.getDb();
-  const arcc = await db_connect
-    .collection("arcc")
-    .findOne({ key: "committee" });
-  const memberIds = Array.isArray(arcc?.memberIds)
-    ? arcc.memberIds.map(String)
-    : [];
-  return memberIds.includes(String(userId));
+  return deptApproved && collegeOk && (getAwardedAmount(grant) ?? 0) > 0;
 }
 
 // GET all of the current user's approved grants, with amountAwarded
@@ -72,7 +68,7 @@ router.get(
         return {
           _id: grant._id,
           title: grant.title,
-          amountAwarded: grant.amountAwarded ?? null,
+          amountAwarded: getAwardedAmount(grant),
           lastReportDate: lastReport?.submittedAt ?? null,
           reportCount: reports.length,
         };
@@ -116,7 +112,7 @@ router.get("/:id", verifyToken, async (req: AuthRequest, res: Response) => {
     return res.json({
       _id: grant._id,
       title: grant.title,
-      amountAwarded: grant.amountAwarded ?? null,
+      amountAwarded: getAwardedAmount(grant),
       reports: Array.isArray(grant.reports) ? grant.reports : [],
     });
   } catch (err) {
@@ -200,52 +196,6 @@ router.post(
     } catch (err) {
       console.error("Failed to submit report:", err);
       return res.status(500).json({ message: "Failed to submit report" });
-    }
-  },
-);
-
-// PUT amountAwarded — admin or ARCC member only (allocation step)
-router.put(
-  "/:id/allocate",
-  verifyToken,
-  async (req: AuthRequest, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { amountAwarded } = req.body;
-
-      if (!ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid grant id" });
-      }
-
-      const amount = Number(amountAwarded);
-      if (!Number.isFinite(amount) || amount < 0) {
-        return res
-          .status(400)
-          .json({ message: "amountAwarded must be a non-negative number" });
-      }
-
-      const isAdmin = req.user!.role === "admin";
-      const isArcc = await isArccMember(req.user!.userId);
-      if (!isAdmin && !isArcc) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-
-      const result = await dbo
-        .getDb()
-        .collection("grant")
-        .updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { amountAwarded: amount } },
-        );
-
-      if (result.matchedCount === 0) {
-        return res.status(404).json({ message: "Grant not found" });
-      }
-
-      return res.json({ amountAwarded: amount });
-    } catch (err) {
-      console.error("Failed to set amountAwarded:", err);
-      return res.status(500).json({ message: "Failed to set amountAwarded" });
     }
   },
 );
