@@ -48,7 +48,7 @@ export default function CollegeGrants() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
+      <DashHeader />
 
       <main className="dash-main">
         <div className="cg-container">

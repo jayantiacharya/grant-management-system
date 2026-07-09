@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { isDeanOnly } from "../utils/roles";
 
 import "../pages/Dashboard.css";
 
@@ -8,8 +9,9 @@ type BackLink = {
   to: string;
 };
 
-// Shared page header: brand (links home), optional page-specific buttons
-// (children), optional back link, profile via the email button, sign out.
+// Shared page header: brand (links home), role-based nav (link to the current
+// page is hidden), optional page-specific buttons (children), optional back
+// link, profile via the email button, sign out.
 export default function DashHeader({
   back,
   children,
@@ -19,8 +21,24 @@ export default function DashHeader({
 }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const home = user?.role === "admin" ? "/admin" : "/dashboard";
+
+  // Dean-only users skip the Dashboard link: their dashboard redirects to
+  // College Grants. The link set stays stable across pages; the current
+  // page's link is disabled rather than hidden.
+  const navLinks = [
+    { label: "Dashboard", to: "/dashboard", show: !isDeanOnly(user) },
+    { label: "Review", to: "/review", show: !!user?.isArcc },
+    {
+      label: "Dept Review",
+      to: "/department-review",
+      show: !!user?.isDeptChair,
+    },
+    { label: "College Grants", to: "/college-grants", show: !!user?.isDean },
+    { label: "Admin", to: "/admin", show: user?.role === "admin" },
+  ].filter((link) => link.show);
 
   return (
     <header className="dash-header">
@@ -35,6 +53,17 @@ export default function DashHeader({
       </div>
 
       <div className="dash-user">
+        {navLinks.map((link) => (
+          <button
+            key={link.to}
+            onClick={() => navigate(link.to)}
+            className="logout-btn"
+            disabled={link.to === pathname}
+          >
+            {link.label}
+          </button>
+        ))}
+
         {children}
 
         {back && (

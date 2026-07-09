@@ -5,20 +5,20 @@ import axios from "axios";
 
 import { GRANT_STATUS, GRANT_APPROVAL_STATUS } from "../types/grant";
 import DashHeader from "../components/DashHeader";
+import { isDeanOnly } from "../utils/roles";
 
 import "./Dashboard.css";
 
 export default function Dashboard() {
-  const { user, token, updateUserArccStatus } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [grants, setGrants] = useState<any[]>([]);
-  const [isReviewer, setIsReviewer] = useState(false);
 
   useEffect(() => {
-    if (user?.isDean) {
+    if (isDeanOnly(user)) {
       navigate("/college-grants", { replace: true });
     }
-  }, [user?.isDean, navigate]);
+  }, [user, navigate]);
 
   const fetchGrants = async () => {
     if (!user?.email || !token) {
@@ -41,46 +41,9 @@ export default function Dashboard() {
     }
   };
 
-  const checkArccMembership = async () => {
-    if (!token || !user?.id) return;
-
-    try {
-      const { data } = await axios.get("http://localhost:5000/api/admin/arcc", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const isArcc = data.memberIds?.includes(user.id) || false;
-      updateUserArccStatus(isArcc);
-    } catch (error) {
-      console.error("Failed to check ARCC membership:", error);
-    }
-  };
-
-  const checkDeptChair = async () => {
-    if (!token) return;
-
-    try {
-      const { data } = await axios.get(
-        "http://localhost:5000/api/admin/checkDeptChair/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      setIsReviewer(Boolean(data.isChair));
-    } catch (error) {
-      console.error("Failed to check department chair status:", error);
-    }
-  };
-
   useEffect(() => {
     fetchGrants();
-
-    if (user?.id) {
-      checkArccMembership();
-      checkDeptChair();
-    }
-  }, [token, user?.email, user?.id]);
+  }, [token, user?.email]);
 
   const getAllocationStatus = (grant: any) =>
     String(grant.allocationStatus ?? "").toLowerCase();
@@ -181,17 +144,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader>
-        {(user?.isArcc || isReviewer) && (
-          <button
-            type="button"
-            onClick={() => navigate("/review")}
-            className="logout-btn"
-          >
-            Review
-          </button>
-        )}
-      </DashHeader>
+      <DashHeader />
 
       <main className="dash-main">
         <div className="grant-form-card">
@@ -233,7 +186,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {!user?.isDean && (
+          {!isDeanOnly(user) && (
             <button
               type="button"
               className="submit-btn"
@@ -242,7 +195,7 @@ export default function Dashboard() {
               Submit a new grant proposal
             </button>
           )}
-          {!user?.isDean && (
+          {!isDeanOnly(user) && (
             <button
               type="button"
               className="submit-btn"

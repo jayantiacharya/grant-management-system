@@ -41,11 +41,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader>
-        <button onClick={() => navigate("/dashboard")} className="logout-btn">
-          My Grants
-        </button>
-      </DashHeader>
+      <DashHeader />
 
       <main className="admin-main">
         <section className="admin-hero">

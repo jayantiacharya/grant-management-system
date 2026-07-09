@@ -87,7 +87,7 @@ export default function CriteriaManagement() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+      <DashHeader />
 
       <main style={styles.container}>
         <section style={styles.hero}>

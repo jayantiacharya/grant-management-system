@@ -43,18 +43,11 @@ export default function Review() {
 
   return (
     <div className="dashboard-page review-page">
-      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
+      <DashHeader />
       <main className="review-main">
         <div className="review-welcome">
           <h2>Grant Review</h2>
           <p>Submitted grants awaiting review</p>
-          <button
-            type="button"
-            className="review-btn review-btn-secondary"
-            onClick={() => navigate("/review")}
-          >
-            Back to Review
-          </button>
         </div>
         {message && <p className="review-message">{message}</p>}
         <div className="review-card">

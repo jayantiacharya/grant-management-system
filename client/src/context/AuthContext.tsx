@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import axios from "axios";
 
 interface User {
   id: string;
@@ -6,6 +13,7 @@ interface User {
   role: string;
   isArcc?: boolean;
   isDean?: boolean;
+  isDeptChair?: boolean;
 }
 
 interface AuthContextType {
@@ -35,6 +43,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("token"),
   );
+
+  // Resolve role flags the login response doesn't carry (isArcc, isDeptChair)
+  // once per login; they persist in localStorage until logout.
+  useEffect(() => {
+    if (!token || !user?.id) return;
+    if (user.isArcc !== undefined && user.isDeptChair !== undefined) return;
+
+    let cancelled = false;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    Promise.all([
+      axios.get("http://localhost:5000/api/admin/arcc", { headers }),
+      axios.get("http://localhost:5000/api/admin/checkDeptChair/", { headers }),
+    ])
+      .then(([arcc, chair]) => {
+        if (cancelled) return;
+        setUser((current) => {
+          if (!current) return current;
+          const updated = {
+            ...current,
+            isArcc: arcc.data.memberIds?.includes(current.id) || false,
+            isDeptChair: Boolean(chair.data.isChair),
+          };
+          localStorage.setItem("user", JSON.stringify(updated));
+          return updated;
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to resolve role flags:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user?.id, user?.isArcc, user?.isDeptChair]);
 
   const login = (userData: User, jwt: string) => {
     setUser(userData);

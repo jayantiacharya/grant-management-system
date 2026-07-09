@@ -133,7 +133,7 @@ export default function ArccCommittee() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "← Back to Admin", to: "/admin" }} />
+      <DashHeader />
 
       <main className="management-main">
         <section className="management-hero">

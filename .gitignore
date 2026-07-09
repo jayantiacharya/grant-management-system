@@ -2,3 +2,4 @@ node_modules
 server/uploads/
 # Local environment secrets
 server/.env
+.playwright-mcp/

@@ -78,7 +78,7 @@ export default function CreateCollege() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+      <DashHeader />
 
       <main className="management-main">
         <section className="management-hero">
