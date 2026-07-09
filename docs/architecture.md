@@ -69,7 +69,7 @@ session (`user`, `token`, and the role flags: `isDean` resolved at login, `isArc
 `isDeptChair` fetched once by the provider after login), and
 `GrantContext` holds the shared grant draft and budget items across `NewGrant`,
 `EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, role-based nav
-links with the current page's link hidden, optional back link, profile, sign out)
+links with the current page's link disabled, optional back link, profile, sign out)
 renders on every page, and `CriteriaForm` backs criteria management. Page-to-page
 navigation is in [Navigation](#navigation).
 
@@ -244,7 +244,7 @@ flowchart TD
         A --> AD2[/admin/department/]
         A --> AA[/admin/arcc/]
         A --> CR[/admin/criteria/]
-        A -->|My Grants| D
+        A -->|header nav: Dashboard| D
         A --> GL[Grant Applications list]
         A -->|Allocation card| AL[/admin/allocation/]
     end
@@ -275,7 +275,9 @@ Role detection lives in `AuthContext`: `isDean` is resolved at login, and the pr
 fetches `isArcc` and `isDeptChair` once after login (`GET /api/admin/arcc` and
 `checkDeptChair`), persisting all three flags with the stored user until logout.
 `DashHeader` renders nav links from the flags (Dashboard, Review, Dept Review, College
-Grants), hiding the link for the page currently shown.
+Grants, and Admin for `role=admin`), disabling the link for the page currently shown.
+Dean-only users (dean and nothing else) get no Dashboard link; their dashboard
+redirects to `/college-grants` (`isDeanOnly` in `client/src/utils/roles.ts`).
 
 ## Known gaps
 
