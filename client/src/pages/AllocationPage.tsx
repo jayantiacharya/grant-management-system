@@ -162,7 +162,7 @@ export default function AllocationPage() {
               : "Rejected",
       };
     });
-  }, [baseGrants, criteria]);
+  }, [baseGrants, criteria, cutoffPercentage]);
 
   const totalAllocated = calculatedGrants.reduce(
     (sum, grant) => sum + grant.allocatedAmount,
