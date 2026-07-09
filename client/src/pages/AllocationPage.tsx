@@ -128,6 +128,8 @@ export default function AllocationPage() {
   };
 
   const getAwardPercentage = (finalPercent: number) => {
+    if (finalPercent < Number(cutoffPercentage)) return 0;
+
     const rule = criteria.find((item) => {
       const from = Number(item.fromPercentage);
       const to = Number(item.toPercentage);
