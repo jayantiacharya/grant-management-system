@@ -1,89 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import "./Auth.css";
 
-const COLLEGES = [
-  "College of Applied Science & Technology",
-  "College of Arts & Humanities",
-  "College of Business & Economics",
-  "College of Education",
-  "College of Engineering, Applied Science & Technology",
-  "College of Health Professions",
-  "College of Science",
-  "College of Social & Behavioral Sciences",
-  "Dumke College of Health Professions",
-];
+type College = { id: string; name: string };
+type Department = { id: string; name: string; college: string };
 
-const DEPARTMENTS: Record<string, string[]> = {
-  "College of Applied Science & Technology": [
-    "Automotive Technology",
-    "Computer & Networking Technology",
-    "Construction & Building Sciences",
-    "Electronics & Biomedical Technology",
-    "Interior Design & Culinary Arts",
-    "Manufacturing & Mechanical Engineering Technology",
-  ],
-  "College of Arts & Humanities": [
-    "Art & Design",
-    "Communication",
-    "English",
-    "History",
-    "Modern Languages",
-    "Music",
-    "Philosophy",
-    "Theatre Arts",
-  ],
-  "College of Business & Economics": [
-    "Accounting",
-    "Economics",
-    "Finance & Economics",
-    "Management",
-    "Marketing & Supply Chain",
-  ],
-  "College of Education": [
-    "Curriculum & Instruction",
-    "Early Childhood Education",
-    "Educational Leadership",
-    "Health Promotion & Human Performance",
-    "Teacher Education",
-  ],
-  "College of Engineering, Applied Science & Technology": [
-    "Civil & Environmental Engineering",
-    "Computer Science",
-    "Electrical & Computer Engineering",
-    "Engineering Technology",
-    "Mechanical Engineering",
-  ],
-  "College of Health Professions": [
-    "Clinical & Health Sciences",
-    "Dental Hygiene",
-    "Health Administrative Services",
-    "Medical Laboratory Sciences",
-    "Radiologic Sciences",
-    "Respiratory Therapy",
-  ],
-  "College of Science": [
-    "Botany",
-    "Chemistry & Biochemistry",
-    "Geosciences",
-    "Mathematics",
-    "Microbiology",
-    "Physics",
-    "Zoology",
-  ],
-  "College of Social & Behavioral Sciences": [
-    "Anthropology",
-    "Criminal Justice",
-    "Geography",
-    "Political Science & Philosophy",
-    "Psychology",
-    "Social Work",
-    "Sociology",
-  ],
-  "Dumke College of Health Professions": ["Nursing", "Physical Therapy"],
-};
 
 export default function Register() {
   const { login } = useAuth();
@@ -100,6 +23,26 @@ export default function Register() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      try {
+        const [collegesRes, departmentsRes] = await Promise.all([
+          axios.get<College[]>("http://localhost:5000/api/admin/colleges"),
+          axios.get<Department[]>(
+            "http://localhost:5000/api/admin/departments",
+          ),
+        ]);
+        setColleges(collegesRes.data);
+        setDepartments(departmentsRes.data);
+      } catch {
+        setError("Failed to load colleges and departments");
+      }
+    };
+    fetchCatalog();
+  }, []);
 
   // Get today's date in YYYY-MM-DD format for max attribute
   const today = new Date().toISOString().slice(0, 10);
@@ -142,7 +85,7 @@ export default function Register() {
   };
 
   const availableDepartments = form.college
-    ? (DEPARTMENTS[form.college] ?? [])
+    ? departments.filter((d) => d.college === form.college)
     : [];
 
   return (
@@ -223,9 +166,9 @@ export default function Register() {
               required
             >
               <option value="">— Select a college —</option>
-              {COLLEGES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              {colleges.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -243,8 +186,8 @@ export default function Register() {
             >
               <option value="">— Select a department —</option>
               {availableDepartments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+                <option key={d.id} value={d.name}>
+                  {d.name}
                 </option>
               ))}
             </select>
