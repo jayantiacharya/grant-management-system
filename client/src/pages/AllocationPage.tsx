@@ -419,7 +419,7 @@ export default function AllocationPage() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "← Back to Admin Dashboard", to: "/admin" }} />
+      <DashHeader />
 
       <main className="allocation-page">
         <div className="allocation-card">

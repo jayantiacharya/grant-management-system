@@ -10,6 +10,7 @@ const { mockUseAuth, mockNavigate, mockLogout } = vi.hoisted(() => ({
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: "/grants/edit/g1" }),
   useParams: () => ({ grantId: "g1" }),
 }));
 

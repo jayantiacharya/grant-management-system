@@ -119,12 +119,7 @@ export default function Profile() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader
-        back={{
-          label: "Back",
-          to: user?.role === "admin" ? "/admin" : "/dashboard",
-        }}
-      />
+      <DashHeader />
 
       <main className="dash-main">
         {!isEditing ? (

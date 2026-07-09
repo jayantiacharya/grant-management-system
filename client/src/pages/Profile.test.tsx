@@ -10,6 +10,7 @@ const { mockUseAuth, mockNavigate, mockLogout } = vi.hoisted(() => ({
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: "/profile" }),
 }));
 
 vi.mock("../context/AuthContext", () => ({
@@ -152,10 +153,13 @@ describe("Profile", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/login");
   });
 
-  it("back button navigates to /dashboard", async () => {
+  it("has no back button; the header Dashboard link navigates home", async () => {
     const user = userEvent.setup();
     render(<Profile />);
-    await user.click(await screen.findByRole("button", { name: /^back$/i }));
+    expect(
+      screen.queryByRole("button", { name: /^back$/i }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Dashboard" }));
     expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
   });
 });

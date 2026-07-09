@@ -10,6 +10,7 @@ const { mockUseAuth, mockNavigate, mockLogout } = vi.hoisted(() => ({
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
+  useLocation: () => ({ pathname: "/dashboard" }),
 }));
 
 vi.mock("../context/AuthContext", () => ({
@@ -31,7 +32,6 @@ beforeEach(() => {
     user: fakeUser,
     token: "tok123",
     logout: mockLogout,
-    updateUserArccStatus: vi.fn(),
   });
   vi.mocked(axios.get).mockResolvedValue({ data: [] });
 });
@@ -106,6 +106,53 @@ describe("Dashboard", () => {
     await user.click(screen.getByRole("button", { name: /sign out/i }));
     expect(mockLogout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith("/login");
+  });
+
+  it("redirects a dean-only user to college grants", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...fakeUser, isDean: true, isArcc: false, isDeptChair: false },
+      token: "tok123",
+      logout: mockLogout,
+    });
+    render(<Dashboard />);
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/college-grants", {
+        replace: true,
+      }),
+    );
+  });
+
+  it("does not redirect a dean before role flags resolve", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...fakeUser, isDean: true },
+      token: "tok123",
+      logout: mockLogout,
+    });
+    render(<Dashboard />);
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(mockNavigate).not.toHaveBeenCalledWith("/college-grants", {
+      replace: true,
+    });
+  });
+
+  it("does not redirect a dean who also holds other roles", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...fakeUser, role: "admin", isDean: true, isArcc: true },
+      token: "tok123",
+      logout: mockLogout,
+    });
+    render(<Dashboard />);
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(mockNavigate).not.toHaveBeenCalledWith("/college-grants", {
+      replace: true,
+    });
+  });
+
+  it("only fetches grants; role flags come from AuthContext", async () => {
+    render(<Dashboard />);
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(axios.get).mock.calls[0][0]).toContain("user-grants");
   });
 
   it("navigates to profile when the email button is clicked", async () => {

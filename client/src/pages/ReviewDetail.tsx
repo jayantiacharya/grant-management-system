@@ -254,13 +254,7 @@ export default function ReviewDetail() {
   if (!grant) {
     return (
       <div className="dashboard-page review-page">
-        {fromApprovalView ? (
-          <DashHeader
-            back={{ label: "Back to approvals", to: "/department-review" }}
-          />
-        ) : (
-          <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
-        )}
+        <DashHeader />
         <main className="review-main">
           {message ? (
             <p className="review-message">{message}</p>
@@ -276,34 +270,11 @@ export default function ReviewDetail() {
 
   return (
     <div className="dashboard-page review-page">
-      {fromApprovalView ? (
-        <DashHeader
-          back={{ label: "Back to approvals", to: "/department-review" }}
-        />
-      ) : (
-        <DashHeader back={{ label: "Back to reviews", to: "/review" }} />
-      )}
+      <DashHeader />
       <main className="review-main">
         <div className="review-welcome">
           <h2>{grant.title}</h2>
           <p>Review grant submission</p>
-          {fromApprovalView ? (
-            <button
-              type="button"
-              className="review-btn review-btn-secondary"
-              onClick={() => navigate("/department-review")}
-            >
-              Back to Review List
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="review-btn review-btn-secondary"
-              onClick={() => navigate("/review")}
-            >
-              Back to Review List
-            </button>
-          )}
         </div>
         {message && <p className="review-message">{message}</p>}
         <div className="review-card">

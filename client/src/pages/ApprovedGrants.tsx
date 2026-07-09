@@ -41,7 +41,7 @@ export default function ApprovedGrants() {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
+      <DashHeader />
 
       <main className="dash-main">
         <div className="ag-container">

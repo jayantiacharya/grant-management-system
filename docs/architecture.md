@@ -28,7 +28,7 @@ users away; `ProtectedRoute` requires a token; `AdminRoute` additionally require
 ```mermaid
 flowchart TB
     subgraph Contexts
-        AUTH["AuthContext<br/>user, token, isArcc, isDean"]
+        AUTH["AuthContext<br/>user, token, isArcc, isDean, isDeptChair"]
         GRANT["GrantContext<br/>shared draft + budget, activeGrantId"]
     end
 
@@ -65,12 +65,13 @@ flowchart TB
 ```
 
 Two contexts back these pages, both persisted to `localStorage`: `AuthContext` holds the
-session (`user`, `token`, and the `isDean` flag resolved at login; `isArcc` is populated
-from a per-page fetch), and
+session (`user`, `token`, and the role flags: `isDean` resolved at login, `isArcc` and
+`isDeptChair` fetched once by the provider after login), and
 `GrantContext` holds the shared grant draft and budget items across `NewGrant`,
-`EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, optional back
-link, profile, sign out) renders on every page, and `CriteriaForm` backs criteria
-management. Page-to-page navigation is in [Navigation](#navigation).
+`EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, role-based nav
+links with the current page's link disabled, optional back link, profile, sign out)
+renders on every page, and `CriteriaForm` backs criteria management. Page-to-page
+navigation is in [Navigation](#navigation).
 
 ## Server and data map
 
@@ -199,17 +200,17 @@ stateDiagram-v2
     end note
 ```
 
-| status            | field written           | Trigger          | Actor                | Route                                 |
-| ----------------- | ----------------------- | ---------------- | -------------------- | ------------------------------------- |
-| (new) → draft     | none                    | save as draft    | owner                | `POST /api/grants/submit`             |
-| (new) → submitted | `reviewStatus: pending` | submit directly  | owner                | `POST /api/grants/submit`             |
-| draft → draft     | none                    | edit, save draft | owner                | `PUT /api/grants/edit/:id`            |
-| draft → submitted | `reviewStatus: pending` | submit           | owner                | `PUT /api/grants/edit/:id`            |
-| submitted         | `reviews[]` upsert      | score the rubric | ARCC member or chair | `PUT /api/grants/review/:id`          |
-| submitted         | `reviewStatus`          | approve / deny   | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
-| submitted         | `collegeReviewStatus`   | approve / reject | college dean         | `PUT /api/college-grants/:id`         |
-| submitted         | `allocatedAmount`, `allocationStatus`, `reportDueDate` | Finish Allocation | admin (chair) | `POST /api/allocation/finalize` |
-| submitted, funded | `reports[]` append      | submit post-award report | owner        | `POST /api/grant-reports/:id/submit`  |
+| status            | field written                                          | Trigger                  | Actor                | Route                                 |
+| ----------------- | ------------------------------------------------------ | ------------------------ | -------------------- | ------------------------------------- |
+| (new) → draft     | none                                                   | save as draft            | owner                | `POST /api/grants/submit`             |
+| (new) → submitted | `reviewStatus: pending`                                | submit directly          | owner                | `POST /api/grants/submit`             |
+| draft → draft     | none                                                   | edit, save draft         | owner                | `PUT /api/grants/edit/:id`            |
+| draft → submitted | `reviewStatus: pending`                                | submit                   | owner                | `PUT /api/grants/edit/:id`            |
+| submitted         | `reviews[]` upsert                                     | score the rubric         | ARCC member or chair | `PUT /api/grants/review/:id`          |
+| submitted         | `reviewStatus`                                         | approve / deny           | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
+| submitted         | `collegeReviewStatus`                                  | approve / reject         | college dean         | `PUT /api/college-grants/:id`         |
+| submitted         | `allocatedAmount`, `allocationStatus`, `reportDueDate` | Finish Allocation        | admin (chair)        | `POST /api/allocation/finalize`       |
+| submitted, funded | `reports[]` append                                     | submit post-award report | owner                | `POST /api/grant-reports/:id/submit`  |
 
 ## Navigation
 
@@ -226,9 +227,9 @@ flowchart TD
     end
 
     subgraph review [ARCC + dept chair]
-        D -->|Review btn, if ARCC or dept chair| R[/review/]
+        D -->|header nav, if ARCC| R[/review/]
         R -->|View| RD[/"review/:id<br/>scoring or approve/deny"/]
-        R -->|if dept chair| DR[/department-review/]
+        D -->|header nav, if dept chair| DR[/department-review/]
         DR -->|View| RD
     end
 
@@ -236,13 +237,14 @@ flowchart TD
         CG[/"college-grants<br/>approve / reject"/]
     end
     D -.->|auto-redirect if dean| CG
+    P -->|header nav, if dean| CG
 
     subgraph admin [Admin]
         A[/admin/] --> AC[/admin/college/]
         A --> AD2[/admin/department/]
         A --> AA[/admin/arcc/]
         A --> CR[/admin/criteria/]
-        A -->|My Grants| D
+        A -->|header nav: Dashboard| D
         A --> GL[Grant Applications list]
         A -->|Allocation card| AL[/admin/allocation/]
     end
@@ -263,27 +265,24 @@ or **admin** (`role=admin`). Each role has its own surface:
 - **ARCC** `/review` → `/review/:id`: score the grant against the rubric criteria and
   leave comments. Each member upserts one review; the rubric renders inline.
 - **Department chair** `/department-review` → `/review/:id`: grants in the chair's
-  department; reached from a button on `/review`.
+  department; reached from the header nav.
 - **College dean** `/college-grants`: only grants with positive funding from the dean's
   college; approve / reject inline (`collegeReviewStatus`), with no separate detail page.
   Reached by an automatic redirect on login.
 - **Admin** `/admin`: management pages plus the all-grants list.
 
-Role detection is mixed: `isDean` is resolved at login and kept in `AuthContext`, while
-`isArcc` and department-chair status are fetched per page (`GET /api/admin/arcc` and
-`checkDeptChair`, from Dashboard and Review).
+Role detection lives in `AuthContext`: `isDean` is resolved at login, and the provider
+fetches `isArcc` and `isDeptChair` once after login (`GET /api/admin/arcc` and
+`checkDeptChair`), persisting all three flags with the stored user until logout.
+`DashHeader` renders nav links from the flags (Dashboard, Review, Dept Review, College
+Grants, and Admin for `role=admin`), disabling the link for the page currently shown.
+Dean-only users (dean and nothing else) get no Dashboard link; their dashboard
+redirects to `/college-grants` (`isDeanOnly` in `client/src/utils/roles.ts`).
 
 ## Known gaps
 
 - **Admin all-grants list** — the "Grant Applications" rows are plain text with no
   click-through to a read-only `/review/:id`.
-- **Header is not role-aware** — `DashHeader` renders on every page (brand/home, back,
-  profile, sign out) but surfaces no role-specific navigation. ARCC and dept-chair entries
-  are buttons on Dashboard / Review (dept-chair gated by a per-page `checkDeptChair`
-  fetch), and the dean reaches `/college-grants`
-  through a post-login redirect with no persistent nav link back. `isDean` is resolved at
-  login and `isArcc` is page-fetched into `AuthContext`, so a single header could resolve
-  all three role flags in one place.
 - **Two "approved" predicates** — the grant-reports routes treat a grant as approved
   when department + college approval landed and the award is positive; the dashboard
   only checks for a positive award. A grant funded despite a missing department or

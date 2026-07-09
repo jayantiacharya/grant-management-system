@@ -375,7 +375,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
 
   return (
     <div className="dashboard-page">
-      <DashHeader back={{ label: "Back to dashboard", to: "/dashboard" }} />
+      <DashHeader />
 
       <main className="dash-main">
         <div className="grant-form-card">
