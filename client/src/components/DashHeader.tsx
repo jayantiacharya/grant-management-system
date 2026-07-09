@@ -10,7 +10,7 @@ type BackLink = {
 };
 
 // Shared page header: brand (links home), role-based nav (link to the current
-// page is hidden), optional page-specific buttons (children), optional back
+// page is disabled), optional page-specific buttons (children), optional back
 // link, profile via the email button, sign out.
 export default function DashHeader({
   back,

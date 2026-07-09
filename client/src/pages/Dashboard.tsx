@@ -15,6 +15,11 @@ export default function Dashboard() {
   const [grants, setGrants] = useState<any[]>([]);
 
   useEffect(() => {
+    // Wait for AuthContext to resolve isArcc/isDeptChair before redirecting.
+    // During that window the flags are undefined, and isDeanOnly would read a
+    // dean who is also ARCC/chair as dean-only and bounce them off their
+    // dashboard.
+    if (user?.isArcc === undefined || user?.isDeptChair === undefined) return;
     if (isDeanOnly(user)) {
       navigate("/college-grants", { replace: true });
     }

@@ -32,7 +32,6 @@ beforeEach(() => {
     user: fakeUser,
     token: "tok123",
     logout: mockLogout,
-    updateUserArccStatus: vi.fn(),
   });
   vi.mocked(axios.get).mockResolvedValue({ data: [] });
 });
@@ -111,7 +110,7 @@ describe("Dashboard", () => {
 
   it("redirects a dean-only user to college grants", async () => {
     mockUseAuth.mockReturnValue({
-      user: { ...fakeUser, isDean: true },
+      user: { ...fakeUser, isDean: true, isArcc: false, isDeptChair: false },
       token: "tok123",
       logout: mockLogout,
     });
@@ -121,6 +120,19 @@ describe("Dashboard", () => {
         replace: true,
       }),
     );
+  });
+
+  it("does not redirect a dean before role flags resolve", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { ...fakeUser, isDean: true },
+      token: "tok123",
+      logout: mockLogout,
+    });
+    render(<Dashboard />);
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(mockNavigate).not.toHaveBeenCalledWith("/college-grants", {
+      replace: true,
+    });
   });
 
   it("does not redirect a dean who also holds other roles", async () => {
