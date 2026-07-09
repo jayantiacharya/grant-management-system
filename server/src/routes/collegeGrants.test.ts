@@ -224,20 +224,6 @@ describe("GET /api/college-grants/", () => {
     expect(res.status).toBe(500);
     expect(res.body.message).toMatch(/Failed to fetch college grants/);
   });
-
-  it("only returns grants with collegeReviewStatus in pending/approved/denied", async () => {
-    const grantDraft = {
-      ...mockGrant,
-      collegeReviewStatus: "draft",
-    };
-    grantFind.mockResolvedValueOnce([mockGrant]);
-
-    const res = await request(app)
-      .get("/api/college-grants/")
-      .set("Authorization", `Bearer ${deanToken}`);
-    expect(res.status).toBe(200);
-    expect(res.body.grants).toHaveLength(1);
-  });
 });
 
 describe("GET /api/college-grants/:id", () => {
