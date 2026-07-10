@@ -7,7 +7,9 @@ import {
   type BudgetItem,
 } from "../context/GrantContext";
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
+import "../styles/PageLayout.css";
+import "../styles/GrantForm.css";
+import "../styles/BudgetWorksheet.css";
 
 export default function BudgetWorksheet() {
   const { budgetItems, setBudgetItems } = useGrant();
@@ -184,7 +186,8 @@ export default function BudgetWorksheet() {
                   {parseFloat(item.amountFromCollege) > 0 && (
                     <div className="budget-field">
                       <label htmlFor={`collegeId-${index}`}>
-                        Which College? <span style={{ color: "red" }}>*</span>
+                        Which College?{" "}
+                        <span className="budget-required-mark">*</span>
                       </label>
                       <select
                         id={`collegeId-${index}`}
@@ -197,13 +200,12 @@ export default function BudgetWorksheet() {
                           )
                         }
                         required
-                        style={{
-                          borderColor:
-                            parseFloat(item.amountFromCollege) > 0 &&
-                            !item.collegeId
-                              ? "red"
-                              : undefined,
-                        }}
+                        className={
+                          parseFloat(item.amountFromCollege) > 0 &&
+                          !item.collegeId
+                            ? "budget-field-invalid"
+                            : undefined
+                        }
                       >
                         <option value="">Select a college</option>
                         {colleges.map((c) => (
@@ -214,7 +216,7 @@ export default function BudgetWorksheet() {
                       </select>
                       {parseFloat(item.amountFromCollege) > 0 &&
                         !item.collegeId && (
-                          <span style={{ color: "red", fontSize: "0.85rem" }}>
+                          <span className="budget-inline-error">
                             Please select a college for this funding amount.
                           </span>
                         )}

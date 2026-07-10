@@ -1,0 +1,70 @@
+.dash-header {
+  height: 72px;
+  background: #1f4373;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 42px;
+}
+
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dash-brand-clickable {
+  cursor: pointer;
+}
+
+.dash-logo {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.logout-btn:disabled {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.15);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.logout-btn:disabled:hover {
+  background: transparent;
+}
+
+@media (max-width: 650px) {
+  .dash-header {
+    padding: 0 16px;
+  }
+}

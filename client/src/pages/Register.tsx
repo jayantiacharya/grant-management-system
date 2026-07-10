@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import "./Auth.css";
+import "../styles/Auth.css";
 
 type College = { id: string; name: string };
 type Department = { id: string; name: string; college: string };
-
 
 export default function Register() {
   const { login } = useAuth();
@@ -90,10 +89,7 @@ export default function Register() {
 
   return (
     <div className="auth-page">
-      <div
-        className="auth-card"
-        style={{ maxHeight: "90vh", overflowY: "auto" }}
-      >
+      <div className="auth-card auth-card-scrollable">
         <div className="auth-header">
           <div className="auth-logo">GMS</div>
           <h1>Create Account</h1>

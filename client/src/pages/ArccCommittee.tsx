@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
-import "./ArccCommittee.css";
+import "../styles/PageLayout.css";
+import "../styles/AdminManagement.css";
+import "../styles/GrantForm.css";
 
 type ArccUser = {
   id: string;

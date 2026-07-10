@@ -4,8 +4,8 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
 import { type Criteria } from "../types/rubric";
-import "./Dashboard.css";
-import "./Review.css";
+import "../styles/PageLayout.css";
+import "../styles/Review.css";
 
 function formatYesNo(value?: string | null) {
   if (value === "yes") return "Yes";

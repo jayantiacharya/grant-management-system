@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import DashHeader from "../components/DashHeader";
 import { useAuth } from "../context/AuthContext";
-import "./AllocationPage.css";
+import "../styles/PageLayout.css";
+import "../styles/AllocationPage.css";
+import "../styles/GrantForm.css";
 
 type AllocationCriterion = {
   fromPercentage: string;

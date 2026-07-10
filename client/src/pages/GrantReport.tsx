@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
+import "../styles/PageLayout.css";
+import "../styles/GrantForm.css";
 
 type GrantReportErrors = Partial<{
   reportText: string;

@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
-import "./Review.css";
+import "../styles/PageLayout.css";
+import "../styles/CollegeGrants.css";
+import "../styles/Review.css";
 
 type BudgetItem = {
   itemDescription: string;

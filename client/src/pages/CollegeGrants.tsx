@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./CollegeGrants.css";
+import "../styles/PageLayout.css";
+import "../styles/CollegeGrants.css";
+import "../styles/Review.css";
 
 type Grant = {
   _id: string;
@@ -47,7 +49,7 @@ export default function CollegeGrants() {
   };
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page review-page">
       <DashHeader />
 
       <main className="dash-main">

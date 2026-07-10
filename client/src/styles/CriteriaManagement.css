@@ -1,0 +1,182 @@
+.criteria-mgmt-container {
+  padding: 2.5rem 2rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.criteria-mgmt-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.criteria-mgmt-eyebrow {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.criteria-mgmt-hero-title {
+  margin: 0.25rem 0 0.5rem;
+  color: #111827;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+}
+
+.criteria-mgmt-hero-text {
+  max-width: 760px;
+  margin: 0;
+  color: #6b7280;
+  font-size: 1.05rem;
+}
+
+.criteria-mgmt-primary-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.9rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.criteria-mgmt-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.criteria-mgmt-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 2rem;
+}
+
+.criteria-mgmt-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.criteria-mgmt-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.criteria-mgmt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.criteria-mgmt-card {
+  background: white;
+  border-radius: 18px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.criteria-mgmt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.criteria-mgmt-card-title {
+  margin: 0 0 0.5rem 0;
+  color: #111827;
+  font-size: 1.35rem;
+}
+
+.criteria-mgmt-max-score {
+  display: inline-block;
+  background: #e8f4f8;
+  color: #2980b9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.criteria-mgmt-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.criteria-mgmt-edit-button {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.criteria-mgmt-delete-button {
+  background: #fee;
+  color: #c0392b;
+  border: 1px solid #fcc;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.criteria-mgmt-description {
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.criteria-mgmt-suggestions-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.criteria-mgmt-suggestions-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.criteria-mgmt-suggestion-item {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.criteria-mgmt-example {
+  color: #888;
+  font-style: italic;
+}
