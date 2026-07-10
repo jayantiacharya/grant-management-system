@@ -176,22 +176,22 @@ export default function Dashboard() {
           )}
 
           {!isDeanOnly(user) && (
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={() => navigate("/grants/new")}
-            >
-              Submit a new grant proposal
-            </button>
-          )}
-          {!isDeanOnly(user) && (
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={() => navigate("/approved-grants")}
-            >
-              View Approved Grants / File Report
-            </button>
+            <div className="dash-actions">
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => navigate("/approved-grants")}
+              >
+                View Approved Grants / File Report
+              </button>
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => navigate("/grants/new")}
+              >
+                Submit a new grant proposal
+              </button>
+            </div>
           )}
         </div>
       </main>

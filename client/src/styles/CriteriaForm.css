@@ -4,6 +4,13 @@
   gap: 1.5rem;
 }
 
+.criteria-form h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
 .criteria-form-group {
   display: flex;
   flex-direction: column;

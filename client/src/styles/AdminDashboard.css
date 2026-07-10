@@ -31,15 +31,6 @@
   font-size: 1.05rem;
 }
 
-.admin-eyebrow {
-  margin: 0;
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.8fr);
