@@ -11,7 +11,8 @@ import {
 import { useGrant, type GrantFormData } from "../../context/GrantContext";
 import DashHeader from "../DashHeader";
 
-import "../../pages/Dashboard.css";
+import "../../styles/PageLayout.css";
+import "../../styles/GrantForm.css";
 
 type GrantFormErrors = Partial<
   Record<keyof GrantFormData | "files" | "irbApprovalFile", string>
@@ -649,13 +650,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                   <label htmlFor="matchingFundsTotal">
                     Matching Funds Total ($)
                   </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                    }}
-                  >
+                  <div className="grant-matching-funds-row">
                     <input
                       type="number"
                       id="matchingFundsTotal"

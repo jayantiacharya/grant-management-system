@@ -96,7 +96,8 @@
   flex-shrink: 0;
 }
 
-.review-page .review-submit-actions {
+.review-page .review-submit-actions,
+.review-page .review-decision-actions {
   display: flex;
   align-items: center;
   gap: 10px;

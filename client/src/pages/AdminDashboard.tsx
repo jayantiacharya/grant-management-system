@@ -2,7 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
+import "../styles/PageLayout.css";
+import "../styles/AdminDashboard.css";
 import axios from "axios";
 
 export default function AdminDashboard() {
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
         </section>
 
         <section className="admin-layout">
-          <div className="admin-panel grant-panel">
+          <div className="admin-panel">
             <div className="admin-panel-header">
               <div>
                 <p className="admin-eyebrow">Grant Applications</p>
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
 
           <div className="admin-actions-panel">
             <Link to="/admin/criteria" className="admin-action-card">
-              <span>📋</span>
+              <span className="admin-action-icon">📋</span>
               <div>
                 <h3>Review Criteria</h3>
                 <p>Create and manage grant review criteria.</p>
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
             </Link>
 
             <Link to="/admin/college" className="admin-action-card">
-              <span>🏫</span>
+              <span className="admin-action-icon">🏫</span>
               <div>
                 <h3>College Management</h3>
                 <p>Create colleges and assign deans.</p>
@@ -104,7 +105,7 @@ export default function AdminDashboard() {
             </Link>
 
             <Link to="/admin/department" className="admin-action-card">
-              <span>🏢</span>
+              <span className="admin-action-icon">🏢</span>
               <div>
                 <h3>Department Management</h3>
                 <p>Create departments and assign chairs.</p>
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
             </Link>
 
             <Link to="/admin/arcc" className="admin-action-card">
-              <span>👥</span>
+              <span className="admin-action-icon">👥</span>
               <div>
                 <h3>ARCC Committee</h3>
                 <p>Manage committee members and chair roles.</p>
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
             </Link>
 
             <Link to="/admin/allocation" className="admin-action-card primary">
-              <span>💰</span>
+              <span className="admin-action-icon">💰</span>
               <div>
                 <h3>Allocation Page</h3>
                 <p>Apply cutoff rules and allocate grant funding.</p>

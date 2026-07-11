@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { isDeanOnly } from "../utils/roles";
 
-import "../pages/Dashboard.css";
+import "../styles/DashHeader.css";
 
 type BackLink = {
   label: string;
@@ -43,9 +43,8 @@ export default function DashHeader({
   return (
     <header className="dash-header">
       <div
-        className="dash-brand"
+        className="dash-brand dash-brand-clickable"
         onClick={() => navigate(home)}
-        style={{ cursor: "pointer" }}
         title="Home"
       >
         <span className="dash-logo">GMS</span>

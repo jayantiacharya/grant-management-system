@@ -1,0 +1,185 @@
+.grant-form-card {
+  width: 100%;
+  max-width: 620px;
+  background: white;
+  padding: 34px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.grant-title {
+  margin: 0;
+  text-align: center;
+  color: #1f2937;
+  font-size: 28px;
+}
+
+.grant-description {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 28px;
+  font-size: 16px;
+}
+
+.grant-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.grant-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.grant-form input,
+.grant-form textarea,
+.grant-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  background: white;
+  color: #111827;
+}
+
+.grant-form textarea {
+  resize: vertical;
+}
+
+.grant-form small {
+  display: block;
+  margin-top: 6px;
+  color: #6b7280;
+}
+
+.acknowledgement-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+}
+
+.grant-form .acknowledgement-item label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.grant-form .acknowledgement-item input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  margin-left: 1em;
+}
+
+.submit-btn {
+  margin-top: 8px;
+  background: #1f4373;
+  color: white;
+  border: none;
+  padding: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.submit-btn:hover {
+  background: #17345c;
+}
+
+.submit-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.edit-btn {
+  margin-left: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.edit-btn:hover {
+  background: #2960b8;
+}
+
+a.edit-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.grant-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 8px;
+}
+
+.save-btn {
+  background: white;
+  color: #1f4373;
+  border: 1px solid #1f4373;
+  padding: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.save-btn:hover {
+  background: #eef2f8;
+}
+
+.save-btn:disabled {
+  color: #9ca3af;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.grant-status {
+  margin-left: 12px;
+  display: inline-block;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.form-message {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 13px;
+}
+
+.grant-matching-funds-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

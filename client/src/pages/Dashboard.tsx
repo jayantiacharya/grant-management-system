@@ -7,7 +7,9 @@ import { GRANT_STATUS, GRANT_APPROVAL_STATUS } from "../types/grant";
 import DashHeader from "../components/DashHeader";
 import { isDeanOnly } from "../utils/roles";
 
-import "./Dashboard.css";
+import "../styles/PageLayout.css";
+import "../styles/Dashboard.css";
+import "../styles/GrantForm.css";
 
 export default function Dashboard() {
   const { user, token } = useAuth();
@@ -89,28 +91,10 @@ export default function Dashboard() {
     }).format(Number(amount ?? 0));
 
   const renderGrantRow = (grant: any) => (
-    <div
-      key={grant._id}
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "0.75rem",
-        padding: "0.5rem 0",
-        borderBottom: "1px solid #eee",
-      }}
-    >
+    <div key={grant._id} className="dash-grant-row">
       <strong>{grant.title}</strong>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          flexWrap: "wrap",
-          justifyContent: "flex-end",
-        }}
-      >
+      <div className="dash-grant-row-actions">
         {grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.APPROVED ? (
           <span className="grant-status">Department Approved</span>
         ) : grant.departmentReviewStatus === GRANT_APPROVAL_STATUS.DENIED ? (
@@ -192,22 +176,22 @@ export default function Dashboard() {
           )}
 
           {!isDeanOnly(user) && (
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={() => navigate("/grants/new")}
-            >
-              Submit a new grant proposal
-            </button>
-          )}
-          {!isDeanOnly(user) && (
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={() => navigate("/approved-grants")}
-            >
-              View Approved Grants / File Report
-            </button>
+            <div className="dash-actions">
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => navigate("/approved-grants")}
+              >
+                View Approved Grants / File Report
+              </button>
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={() => navigate("/grants/new")}
+              >
+                Submit a new grant proposal
+              </button>
+            </div>
           )}
         </div>
       </main>

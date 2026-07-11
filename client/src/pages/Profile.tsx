@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 import DashHeader from "../components/DashHeader";
-import "./Dashboard.css";
+import "../styles/PageLayout.css";
+import "../styles/GrantForm.css";
+import "../styles/Profile.css";
 
 type College = {
   _id: string;
@@ -146,80 +148,82 @@ export default function Profile() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="grant-form-card">
-            <input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={userFormData.firstName}
-              onChange={handleChange}
-            />
+            <div className="grant-form">
+              <input
+                type="text"
+                name="firstName"
+                placeholder="First Name"
+                value={userFormData.firstName}
+                onChange={handleChange}
+              />
 
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={userFormData.lastName}
-              onChange={handleChange}
-            />
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Last Name"
+                value={userFormData.lastName}
+                onChange={handleChange}
+              />
 
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={userFormData.email}
-              onChange={handleChange}
-            />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={userFormData.email}
+                onChange={handleChange}
+              />
 
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={userFormData.password}
-              onChange={handleChange}
-            />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={userFormData.password}
+                onChange={handleChange}
+              />
 
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              value={userFormData.confirmPassword}
-              onChange={handleChange}
-            />
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={userFormData.confirmPassword}
+                onChange={handleChange}
+              />
 
-            <select
-              name="college"
-              value={userFormData.college}
-              onChange={handleChange}
-            >
-              <option value="">Select College</option>
+              <select
+                name="college"
+                value={userFormData.college}
+                onChange={handleChange}
+              >
+                <option value="">Select College</option>
 
-              {colleges.map((college) => (
-                <option key={college._id} value={college.name}>
-                  {college.name}
-                </option>
-              ))}
-            </select>
+                {colleges.map((college) => (
+                  <option key={college._id} value={college.name}>
+                    {college.name}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              name="department"
-              value={userFormData.department}
-              onChange={handleChange}
-            >
-              <option value="">Select Department</option>
+              <select
+                name="department"
+                value={userFormData.department}
+                onChange={handleChange}
+              >
+                <option value="">Select Department</option>
 
-              {departments.map((department) => (
-                <option key={department._id} value={department.name}>
-                  {department.name}
-                </option>
-              ))}
-            </select>
+                {departments.map((department) => (
+                  <option key={department._id} value={department.name}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
 
-            <div className="form-buttons">
-              <button type="submit">Save</button>
+              <div className="form-buttons">
+                <button type="submit">Save</button>
 
-              <button type="button" onClick={() => setIsEditing(false)}>
-                Cancel
-              </button>
+                <button type="button" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </button>
+              </div>
             </div>
           </form>
         )}

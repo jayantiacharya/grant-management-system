@@ -1,0 +1,112 @@
+.criteria-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.criteria-form h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.criteria-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.criteria-form-hint {
+  font-size: 0.85rem;
+  color: #777;
+  margin: 0;
+}
+
+.criteria-form-input,
+.criteria-form-textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.criteria-form-textarea {
+  font-family: inherit;
+}
+
+.criteria-form-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.criteria-form-suggestion-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.criteria-form-suggestion-score {
+  flex: 0 0 120px;
+}
+
+.criteria-form-suggestion-description {
+  flex: 1;
+}
+
+.criteria-form-remove-button {
+  background: #fee;
+  color: #c0392b;
+  border: 1px solid #fcc;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+}
+
+.criteria-form-add-button {
+  background: #e8f4f8;
+  color: #2980b9;
+  border: 1px solid #bde0f0;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.criteria-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.criteria-form-cancel-button {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.criteria-form-submit-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.criteria-form-error {
+  color: #e74c3c;
+  font-size: 0.875rem;
+}

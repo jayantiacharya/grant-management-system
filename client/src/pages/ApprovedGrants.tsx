@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import DashHeader from "../components/DashHeader";
-import "./ApprovedGrants.css";
+import "../styles/PageLayout.css";
+import "../styles/ApprovedGrants.css";
 
 type ApprovedGrant = {
   _id: string;

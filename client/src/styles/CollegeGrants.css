@@ -1,0 +1,63 @@
+.cg-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.cg-title {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.cg-subtitle {
+  margin: 0 0 0.25rem 0;
+  color: #555;
+}
+
+.cg-hint {
+  margin: 0 0 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.cg-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.cg-error {
+  padding: 1rem;
+  background: #fee;
+  color: #c0392b;
+  border-radius: 6px;
+}
+
+.cg-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+.cg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cg-th {
+  background: #f0f0f0;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+}
+
+.cg-td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
