@@ -162,3 +162,73 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/profile");
   });
 });
+
+describe("Dashboard report due-date reminder banner", () => {
+  const daysFromNow = (days: number) =>
+    new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+  it("shows a reminder for an approved grant due soon", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: [
+        {
+          _id: "g1",
+          title: "G3: Submitted with Committee Reviews",
+          allocatedAmount: 2500,
+          reportDueDate: daysFromNow(5),
+          reports: [],
+        },
+      ],
+    });
+
+    render(<Dashboard />);
+
+    expect(
+      await screen.findByText(
+        /report for "g3: submitted with committee reviews" is due in 5 days\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows overdue messaging for a grant past its due date", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: [
+        {
+          _id: "g1",
+          title: "Overdue Grant",
+          allocatedAmount: 1000,
+          reportDueDate: daysFromNow(-10),
+          reports: [],
+        },
+      ],
+    });
+
+    render(<Dashboard />);
+
+    expect(
+      await screen.findByText(
+        /report for "overdue grant" is overdue by 10 days\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show a reminder for a grant that already has a filed report", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: [
+        {
+          _id: "g1",
+          title: "Already Reported Grant",
+          allocatedAmount: 1000,
+          reportDueDate: daysFromNow(5),
+          reports: [{ submittedAt: new Date().toISOString() }],
+        },
+      ],
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(
+      screen.queryByText(/report for "already reported grant"/i),
+    ).not.toBeInTheDocument();
+  });
+});
