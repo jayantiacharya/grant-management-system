@@ -11,6 +11,43 @@ import "../styles/PageLayout.css";
 import "../styles/Dashboard.css";
 import "../styles/GrantForm.css";
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+type ReportReminder = {
+  grant: any;
+  daysUntilDue: number;
+  overdue: boolean;
+};
+
+// Builds the list of approved grants whose report is due soon, overdue, or
+// otherwise still within the reminder window (90 days out, up to 365 days
+// past due). Grants that already have a filed report are excluded entirely.
+const getReportReminders = (grantList: any[]): ReportReminder[] => {
+  const now = Date.now();
+
+  return grantList
+    .filter((grant) => {
+      const hasDueDate = Boolean(grant.reportDueDate);
+      const alreadyReported =
+        Array.isArray(grant.reports) && grant.reports.length > 0;
+      return hasDueDate && !alreadyReported;
+    })
+    .map((grant) => {
+      const dueTime = new Date(grant.reportDueDate).getTime();
+      const daysUntilDue = Math.ceil((dueTime - now) / MS_PER_DAY);
+      return {
+        grant,
+        daysUntilDue,
+        overdue: daysUntilDue < 0,
+      };
+    })
+    .filter(
+      (reminder) =>
+        reminder.daysUntilDue <= 90 && reminder.daysUntilDue >= -365,
+    )
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+};
+
 export default function Dashboard() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -84,6 +121,8 @@ export default function Dashboard() {
   const approvedGrants = grants.filter(isApprovedGrant);
   const rejectedGrants = grants.filter(isRejectedGrant);
 
+  const reportReminders = getReportReminders(approvedGrants);
+
   const formatAmount = (amount: unknown) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -137,6 +176,27 @@ export default function Dashboard() {
 
       <main className="dash-main">
         <div className="grant-form-card">
+          {reportReminders.length > 0 && (
+            <div className="report-reminder-banner">
+              {reportReminders.map(({ grant, daysUntilDue, overdue }) => (
+                <p key={grant._id} className="report-reminder-item">
+                  {overdue
+                    ? `Report for "${grant.title}" is overdue by ${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) === 1 ? "" : "s"}.`
+                    : daysUntilDue === 0
+                      ? `Report for "${grant.title}" is due today.`
+                      : `Report for "${grant.title}" is due in ${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"}.`}{" "}
+                  <button
+                    type="button"
+                    className="report-reminder-link"
+                    onClick={() => navigate("/approved-grants")}
+                  >
+                    File report
+                  </button>
+                </p>
+              ))}
+            </div>
+          )}
+
           <h2 className="grant-title">Welcome, {user?.email}</h2>
 
           <p className="grant-description">

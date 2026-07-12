@@ -417,12 +417,15 @@ function calculateSummary(grants: any[], currentCycleAmount: number) {
   };
 }
 
+// Report is due at the end of the current fiscal year (FY = July 1 - June 30).
+// Previously this added an extra +1 to the fiscal year, pushing the due date
+// ~2 years out instead of ~1 year; fixed to use firstFiscalYearEnd directly.
 function getNextReportDueDate() {
   const now = new Date();
   const firstFiscalYearEnd =
     now.getUTCMonth() <= 5 ? now.getUTCFullYear() : now.getUTCFullYear() + 1;
 
-  return new Date(Date.UTC(firstFiscalYearEnd + 1, 5, 30)).toISOString();
+  return new Date(Date.UTC(firstFiscalYearEnd, 5, 30)).toISOString();
 }
 
 function getGrantFilter(id: string) {
