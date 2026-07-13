@@ -11,6 +11,7 @@ interface User {
   id: string;
   email: string;
   role: string;
+  accountNumber?: string;
   isArcc?: boolean;
   isDean?: boolean;
   isDeptChair?: boolean;

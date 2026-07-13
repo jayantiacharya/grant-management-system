@@ -59,7 +59,16 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     if (mode === "new" && user?.id && !formData.projectDirectorId) {
       setFormData((prev) => ({ ...prev, projectDirectorId: user.id }));
     }
-  }, [user, formData.projectDirectorId, setFormData, mode]);
+    if (mode === "new" && user?.accountNumber && !formData.accountNumber) {
+      setFormData((prev) => ({ ...prev, accountNumber: user.accountNumber }));
+    }
+  }, [
+    user,
+    formData.projectDirectorId,
+    formData.accountNumber,
+    setFormData,
+    mode,
+  ]);
 
   // edit mode: fetch existing grant
   useEffect(() => {
@@ -79,7 +88,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
             title: grant.title || "",
             description: grant.description || "",
             projectDirectorId: grant.projectDirectorId || user?.id || "",
-            accountNumber: grant.accountNumber || "",
+            accountNumber: grant.accountNumber || user?.accountNumber || "",
             studentsImpacted:
               grant.studentsImpacted == null
                 ? ""

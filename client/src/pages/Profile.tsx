@@ -23,6 +23,7 @@ type UserData = {
   email: string;
   department: string;
   college: string;
+  accountNumber: string;
 };
 
 export default function Profile() {
@@ -36,6 +37,7 @@ export default function Profile() {
     email: "",
     department: "",
     college: "",
+    accountNumber: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [userFormData, setUserFormData] = useState({
@@ -46,6 +48,7 @@ export default function Profile() {
     confirmPassword: "",
     department: "",
     college: "",
+    accountNumber: "",
   });
 
   const fetchColleges = async () => {
@@ -76,6 +79,7 @@ export default function Profile() {
       confirmPassword: "",
       department: data.user.department || "",
       college: data.user.college || "",
+      accountNumber: data.user.accountNumber || "",
     });
   };
 
@@ -142,6 +146,10 @@ export default function Profile() {
 
             <p>
               <strong>Department:</strong> {userData.department}
+            </p>
+
+            <p>
+              <strong>Account Number:</strong> {userData.accountNumber}
             </p>
 
             <button onClick={() => setIsEditing(true)}>Edit Profile</button>
@@ -216,6 +224,14 @@ export default function Profile() {
                   </option>
                 ))}
               </select>
+
+              <input
+                type="text"
+                name="accountNumber"
+                placeholder="Account Number"
+                value={userFormData.accountNumber}
+                onChange={handleChange}
+              />
 
               <div className="form-buttons">
                 <button type="submit">Save</button>
