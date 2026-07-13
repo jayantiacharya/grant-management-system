@@ -89,6 +89,9 @@ describe("Profile", () => {
     expect(
       (screen.getByPlaceholderText("Email") as HTMLInputElement).value,
     ).toBe("alice@wsu.edu");
+    expect(
+      (screen.getByPlaceholderText("Account Number") as HTMLInputElement).value,
+    ).toBe("123456789");
   });
 
   it("alerts and does not submit when passwords do not match", async () => {
