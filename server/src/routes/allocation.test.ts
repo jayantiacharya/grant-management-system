@@ -281,3 +281,166 @@ describe("POST /api/allocation/send-to-accounting", () => {
     expect(res.text).toContain('"Approved (Full)"');
   });
 });
+
+describe("Edge case #2: requested less than available (acceptable case)", () => {
+  it("allocates fully and shows no over-budget or under-distribution warning when requested < available", async () => {
+    // Default mock: 1 grant requesting $5,000 against a $50,000 cycle.
+    // Requested ($5,000) is well below available ($50,000).
+    const res = await request(app)
+      .get("/api/allocation/grants")
+      .set("Authorization", `Bearer ${chairToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalRequested).toBe(5000);
+    expect(res.body.totalAllocated).toBe(2500);
+    expect(res.body.leftoverAmount).toBe(47500);
+    expect(res.body.overAllocated).toBe(false);
+    expect(res.body.underDistributed).toBe(false);
+  });
+
+  it("allocates the full requested amount with no leftover when requested exactly equals available", async () => {
+    // One grant, fully maxed rubric score (finalPercent 100), requesting
+    // exactly the full $50,000 cycle amount. Award percentage at 100%
+    // means allocatedAmount === arccAmountRequested === currentCycleAmount.
+    grantToArray.mockResolvedValueOnce([
+      reviewedGrant({
+        arccAmountRequested: 50000,
+        reviews: [
+          {
+            reviewerId: "arcc-member@test.edu",
+            scores: {
+              "507f1f77bcf86cd799439021": 30,
+              "507f1f77bcf86cd799439022": 40,
+              "507f1f77bcf86cd799439023": 30,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    const res = await request(app)
+      .get("/api/allocation/grants")
+      .set("Authorization", `Bearer ${chairToken}`);
+
+    expect(res.status).toBe(200);
+
+    const grant = res.body.grants[0];
+
+    expect(grant.finalPercent).toBe(100);
+    expect(grant.allocatedAmount).toBe(50000);
+    expect(res.body.totalRequested).toBe(50000);
+    expect(res.body.totalAllocated).toBe(50000);
+    expect(res.body.leftoverAmount).toBe(0);
+    expect(res.body.overAllocated).toBe(false);
+    expect(res.body.underDistributed).toBe(false);
+  });
+});
+
+describe("Edge case #3: under-distribution / 5% rule", () => {
+  it("warns when enough money was requested but allocation falls more than 5% short", async () => {
+    // Available = $100,000, Requested = $120,000, Allocated = $90,000
+    // (Arfath's exact example). $10,000 leftover is more than 5% of
+    // $100,000, so underDistributed must be true.
+    allocationFindOne.mockResolvedValueOnce({
+      currentCycleAmount: 100000,
+      cutoffPercentage: 75,
+      criteria: allocationCriteria,
+      finalized: false,
+      finalizedAt: null,
+    });
+
+    grantToArray.mockResolvedValueOnce([
+      reviewedGrant({
+        _id: new ObjectId("507f1f77bcf86cd799439011"),
+        arccAmountRequested: 90000,
+        reviews: [
+          {
+            reviewerId: "arcc-member@test.edu",
+            scores: {
+              "507f1f77bcf86cd799439021": 30,
+              "507f1f77bcf86cd799439022": 40,
+              "507f1f77bcf86cd799439023": 30,
+            },
+          },
+        ],
+      }),
+      reviewedGrant({
+        _id: new ObjectId("507f1f77bcf86cd799439012"),
+        arccAmountRequested: 30000,
+        reviews: [
+          {
+            reviewerId: "arcc-member@test.edu",
+            scores: {
+              "507f1f77bcf86cd799439021": 5,
+              "507f1f77bcf86cd799439022": 5,
+              "507f1f77bcf86cd799439023": 5,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    const res = await request(app)
+      .get("/api/allocation/grants")
+      .set("Authorization", `Bearer ${chairToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalRequested).toBe(120000);
+    expect(res.body.totalAllocated).toBe(90000);
+    expect(res.body.leftoverAmount).toBe(10000);
+    expect(res.body.underDistributed).toBe(true);
+    expect(res.body.overAllocated).toBe(false);
+  });
+
+  it("does not warn when total requested is less than available money", async () => {
+    // Default mock: 1 grant requesting $5,000 against a $50,000 cycle.
+    // Even though the award only funds part of it, requested never
+    // reached the cycle amount, so the 5% rule should not apply.
+    const res = await request(app)
+      .get("/api/allocation/grants")
+      .set("Authorization", `Bearer ${chairToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalRequested).toBe(5000);
+    expect(res.body.underDistributed).toBe(false);
+  });
+
+  it("does not warn when allocation lands exactly at the 95% boundary", async () => {
+    // Available = $100,000, Requested = $100,000, Allocated = $95,000
+    // exactly. The rule is "at least 95%", so this must NOT warn.
+    allocationFindOne.mockResolvedValueOnce({
+      currentCycleAmount: 100000,
+      cutoffPercentage: 75,
+      criteria: [
+        { fromPercentage: 90, toPercentage: 100, awardPercentage: 95 },
+      ],
+      finalized: false,
+      finalizedAt: null,
+    });
+
+    grantToArray.mockResolvedValueOnce([
+      reviewedGrant({
+        arccAmountRequested: 100000,
+        reviews: [
+          {
+            reviewerId: "arcc-member@test.edu",
+            scores: {
+              "507f1f77bcf86cd799439021": 30,
+              "507f1f77bcf86cd799439022": 40,
+              "507f1f77bcf86cd799439023": 30,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    const res = await request(app)
+      .get("/api/allocation/grants")
+      .set("Authorization", `Bearer ${chairToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalRequested).toBe(100000);
+    expect(res.body.totalAllocated).toBe(95000);
+    expect(res.body.underDistributed).toBe(false);
+  });
+});
