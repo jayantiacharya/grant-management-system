@@ -250,6 +250,10 @@ flowchart TD
     end
 ```
 
+The dashboard also shows a report due-date reminder banner for approved grants with an
+unfiled report whose due date is within 90 days ahead or up to a year past; its File
+report button navigates to `/approved-grants`.
+
 `ReviewDetail` (`/review/:id`) gates its controls on how it was reached: navigations pass
 `state.fromApprovalView`, so the same page shows the rubric-scoring form when an ARCC
 reviewer opens it and the approve/deny controls when a department chair opens it from

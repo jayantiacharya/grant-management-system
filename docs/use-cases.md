@@ -308,3 +308,26 @@ Feature: Proposer dashboard sections
     Then the grant appears in the Rejected Grants section
     And the proposer can see it was rejected so they have a record of the application
 ```
+
+```gherkin
+Feature: Report due-date reminder banner
+
+  Scenario: Reminder for a report due soon
+    Given an approved grant with no filed report
+    And its report due date is 30 days away
+    When the proposer views their dashboard
+    Then a banner says the report is due in 30 days
+    And a File report link navigates to the Approved Grants page
+
+  Scenario: Reminder for an overdue report
+    Given an approved grant with no filed report
+    And its report due date passed 10 days ago
+    When the proposer views their dashboard
+    Then a banner says the report is overdue by 10 days
+
+  Scenario: No reminder outside the window or after filing
+    Given an approved grant whose report is due more than 90 days away,
+      overdue by more than a year, or already filed
+    When the proposer views their dashboard
+    Then no reminder appears for that grant
+```

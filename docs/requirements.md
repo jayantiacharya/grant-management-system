@@ -293,6 +293,11 @@ Draft grants can be edited; submitted grants are locked with no edit option. Eac
 shows its current status (see below) so the proposer can see where it sits, for example
 chasing a department chair who has not yet approved.
 
+The dashboard also shows a **report due-date reminder** banner: one line per approved
+grant whose report has not been filed and whose due date (see 8e) is within 90 days
+ahead or up to a year past, saying the report is due in N days, due today, or overdue by
+N days, with a link to file the report.
+
 ---
 
 ## 11. Grant status
@@ -328,7 +333,9 @@ Listed so the boundary of the current scope is explicit:
   and a breakdown of what was bought.
 - **Reporting and analytics** — historic trend charts (money per department per year)
   and financial reports for auditing.
-- **Notifications / reminders** — e.g. nudging an approver who has not acted.
+- **Notifications / reminders** — e.g. nudging an approver who has not acted. (The
+  dashboard's report due-date reminder banner is in scope, see section 10; email or
+  other push notifications are not.)
 - **Automated money distribution** — paying funds into PI accounts directly. The system
   instead exports the accounting spreadsheet (see Allocation) and the accounting office
   disburses.
