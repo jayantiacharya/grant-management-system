@@ -34,6 +34,7 @@ const userPayload = {
     email: "alice@wsu.edu",
     department: "Computer Science",
     college: "College of Engineering",
+    accountNumber: "123456789",
   },
 };
 
@@ -74,8 +75,8 @@ describe("Profile", () => {
     expect(await screen.findByText(/Alice Smith/)).toBeInTheDocument();
     expect(screen.getByText("College of Engineering")).toBeInTheDocument();
     expect(screen.getByText("Computer Science")).toBeInTheDocument();
+    expect(await screen.findByText("123456789")).toBeInTheDocument();
   });
-
   it("switches to edit mode and pre-fills the form", async () => {
     const user = userEvent.setup();
     render(<Profile />);
@@ -88,6 +89,9 @@ describe("Profile", () => {
     expect(
       (screen.getByPlaceholderText("Email") as HTMLInputElement).value,
     ).toBe("alice@wsu.edu");
+    expect(
+      (screen.getByPlaceholderText("Account Number") as HTMLInputElement).value,
+    ).toBe("123456789");
   });
 
   it("alerts and does not submit when passwords do not match", async () => {

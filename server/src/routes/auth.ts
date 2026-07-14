@@ -153,6 +153,7 @@ router.route("/login").post(async (req: Request, res: Response) => {
       birthday: user.birthday,
       college: user.college,
       department: user.department,
+      accountNumber: user.accountNumber,
       isDean: !!deanCollege,
     },
   });
@@ -183,6 +184,7 @@ router.route("/get-user/:userId").get(async (req: Request, res: Response) => {
         email: user.email,
         department: user.department,
         college: user.college,
+        accountNumber: user.accountNumber,
         birthday:
           user.birthday instanceof Date
             ? user.birthday.toISOString().split("T")[0]
@@ -195,8 +197,16 @@ router.route("/get-user/:userId").get(async (req: Request, res: Response) => {
 });
 
 router.route("/update-user").post(async (req: Request, res: Response) => {
-  const { userId, firstName, lastName, email, password, department, college } =
-    req.body;
+  const {
+    userId,
+    firstName,
+    lastName,
+    email,
+    password,
+    department,
+    college,
+    accountNumber,
+  } = req.body;
 
   if (!userId) {
     res.status(400).json({ message: "User ID is required" });
@@ -225,7 +235,7 @@ router.route("/update-user").post(async (req: Request, res: Response) => {
   if (email) updateData.email = email.toLowerCase();
   if (department) updateData.department = department;
   if (college) updateData.college = college;
-
+  if (accountNumber) updateData.accountNumber = accountNumber.trim();
   if (password) {
     if (password.length < 6) {
       res

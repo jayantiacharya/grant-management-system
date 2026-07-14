@@ -45,6 +45,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [isLocked, setIsLocked] = useState<boolean>(false);
+  const preFillAccountNumberRef = useRef<boolean>(false);
 
   // new mode: clear stale draft when navigating from an existing grant
   useEffect(() => {
@@ -59,7 +60,22 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     if (mode === "new" && user?.id && !formData.projectDirectorId) {
       setFormData((prev) => ({ ...prev, projectDirectorId: user.id }));
     }
-  }, [user, formData.projectDirectorId, setFormData, mode]);
+    if (
+      mode === "new" &&
+      user?.accountNumber &&
+      !formData.accountNumber &&
+      !preFillAccountNumberRef.current
+    ) {
+      setFormData((prev) => ({ ...prev, accountNumber: user.accountNumber }));
+      preFillAccountNumberRef.current = true;
+    }
+  }, [
+    user,
+    formData.projectDirectorId,
+    formData.accountNumber,
+    setFormData,
+    mode,
+  ]);
 
   // edit mode: fetch existing grant
   useEffect(() => {

@@ -33,6 +33,7 @@ const validRegister = {
   birthday: "1990-05-20",
   department: "Computer Science",
   college: "College of Engineering",
+  accountNumber: "123456789",
 };
 
 beforeEach(() => {
@@ -276,5 +277,16 @@ describe("POST /api/auth/update-user", () => {
       .send({ userId: "u1" });
     expect(res.status).toBe(200);
     expect(updateOne.mock.calls[0][1]).toEqual({ $set: {} });
+  });
+
+  it("200 updates accountNumber when provided", async () => {
+    findOne.mockResolvedValueOnce({ id: "u1" });
+    const res = await request(app)
+      .post("/api/auth/update-user")
+      .send({ userId: "u1", accountNumber: "987654321" });
+    expect(res.status).toBe(200);
+    const [filter, update] = updateOne.mock.calls[0];
+    expect(filter).toEqual({ id: "u1" });
+    expect(update.$set.accountNumber).toBe("987654321");
   });
 });
