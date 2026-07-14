@@ -235,7 +235,7 @@ router.route("/update-user").post(async (req: Request, res: Response) => {
   if (email) updateData.email = email.toLowerCase();
   if (department) updateData.department = department;
   if (college) updateData.college = college;
-  if (accountNumber) updateData.accountNumber = accountNumber;
+  if (accountNumber) updateData.accountNumber = accountNumber.trim();
   if (password) {
     if (password.length < 6) {
       res
