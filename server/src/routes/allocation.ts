@@ -417,6 +417,9 @@ function calculateSummary(grants: any[], currentCycleAmount: number) {
   };
 }
 
+// Report is due on the first June 30 that is at least one full year after
+// the allocation date (see allocation.test.ts: "sets funded grant report
+// due date to first June 30 on or after allocation date plus one year").
 function getNextReportDueDate() {
   const now = new Date();
   const firstFiscalYearEnd =
