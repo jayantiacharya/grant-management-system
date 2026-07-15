@@ -290,13 +290,15 @@ export default function AllocationPage() {
     }
 
     if (overAllocated) {
-      setMessage("You are allocating more money than available.");
+      setMessage(
+        "You are allocating more money than available. Please adjust the allocation criteria to fit within the available amount.",
+      );
       return false;
     }
 
     if (underDistributed) {
       setMessage(
-        "Warning: Less than 95% of available funds are allocated. Adjust criteria before finalizing.",
+        "You are leaving more than 5% of the available money unused. Please adjust the allocation criteria to distribute more funding.",
       );
       return false;
     }
@@ -584,14 +586,15 @@ export default function AllocationPage() {
 
           {overAllocated && (
             <p className="allocation-warning">
-              You are allocating more money than available.
+              You are allocating more money than available. Please adjust the
+              allocation criteria to fit within the available amount.
             </p>
           )}
 
           {underDistributed && !overAllocated && (
             <p className="allocation-warning">
-              Less than 95% of available funds are allocated. Please adjust the
-              criteria before finalizing.
+              You are leaving more than 5% of the available money unused. Please
+              adjust the allocation criteria to distribute more funding.
             </p>
           )}
 
