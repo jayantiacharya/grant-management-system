@@ -584,7 +584,8 @@ export default function AllocationPage() {
 
           {overAllocated && (
             <p className="allocation-warning">
-              You are allocating more money than available.
+              You are allocating more money than available. Please adjust the
+              allocation criteria to fit within the available amount.
             </p>
           )}
 
