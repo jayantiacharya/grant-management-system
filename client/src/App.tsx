@@ -24,6 +24,7 @@ import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
 import ApprovedGrants from "./pages/ApprovedGrants";
 import GrantReport from "./pages/GrantReport";
+import DonorReport from "./pages/DonorReport";
 
 /* ---------------- ROUTE GUARDS ---------------- */
 
@@ -152,6 +153,15 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AllocationPage />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin/donor-report"
+              element={
+                <AdminRoute>
+                  <DonorReport />
                 </AdminRoute>
               }
             />
