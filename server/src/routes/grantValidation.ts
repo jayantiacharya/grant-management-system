@@ -62,6 +62,8 @@ export function validateGrantPayload(
     departmentCount,
     usesSubjects,
     irbApproved,
+    educationalImpact,
+    evaluationPlan,
     status,
   } = body;
 
@@ -143,6 +145,24 @@ export function validateGrantPayload(
         ok: false,
         status: 400,
         message: "IRB approval document is required when irbApproved is yes",
+      };
+    }
+    const normalizedEducationalImpact =
+      typeof educationalImpact === "string" ? educationalImpact.trim() : "";
+    if (!normalizedEducationalImpact) {
+      return {
+        ok: false,
+        status: 400,
+        message: "educationalImpact is required",
+      };
+    }
+    const normalizedEvaluationPlan =
+      typeof evaluationPlan === "string" ? evaluationPlan.trim() : "";
+    if (!normalizedEvaluationPlan) {
+      return {
+        ok: false,
+        status: 400,
+        message: "evaluationPlan is required",
       };
     }
   }

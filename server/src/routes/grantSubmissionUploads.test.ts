@@ -61,6 +61,8 @@ describe("POST /api/grants/submit - validation parity (JSON)", () => {
     acknowledgement3: true,
     acknowledgement4: true,
     signature: "Jane Director",
+    educationalImpact: "Gives students hands-on AI experience.",
+    evaluationPlan: "Pre/post surveys and completion rates.",
   };
 
   it("400 when affectsMultipleDepartments=yes but departmentCount < 2", async () => {
@@ -116,6 +118,8 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("acknowledgement3", "true")
       .field("acknowledgement4", "true")
       .field("signature", "Jane Director")
+      .field("educationalImpact", "Gives students hands-on AI experience.")
+      .field("evaluationPlan", "Pre/post surveys and completion rates.")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "no")
       .attach("files", Buffer.from("hello"), "proposal.pdf");
@@ -145,6 +149,8 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("acknowledgement3", "true")
       .field("acknowledgement4", "true")
       .field("signature", "Jane Director")
+      .field("educationalImpact", "Gives students hands-on AI experience.")
+      .field("evaluationPlan", "Pre/post surveys and completion rates.")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "yes")
       .field("irbApproved", "yes")
@@ -172,6 +178,8 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
       .field("acknowledgement3", "true")
       .field("acknowledgement4", "true")
       .field("signature", "Jane Director")
+      .field("educationalImpact", "Gives students hands-on AI experience.")
+      .field("evaluationPlan", "Pre/post surveys and completion rates.")
       .field("affectsMultipleDepartments", "no")
       .field("usesSubjects", "yes")
       .field("irbApproved", "yes");
@@ -195,6 +203,8 @@ describe("POST /api/grants/submit - file uploads (multipart)", () => {
         acknowledgement3: true,
         acknowledgement4: true,
         signature: "Jane Director",
+        educationalImpact: "Gives students hands-on AI experience.",
+        evaluationPlan: "Pre/post surveys and completion rates.",
       });
     expect(res.status).toBe(201);
     expect(res.body.files).toEqual([]);
