@@ -34,7 +34,8 @@ exist in the system.
 Passwords are stored hashed, never in plaintext.
 
 Each user has a profile page where they can view and edit their own details (name,
-email, password, college, department).
+email, password, college, department, account number). The saved account number
+prefills the account number field on new grant applications.
 
 ---
 
@@ -258,12 +259,17 @@ A **Send to Accounting** button exports a spreadsheet the chair downloads and em
 the accounting office. The accounting office performs the actual disbursement; the app
 does not move money. Current spreadsheet columns per row (one row per grant):
 
-- Grant title
 - Principal investigator name
+- Grant name
+- Accounting number
+- Submitted by
 - Amount requested from ARCC
+- Other sources amount
+- Final rating %
+- Allocated amount
+- Status
 
-The allocated amount column is planned for a future iteration. Spreadsheet generation
-must use free tooling only.
+Spreadsheet generation must use free tooling only (the export is a plain CSV).
 
 ---
 
@@ -370,11 +376,12 @@ Where the current build differs from the expectations above.
   "Department Chair Approved", "Grant Approved") are not yet surfaced as discrete
   labeled badges. The allocation-driven terminal states (Accepted / Rejected) do not
   exist yet.
-- **Allocation** — The allocation page exists but is UI only: it shows placeholder data
-  rather than real grant ratings. The cycle inputs (amount available, leftover, cutoff
-  percentage) are not editable by the user. The two-table cutoff split, dynamic tier
-  criteria, allocated amount column, Finish Allocation action, report due date
-  calculation, and Send to Accounting spreadsheet export are all not yet implemented.
+- **Allocation** — Fully implemented: editable cycle inputs (amount available, leftover,
+  cutoff percentage), the two-table cutoff split, dynamic tier criteria, the allocated
+  amount column, Finish Allocation (locks the cycle and stamps allocated amount, status,
+  and report due date onto each funded grant), and the Send to Accounting CSV export.
+  Before finalizing, the page warns when the tiers over-allocate the available amount or
+  leave more than 5% of it unused.
 - **College & department admin** — The college dean approval workflow is fully
   implemented: dean detection on login, auto-redirect to `/college-grants`, and
   approve/reject with college-scoped filtering (PR #29). Remaining gaps: delete is

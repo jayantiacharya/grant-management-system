@@ -23,6 +23,7 @@ erDiagram
         date birthday
         string department
         string college
+        string accountNumber "employee account/index number; prefills new grant forms"
         string role "admin | user"
         string createdAt
     }

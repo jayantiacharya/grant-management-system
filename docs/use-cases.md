@@ -57,7 +57,8 @@ graph LR
 
 1. The proposer registers with email, password, name, and birthday, and may select
    their college and department.
-2. From their profile page they can later update any of these details.
+2. From their profile page they can later update any of these details, plus their
+   account number, which prefills the account number field on new grant applications.
 
 ### Draft and submit a grant
 
