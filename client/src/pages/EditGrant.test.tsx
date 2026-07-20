@@ -51,6 +51,8 @@ const existingGrant = {
   usesSubjects: "no",
   irbApproved: "",
   timeline: "Phase 1 in fall",
+  educationalImpact: "Hands-on AI experience for students.",
+  evaluationPlan: "Pre/post surveys and completion rates.",
   acknowledgements: {
     acknowledgement1: true,
     acknowledgement2: true,

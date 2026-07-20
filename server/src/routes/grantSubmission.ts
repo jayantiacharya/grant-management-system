@@ -140,6 +140,8 @@ router.post(
       usesSubjects,
       budgetItems,
       timeline,
+      educationalImpact,
+      evaluationPlan,
     } = req.body;
 
     const filesRecord = req.files as
@@ -215,6 +217,8 @@ router.post(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
+      educationalImpact: educationalImpact ?? "",
+      evaluationPlan: evaluationPlan ?? "",
       budgetItems: parsedBudgetItems,
       files: uploadedFiles,
       irbApprovalFile: irbApprovalFile,
@@ -615,6 +619,8 @@ router.put(
       usesSubjects,
       budgetItems,
       timeline,
+      educationalImpact,
+      evaluationPlan,
     } = req.body;
 
     if (!ObjectId.isValid(req.params.id)) {
@@ -713,6 +719,8 @@ router.put(
       usesSubjects: usesSubjects ?? null,
       irbApproved: usesSubjects === "yes" ? req.body.irbApproved : null,
       timeline: timeline ?? "",
+      educationalImpact: educationalImpact ?? "",
+      evaluationPlan: evaluationPlan ?? "",
       budgetItems: parsedBudgetItems,
       collegeReviewStatus: hasCollegeFundingRequest(parsedBudgetItems)
         ? GRANT_APPROVAL_STATUS.PENDING

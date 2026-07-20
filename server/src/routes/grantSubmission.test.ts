@@ -40,6 +40,8 @@ const validBody = {
   acknowledgement3: true,
   acknowledgement4: true,
   signature: "Jane Director",
+  educationalImpact: "Gives students hands-on AI experience.",
+  evaluationPlan: "Pre/post surveys and completion rates.",
 };
 
 beforeEach(() => {

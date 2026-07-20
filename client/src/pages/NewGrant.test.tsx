@@ -140,6 +140,14 @@ describe("NewGrant", () => {
       screen.getByLabelText(/full name signature/i),
       "Jane Director",
     );
+    await user.type(
+      screen.getByLabelText(/educational experience/i),
+      "It gives students hands-on AI experience.",
+    );
+    await user.type(
+      screen.getByLabelText(/being evaluated/i),
+      "Pre/post surveys and course completion rates.",
+    );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),
       "no",
@@ -168,6 +176,8 @@ describe("NewGrant", () => {
           acknowledgement3: true,
           acknowledgement4: true,
           signature: "Jane Director",
+          educationalImpact: "It gives students hands-on AI experience.",
+          evaluationPlan: "Pre/post surveys and course completion rates.",
           status: "submitted",
         }),
         expect.objectContaining({
@@ -199,6 +209,14 @@ describe("NewGrant", () => {
     await user.type(
       screen.getByLabelText(/full name signature/i),
       "Jane Director",
+    );
+    await user.type(
+      screen.getByLabelText(/educational experience/i),
+      "It gives students hands-on AI experience.",
+    );
+    await user.type(
+      screen.getByLabelText(/being evaluated/i),
+      "Pre/post surveys and course completion rates.",
     );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),
@@ -379,6 +397,14 @@ describe("NewGrant", () => {
     await user.type(
       screen.getByLabelText(/full name signature/i),
       "Jane Director",
+    );
+    await user.type(
+      screen.getByLabelText(/educational experience/i),
+      "It gives students hands-on AI experience.",
+    );
+    await user.type(
+      screen.getByLabelText(/being evaluated/i),
+      "Pre/post surveys and course completion rates.",
     );
     await user.selectOptions(
       screen.getByLabelText(/affect more than one department/i),

@@ -317,7 +317,21 @@ export default function ReviewDetail() {
           <p>
             <strong>Description:</strong>
           </p>
-          <p>{grant.description}</p>
+          <p>{grant.description || "—"}</p>
+
+          <p>
+            <strong>Educational Impact:</strong>
+          </p>
+          <p>{grant.educationalImpact || "—"}</p>
+
+          <p>
+            <strong>Evaluation Plan:</strong>
+          </p>
+          <p>{grant.evaluationPlan || "—"}</p>
+          <p>
+            <strong>Project Timeline:</strong>
+          </p>
+          <p>{grant.timeline || "—"}</p>
 
           {files.length > 0 && (
             <>

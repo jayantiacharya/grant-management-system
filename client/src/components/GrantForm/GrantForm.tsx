@@ -105,6 +105,8 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
             usesSubjects: grant.usesSubjects || "",
             irbApproved: grant.irbApproved || "",
             timeline: grant.timeline ?? "",
+            educationalImpact: grant.educationalImpact ?? "",
+            evaluationPlan: grant.evaluationPlan ?? "",
             hasMatchingFunds: grant.hasMatchingFunds ?? false,
             matchingFundsTotal: grant.matchingFundsTotal
               ? String(grant.matchingFundsTotal)
@@ -239,6 +241,14 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
         next.irbApprovalFile = "IRB approval document is required.";
       }
     }
+    if (!data.educationalImpact.trim()) {
+      next.educationalImpact =
+        "Please describe how this project enhances the educational experience of Weber State students.";
+    }
+    if (!data.evaluationPlan.trim()) {
+      next.evaluationPlan =
+        "Please describe how this project will be evaluated.";
+    }
     if (!data.acknowledgement1) {
       next.acknowledgement1 = "You must acknowledge this item.";
     }
@@ -295,6 +305,8 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
           body.append("irbApproved", formData.irbApproved);
         }
         body.append("timeline", formData.timeline);
+        body.append("educationalImpact", formData.educationalImpact);
+        body.append("evaluationPlan", formData.evaluationPlan);
         body.append("hasMatchingFunds", String(formData.hasMatchingFunds));
         body.append("matchingFundsTotal", formData.matchingFundsTotal);
         body.append("acknowledgement1", String(formData.acknowledgement1));
@@ -345,6 +357,8 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
           irbApproved:
             formData.usesSubjects === "yes" ? formData.irbApproved : "",
           timeline: formData.timeline,
+          educationalImpact: formData.educationalImpact,
+          evaluationPlan: formData.evaluationPlan,
           hasMatchingFunds: formData.hasMatchingFunds,
           matchingFundsTotal: formData.matchingFundsTotal,
           acknowledgement1: formData.acknowledgement1,
@@ -623,6 +637,45 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                   onChange={handleChange}
                   placeholder="e.g. August: design, September: build, or just an end date"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="educationalImpact">
+                  How does this project enhance the educational experience of
+                  Weber State students?
+                </label>
+                <textarea
+                  id="educationalImpact"
+                  name="educationalImpact"
+                  rows={6}
+                  value={formData.educationalImpact}
+                  onChange={handleChange}
+                  placeholder="Describe the educational impact on Weber State students"
+                  required
+                />
+                {errors.educationalImpact && (
+                  <span className="field-error">
+                    {errors.educationalImpact}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="evaluationPlan">
+                  How is this project being evaluated?
+                </label>
+                <textarea
+                  id="evaluationPlan"
+                  name="evaluationPlan"
+                  rows={6}
+                  value={formData.evaluationPlan}
+                  onChange={handleChange}
+                  placeholder="Describe how success/outcomes will be measured"
+                  required
+                />
+                {errors.evaluationPlan && (
+                  <span className="field-error">{errors.evaluationPlan}</span>
+                )}
               </div>
 
               <button
