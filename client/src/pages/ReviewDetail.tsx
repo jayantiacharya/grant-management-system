@@ -328,6 +328,10 @@ export default function ReviewDetail() {
             <strong>Evaluation Plan:</strong>
           </p>
           <p>{grant.evaluationPlan || "—"}</p>
+          <p>
+            <strong>Project Timeline:</strong>
+          </p>
+          <p>{grant.timeline || "—"}</p>
 
           {files.length > 0 && (
             <>
