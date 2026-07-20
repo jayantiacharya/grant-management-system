@@ -10,6 +10,8 @@ import {
 const wrapper = GrantProvider;
 
 const sampleForm: GrantFormData = {
+  educationalImpact: "",
+  evaluationPlan: "",
   title: "Grant A",
   description: "desc",
   projectDirectorId: "u1",
