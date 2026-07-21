@@ -13,6 +13,7 @@ interface User {
   role: string;
   accountNumber?: string;
   isArcc?: boolean;
+  isArccChair?: boolean;
   isDean?: boolean;
   isDeptChair?: boolean;
 }
@@ -44,11 +45,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem("token"),
   );
 
-  // Resolve role flags the login response doesn't carry (isArcc, isDeptChair)
-  // once per login; they persist in localStorage until logout.
+  // Resolve role flags the login response doesn't carry (isArcc, isArccChair,
+  // isDeptChair) once per login; they persist in localStorage until logout.
   useEffect(() => {
     if (!token || !user?.id) return;
-    if (user.isArcc !== undefined && user.isDeptChair !== undefined) return;
+    if (
+      user.isArcc !== undefined &&
+      user.isArccChair !== undefined &&
+      user.isDeptChair !== undefined
+    )
+      return;
 
     let cancelled = false;
     const headers = { Authorization: `Bearer ${token}` };
@@ -64,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const updated = {
             ...current,
             isArcc: arcc.data.memberIds?.includes(current.id) || false,
+            isArccChair: arcc.data.chairId === current.id,
             isDeptChair: Boolean(chair.data.isChair),
           };
           localStorage.setItem("user", JSON.stringify(updated));
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [token, user?.id, user?.isArcc, user?.isDeptChair]);
+  }, [token, user?.id, user?.isArcc, user?.isArccChair, user?.isDeptChair]);
 
   const login = (userData: User, jwt: string) => {
     setUser(userData);

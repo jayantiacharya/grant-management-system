@@ -4,19 +4,22 @@ import { verifyToken, AuthRequest } from "../middleware/auth.js";
 
 const router = Router();
 
-// Same role check used for the Allocation Page (server/src/routes/allocation.ts).
-// Duplicated here rather than imported since it isn't exported from that file.
-function isARCCChairOrAdmin(req: AuthRequest) {
+// Mirrors the arcc-lookup pattern used by isArccMember in grantSubmission.ts,
+// but checks chairId specifically since this report is the chair's tool
+// rather than something every ARCC member needs (per PR #53 review).
+// chairId can be null when no chair is assigned; in that case only admins
+// can reach the page, which is fine for now.
+async function isARCCChairOrAdmin(req: AuthRequest): Promise<boolean> {
   const role = req.user?.role?.toLowerCase();
+  if (role === "admin") return true;
 
-  return (
-    role === "admin" ||
-    role === "arcc" ||
-    role === "arccchair" ||
-    role === "arcc-chair" ||
-    role === "arcc_chair" ||
-    role === "committeechair"
-  );
+  const userId = req.user?.userId;
+  if (!userId) return false;
+
+  const db = dbo.getDb();
+  const arcc = await db.collection("arcc").findOne({ key: "committee" });
+
+  return arcc?.chairId != null && String(arcc.chairId) === String(userId);
 }
 
 type DonorReportGrant = {
@@ -35,7 +38,7 @@ type DonorReportGrant = {
 // is computed client-side from this flat list.
 router.get("/grants", verifyToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!isARCCChairOrAdmin(req)) {
+    if (!(await isARCCChairOrAdmin(req))) {
       return res.status(403).json({ message: "Not authorized" });
     }
 

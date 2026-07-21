@@ -40,6 +40,19 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+export function AdminOrArccChairRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { token, user } = useAuth();
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin" && !user.isArccChair) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
   if (!token || !user) return <>{children}</>;
@@ -160,9 +173,9 @@ export default function App() {
             <Route
               path="/admin/donor-report"
               element={
-                <AdminRoute>
+                <AdminOrArccChairRoute>
                   <DonorReport />
-                </AdminRoute>
+                </AdminOrArccChairRoute>
               }
             />
 
