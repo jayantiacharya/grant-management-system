@@ -175,6 +175,7 @@ describe("AuthContext", () => {
         email: "saved@b.c",
         role: "user",
         isArcc: false,
+        isArccChair: false,
         isDeptChair: false,
       }),
     );
