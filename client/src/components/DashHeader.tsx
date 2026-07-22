@@ -38,6 +38,11 @@ export default function DashHeader({
     },
     { label: "College Grants", to: "/college-grants", show: !!user?.isDean },
     { label: "Admin", to: "/admin", show: user?.role === "admin" },
+    {
+      label: "Donor Report",
+      to: "/admin/donor-report",
+      show: !!user?.isArccChair || user?.role === "admin",
+    },
   ].filter((link) => link.show);
 
   return (

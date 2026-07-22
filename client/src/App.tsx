@@ -24,6 +24,7 @@ import AllocationPage from "./pages/AllocationPage";
 import DepartmentReview from "./pages/DeptReview";
 import ApprovedGrants from "./pages/ApprovedGrants";
 import GrantReport from "./pages/GrantReport";
+import DonorReport from "./pages/DonorReport";
 
 /* ---------------- ROUTE GUARDS ---------------- */
 
@@ -36,6 +37,19 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuth();
   if (!token || !user) return <Navigate to="/login" replace />;
   if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+export function AdminOrArccChairRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { token, user } = useAuth();
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin" && !user.isArccChair) {
+    return <Navigate to="/dashboard" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -153,6 +167,15 @@ export default function App() {
                 <AdminRoute>
                   <AllocationPage />
                 </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin/donor-report"
+              element={
+                <AdminOrArccChairRoute>
+                  <DonorReport />
+                </AdminOrArccChairRoute>
               }
             />
 

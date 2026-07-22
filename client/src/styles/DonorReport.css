@@ -1,0 +1,162 @@
+.dr-main {
+  padding: 2rem 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.dr-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.dr-title {
+  margin: 0 0 0.25rem;
+}
+
+.dr-subtitle {
+  color: #555;
+  margin: 0 0 1.5rem;
+}
+
+.dr-status {
+  font-size: 0.95rem;
+}
+
+.dr-error {
+  color: #b91c1c;
+}
+
+.dr-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.dr-tab {
+  padding: 0.6rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+  color: #555;
+}
+
+.dr-tab-active {
+  color: #1a56db;
+  border-bottom-color: #1a56db;
+}
+
+.dr-total-line {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.dr-chart-section {
+  margin-bottom: 2.5rem;
+}
+
+.dr-chart-section h2 {
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.dr-empty {
+  color: #777;
+  font-size: 0.95rem;
+}
+
+.dr-top-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dr-top-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.dr-top-title {
+  font-weight: 600;
+  flex: 1 1 200px;
+}
+
+.dr-top-meta {
+  color: #666;
+  font-size: 0.9rem;
+  flex: 1 1 200px;
+}
+
+.dr-top-amount {
+  font-weight: 600;
+  color: #0e9f6e;
+}
+
+.dr-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.dr-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.dr-filters select,
+.dr-filters input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  min-width: 140px;
+}
+
+.dr-clear-btn {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.dr-result-count {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.dr-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dr-table th,
+.dr-table td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.dr-table th {
+  color: #555;
+  font-weight: 600;
+}

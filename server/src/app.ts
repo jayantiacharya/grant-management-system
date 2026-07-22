@@ -9,6 +9,7 @@ import session from "express-session";
 import collegeGrantsRoutes from "./routes/collegeGrants.js";
 import allocationRoutes from "./routes/allocation.js";
 import grantReportsRoutes from "./routes/grantReports.js";
+import donorReportRoutes from "./routes/donorReport.js";
 
 export function createApp(): Express {
   const app = express();
@@ -36,6 +37,7 @@ export function createApp(): Express {
   app.use("/api/college-grants", collegeGrantsRoutes);
   app.use("/api/allocation", allocationRoutes);
   app.use("/api/grant-reports", grantReportsRoutes);
+  app.use("/api/donor-report", donorReportRoutes);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
