@@ -52,6 +52,7 @@ flowchart TB
         REVDET[ReviewDetail]
         DEPTREV[DeptReview]
         CG[CollegeGrants]
+        CGDET[CollegeGrantDetail]
     end
 
     subgraph Admin ["Admin (ProtectedRoute; Criteria + Allocation are AdminRoute; DonorReport is AdminOrArccChairRoute)"]
@@ -82,7 +83,7 @@ flowchart LR
 
     subgraph Middleware
         VERIFY["verifyToken (JWT)"]
-        MULTER["multer<br/>uploads/ (3 files + IRB doc)"]
+        MULTER["multer<br/>uploads/ (grants: 3 files + IRB doc; reports: 1 file)"]
         VALID["grantValidation<br/>draft vs submitted rules"]
         CONN["Mongo conn<br/>(connects before listen)"]
     end
@@ -116,13 +117,13 @@ flowchart LR
     GRPTR -.- VERIFY & MULTER
     DONORR -.- VERIFY
 
-    AUTHR --> CUSER
-    GRANTR --> CGRANT & CARCC & CUSER
+    AUTHR --> CUSER & CCOLL
+    GRANTR --> CGRANT & CARCC & CUSER & CCRIT & CCOLL
     ADMINR --> CCOLL & CARCC & CUSER
     CRITR --> CCRIT
     CGR --> CGRANT & CCOLL
     ALLOCR --> CGRANT & CCRIT & CALLOC
-    GRPTR --> CGRANT & CARCC
+    GRPTR --> CGRANT
     DONORR --> CGRANT & CUSER & CARCC
 ```
 
@@ -134,11 +135,11 @@ What each route group handles:
   update colleges and departments; read and update the ARCC committee; checkDeptChair.
 - **`/api/criteria`** — CRUD (writes admin-only).
 - **`/api/college-grants`** — dean list / get / approve-reject.
-- **`/api/allocation`** — the allocation cycle, gated to admin (the chair): list grants
-  with server-computed final ratings (scores from `grant.reviews[]` over the live rubric
-  total, cutoff applied), read / save cycle settings, finalize (writes awards and report
-  due dates onto grants), and the send-to-accounting CSV export, which returns 409 until
-  the cycle is finalized.
+- **`/api/allocation`** — the allocation cycle, admin-gated in practice (see Known
+  gaps): list grants with server-computed final ratings (scores from `grant.reviews[]`
+  over the live rubric total, cutoff applied) plus the stored cycle settings, finalize
+  (persists the settings and writes awards and report due dates onto grants), and the
+  send-to-accounting CSV export, which returns 409 until the cycle is finalized.
 - **`/api/grant-reports`** — post-award reporting: the proposer's approved grants, report
   detail, submit a report (multipart upload, appends to `grant.reports[]`, owner-only),
   and report file download.
@@ -161,13 +162,14 @@ grant document, with no separate Review entity:
 - **`reviews[]`** — an embedded array, one entry per committee member, each holding
   per-criterion `scores` and `comments`, upserted on re-submit. The field is created on
   the first score, not at submit.
-- **`reviewStatus`** (`null` for a draft / `pending` once submitted / `approved` /
-  `denied`) — the approve/deny outcome, written by a department chair or ARCC member
-  through the approval route. A freshly submitted grant has `reviewStatus: "pending"` and
-  no `reviews` field yet.
-- **`collegeReviewStatus`** (`approved` / `rejected` / unset) — the college dean's
-  decision, written only for a grant that requests money from that dean's college; unset
-  reads as pending.
+- **`departmentReviewStatus`** (`pending` at submit / `approved` / `denied`) — the
+  approve/deny outcome, written by a department chair or ARCC member through the
+  approval route. A freshly submitted grant has it `pending` and no `reviews` field yet.
+  (A legacy `reviewStatus` field is also set to `pending` at submit and never updated
+  afterward.)
+- **`collegeReviewStatus`** (`pending` / `approved` / `denied` / `N/A`) — the college
+  dean's decision. Submit initializes it to `pending` when the budget requests college
+  money and `N/A` otherwise; the dean then writes `approved` or `denied`.
 
 Editing track (`status`):
 
@@ -189,17 +191,17 @@ Review tracks (run once submitted, concurrently):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Submitted : grant submitted (reviewStatus: pending, no reviews field)
+    [*] --> Submitted : grant submitted (departmentReviewStatus: pending, no reviews field)
 
     state "Committee scoring" as Scoring
     Submitted --> Scoring : each member upserts a review into reviews[]
     Scoring --> Scoring : re-score (upsert)
 
-    Submitted --> Approved : dept chair / ARCC approves (reviewStatus)
-    Submitted --> Denied : dept chair / ARCC denies (reviewStatus)
+    Submitted --> Approved : dept chair / ARCC approves (departmentReviewStatus)
+    Submitted --> Denied : dept chair / ARCC denies (departmentReviewStatus)
 
     Submitted --> CollegeApproved : dean approves (collegeReviewStatus)
-    Submitted --> CollegeRejected : dean rejects (collegeReviewStatus)
+    Submitted --> CollegeDenied : dean denies (collegeReviewStatus)
 
     note right of Submitted
         scoring, approve/deny, and dean review
@@ -211,13 +213,13 @@ stateDiagram-v2
 | status            | field written                                          | Trigger                  | Actor                | Route                                 |
 | ----------------- | ------------------------------------------------------ | ------------------------ | -------------------- | ------------------------------------- |
 | (new) → draft     | none                                                   | save as draft            | owner                | `POST /api/grants/submit`             |
-| (new) → submitted | `reviewStatus: pending`                                | submit directly          | owner                | `POST /api/grants/submit`             |
+| (new) → submitted | `departmentReviewStatus: pending`                      | submit directly          | owner                | `POST /api/grants/submit`             |
 | draft → draft     | none                                                   | edit, save draft         | owner                | `PUT /api/grants/edit/:id`            |
-| draft → submitted | `reviewStatus: pending`                                | submit                   | owner                | `PUT /api/grants/edit/:id`            |
+| draft → submitted | `departmentReviewStatus: pending`                      | submit                   | owner                | `PUT /api/grants/edit/:id`            |
 | submitted         | `reviews[]` upsert                                     | score the rubric         | ARCC member or chair | `PUT /api/grants/review/:id`          |
-| submitted         | `reviewStatus`                                         | approve / deny           | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
+| submitted         | `departmentReviewStatus`                               | approve / deny           | dept chair or ARCC   | `PUT /api/grants/review/approval/:id` |
 | submitted         | `collegeReviewStatus`                                  | approve / reject         | college dean         | `PUT /api/college-grants/:id`         |
-| submitted         | `allocatedAmount`, `allocationStatus`, `reportDueDate` | Finish Allocation        | admin (chair)        | `POST /api/allocation/finalize`       |
+| submitted         | `allocatedAmount`, `allocationStatus`, `reportDueDate` | Finish Allocation        | admin                | `POST /api/allocation/finalize`       |
 | submitted, funded | `reports[]` append                                     | submit post-award report | owner                | `POST /api/grant-reports/:id/submit`  |
 
 ## Navigation
@@ -244,7 +246,7 @@ flowchart TD
     subgraph dean [College dean]
         CG[/"college-grants<br/>approve / reject"/]
     end
-    D -.->|auto-redirect if dean| CG
+    D -.->|auto-redirect if dean-only| CG
     P -->|header nav, if dean| CG
 
     subgraph admin [Admin]
@@ -281,8 +283,8 @@ or **admin** (`role=admin`). Each role has its own surface:
 - **Department chair** `/department-review` → `/review/:id`: grants in the chair's
   department; reached from the header nav.
 - **College dean** `/college-grants`: only grants with positive funding from the dean's
-  college; approve / reject inline (`collegeReviewStatus`), with no separate detail page.
-  Reached by an automatic redirect on login.
+  college; approve / deny (`collegeReviewStatus`), with a detail view at
+  `/college-grants/:grantId`. Dean-only users are redirected here from the dashboard.
 - **Admin** `/admin`: management pages plus the all-grants list.
 
 Role detection lives in `AuthContext`: `isDean` is resolved at login, and the provider
@@ -299,10 +301,14 @@ redirects to `/college-grants` (`isDeanOnly` in `client/src/utils/roles.ts`).
 - **Admin all-grants list** — the "Grant Applications" rows are plain text with no
   click-through to a read-only `/review/:id`.
 - **Two "approved" predicates** — the grant-reports routes treat a grant as approved
-  when department + college approval landed and the award is positive; the dashboard
-  only checks for a positive award. A grant funded despite a missing department or
-  college approval would show as approved on the dashboard but be rejected by the
-  report routes.
+  when the department approved, the college approved (or is `N/A` because no college
+  money was requested), and the award is positive; the dashboard only checks for a
+  positive award. A grant funded despite a missing approval shows as approved on the
+  dashboard but is rejected by the report routes.
+- **Allocation auth ignores the committee chair** — `isARCCChair()` in `allocation.ts`
+  checks `user.role` strings only and never consults the committee doc's `chairId`
+  (unlike the donor report's check). Since only `user`/`admin` roles exist, allocation
+  is effectively admin-only; a committee chair without the admin role cannot run it.
 
 ## Roles and permissions
 
@@ -324,7 +330,7 @@ A single user can hold several of these at once.
 | Register, log in, edit own profile                   | yes  | yes  |    yes     | yes  |  yes  |
 | Create / edit / submit own grants                    | yes  | yes  |    yes     | yes  |  yes  |
 | Score submitted grants vs rubric                     |  no  | yes  |    yes     |  no  |  no   |
-| Approve / deny (`reviewStatus`)                      |  no  | yes  |    yes     |  no  |  no   |
+| Approve / deny (`departmentReviewStatus`)            |  no  | yes  |    yes     |  no  |  no   |
 | Approve / reject own college (`collegeReviewStatus`) |  no  |  no  |     no     | yes  |  no   |
 | Download grant files                                 | own  | yes  |    yes     | own  |  yes  |
 | View all grants                                      |  no  |  no  |     no     |  no  |  yes  |
@@ -350,7 +356,7 @@ sequenceDiagram
     participant DB as MongoDB
     Owner->>Client: fill form, click Submit
     Client->>API: POST /submit (JWT)
-    API->>API: validate, set status, reviewStatus: pending
+    API->>API: validate, set status, departmentReviewStatus: pending
     API->>DB: insert grant
     DB-->>API: ok
     API-->>Client: 201
@@ -381,5 +387,5 @@ sequenceDiagram
 ```
 
 Approval is a separate call: a department chair (or ARCC member) sets approve/deny via
-`PUT /api/grants/review/approval/:id` (`reviewStatus`), and a college dean approves /
-rejects via `PUT /api/college-grants/:id` (`collegeReviewStatus`).
+`PUT /api/grants/review/approval/:id` (`departmentReviewStatus`), and a college dean
+approves / denies via `PUT /api/college-grants/:id` (`collegeReviewStatus`).

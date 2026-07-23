@@ -74,8 +74,8 @@ graph LR
 4. They build the budget worksheet: one entry per item, each with a description, a
    hardware/software category, and amounts from ARCC, college, department, and other
    sources. Per-item totals compute automatically.
-5. If matching funds are available, they check the box; the amount defaults to the
-   non-ARCC total from the worksheet and can be edited.
+5. If matching funds are available, they check the box and either type the amount or
+   use the Pull from budget button to fill it with the worksheet's non-ARCC total.
 6. They enter a timeline as free text.
 7. They describe how the project enhances the educational experience of Weber State
    students and how the project will be evaluated; both text areas are required.
@@ -86,8 +86,9 @@ graph LR
 
 ### Track grants
 
-1. The proposer's dashboard organizes grants into three sections: approved, rejected, and
-   active/pending. A submitted grant can hold several statuses at once (committee review,
+1. The proposer's dashboard organizes grants into four sections: saved drafts,
+   submitted, approved, and rejected. A submitted grant can hold several statuses at
+   once (committee review,
    department-chair review, dean review), and the proposer sees each as pending, approved,
    or rejected, so they can chase an approver who has not yet acted.
 2. Once allocation is finalized, the grant moves to the approved or rejected section with
@@ -121,16 +122,19 @@ The chair does everything a committee member does, plus:
 ### Set the cycle allocation
 
 1. On the allocation page (available only to the chair), the chair enters the current
-   cycle amount, leftover amount, and cutoff percentage in editable text boxes.
-2. The cutoff applies as it is edited: grants below the cutoff move to a Rejected Grants
-   table; grants above stay in the main table.
+   cycle amount and cutoff percentage in editable text boxes; a read-only leftover box
+   shows the cycle amount minus the total allocated.
+2. The cutoff applies as it is edited: grants below the cutoff move to the Rejected
+   Grants table, unreviewed grants sit in Pending Review, and the rest stay in the
+   Approved Grants table.
 3. The chair adjusts the cutoff as many times as needed to accommodate more applicants.
 4. For the eligible grants, the chair adds dynamic tier criteria: each tier maps a rating
    range to a percentage of the requested amount (the top tier, e.g. 90-100%, awards
    100% of the request). An Allocated Amount column updates as tiers are configured.
 5. When satisfied, the chair clicks Finish Allocation. This locks the allocation and sets
-   each grant's final status (Accepted or Rejected). Accepted grants receive a calculated
-   report due date (next June 30 after the allocation date, plus one year).
+   each grant's final status (Approved (Full), Approved (Partial), or Rejected). Funded
+   grants receive a calculated report due date (next June 30 after the allocation date,
+   plus one year).
 6. Send to Accounting stays disabled until Finish Allocation completes. Once the cycle is
    finalized, the chair clicks it to download the accounting spreadsheet (PI, grant name,
    accounting number, submitter, amounts, final rating, allocated amount, status) for the
@@ -235,12 +239,12 @@ Feature: Department chair approval
   Scenario: Chair approves a grant from their department
     Given a department chair viewing a submitted grant from their department
     When they approve it
-    Then the grant's reviewStatus becomes "approved"
+    Then the grant's departmentReviewStatus becomes "approved"
 
   Scenario: Chair rejects a grant
     Given a department chair viewing a submitted grant from their department
     When they reject it
-    Then the grant's reviewStatus becomes "denied"
+    Then the grant's departmentReviewStatus becomes "denied"
 ```
 
 ```gherkin
@@ -260,16 +264,15 @@ Feature: College dean approval
 ```gherkin
 Feature: Allocation cutoff
 
-  Scenario: Applying a cutoff splits grants into two tables
+  Scenario: Setting a cutoff splits grants into tables
     Given the chair has set a cutoff of 75
-    When they click Apply Cutoff
-    Then grants with an average rating >= 75 appear in the eligible table
+    Then reviewed grants with an average rating >= 75 appear in the Approved Grants table
     And grants with an average rating < 75 appear in the Rejected Grants table
 
-  Scenario: Adjusting cutoff re-splits the tables
-    Given the chair previously applied a cutoff of 70
-    When they change the cutoff to 80 and click Apply Cutoff again
-    Then the eligible and Rejected Grants tables update to reflect the new threshold
+  Scenario: Adjusting the cutoff re-splits the tables
+    Given the chair previously set a cutoff of 70
+    When they change the cutoff to 80
+    Then the Approved and Rejected Grants tables update to reflect the new threshold
 ```
 
 ```gherkin
@@ -281,9 +284,9 @@ Feature: Allocation tiers
     When the chair applies the tier criteria
     Then the grant's Allocated Amount shows $6,000
 
-  Scenario: Grant above the full-funding threshold receives 100%
+  Scenario: Grant in the top tier receives 100%
     Given a grant requesting $10,000 with a 95% average rating
-    And the full-funding threshold is set to 90%
+    And the top tier 90-100% awards 100%
     When the chair applies the tier criteria
     Then the grant's Allocated Amount shows $10,000
 ```
@@ -295,17 +298,17 @@ Feature: Finish Allocation
     Given the chair has configured cutoff and tier criteria
     When they click Finish Allocation
     Then no further changes to the allocation page are possible
-    And each grant in the eligible table has status "accepted"
-    And each grant in the Rejected Grants table has status "rejected"
+    And each funded grant's status is "Approved (Full)" or "Approved (Partial)"
+    And each grant in the Rejected Grants table has status "Rejected"
 
-  Scenario: Accepted grant receives a report due date
+  Scenario: Funded grant receives a report due date
     Given Finish Allocation is clicked on 2025-10-20
-    And a grant is in the eligible table
+    And a grant is in the Approved Grants table
     Then that grant's report due date is 2027-06-30
 
   Scenario: Report due date when allocation finalizes near fiscal year end
     Given Finish Allocation is clicked on 2026-06-23
-    And a grant is in the eligible table
+    And a grant is in the Approved Grants table
     Then that grant's report due date is 2027-06-30
 
   Scenario: Send to Accounting is disabled before finalization

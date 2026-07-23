@@ -72,8 +72,8 @@ A proposer fills out a grant application:
 - How the project is being evaluated (how success and outcomes will be measured), also
   a large required text area.
 - Whether matching funds are available from other sources. If yes, a text box captures
-  how much. Its default is pulled from the budget worksheet (the total amount not
-  requested from ARCC) and can be edited afterward.
+  how much; a Pull from budget button fills it with the worksheet total not requested
+  from ARCC, and the value can be edited afterward.
 
 ### Files
 
@@ -106,8 +106,8 @@ processors"). It is built on its own page and is a set of budget items. Each ite
 - An amount split across four funding sources: ARCC, college, department, and other.
 
 The per-item total is calculated automatically from the four source amounts, and the
-worksheet's overall total is likewise computed, never entered by hand. The worksheet
-view shows only the four category totals, not the individual items.
+worksheet's overall requested total is likewise computed, never entered by hand. The
+worksheet lists each item as an editable card, with the computed total below.
 
 The worksheet is its own page, reachable both from the grant application and by a button
 on the grant itself.
@@ -190,27 +190,29 @@ The ARCC committee chair has an allocation page (available only to them).
 
 ### 8a. Cycle inputs
 
-At the top of the page the chair enters three values for the current cycle using editable
-text boxes. These numbers change every cycle and must not be hardcoded:
+At the top of the page the chair enters two values for the current cycle using editable
+text boxes; these numbers change every cycle and must not be hardcoded. A third box is
+computed:
 
 1. **Current cycle amount** — funds available from donors this cycle (e.g. $50,000).
-2. **Leftover amount** — unspent money carried over from the prior cycle (e.g. $37,000).
-3. **Cutoff percentage** — the floor for funding, generally 70% but changeable at any
+2. **Cutoff percentage** — the floor for funding, generally 70% but changeable at any
    point in the process. The chair may adjust it several times while reviewing the
    grant table to try to accommodate more applicants.
+3. **Leftover amount** — read-only: the cycle amount minus the total allocated so far.
 
 ### 8b. Grant table and cutoff
 
 The table displays all submitted grants with each grant's real average final rating
 (the consolidated 0-to-100 score computed from committee reviews, not placeholder data).
 
-When the chair sets a cutoff and clicks **Apply Cutoff**, the table splits into two:
+The cutoff applies as it is edited, splitting the grants into three tables:
 
-- **Eligible grants** (rated at or above the cutoff) — remain in the main table.
-- **Rejected Grants** — a separate table below, containing every grant whose average
-  rating fell below the cutoff. These grants receive no money.
+- **Approved Grants** — rated at or above the cutoff and receiving money.
+- **Pending Review Grants** — grants with no committee reviews yet.
+- **Rejected Grants** — every grant whose average rating fell below the cutoff; these
+  grants receive no money.
 
-The chair can adjust the cutoff and re-apply as many times as needed before finalizing.
+The chair can adjust the cutoff as many times as needed before finalizing.
 
 ### 8c. Allocation tiers (criteria)
 
@@ -220,13 +222,11 @@ dynamic tier criteria. Each criterion specifies:
 - A **rating range** (e.g. 80%–90%).
 - A **percentage of the requested amount** to award (e.g. 75%).
 
-The chair can add as many tiers as needed. There is also a single **full-funding
-threshold**: grants rated above this number (e.g. 90%) receive 100% of what they
-requested. Together, the tiers and the full-funding threshold cover the range from the
-cutoff to 100%.
+The chair can add as many tiers as needed; the top tier (e.g. 90%-100%) awards 100% of
+the requested amount, so together the tiers cover the range from the cutoff to 100%.
 
-An **Allocated Amount** column in the eligible table shows the computed award for each
-grant based on whichever tier or threshold applies to its rating.
+An **Allocated Amount** column in the approved table shows the computed award for each
+grant based on whichever tier applies to its rating.
 
 Example: grant requesting $8,000 with an 88% average rating, tiers set to 90%+ → 100%
 and 80–90% → 75%, receives $6,000 (75% of $8,000).
@@ -291,11 +291,11 @@ The ARCC committee chair (or an admin) generates a donor-facing report showing f
 It is a second report type, separate from the proposer's post-award report. It covers
 funded grants only and has two tabs:
 
-- **Charts** — money received per college, money received per department, grant count
-  per award-amount bucket ($0-2k, $2-5k, $5-10k, $10k+), and a separate Top 5 grants by
-  amount received.
-- **All grants with filtering** — every funded grant in a table with a college dropdown,
-  a department dropdown, and an amount range (min to max), so the chair can answer live
+- **Overview** — charts: money received per college, money received per department,
+  grant count per award-amount bucket ($0-2k, $2-5k, $5-10k, $10k+), and a separate
+  Top 5 grants by amount received.
+- **Grants** — every funded grant in a table with a college dropdown, a department
+  dropdown, and an amount range filter (min to max), so the chair can answer live
   questions from funders.
 
 Charting must use a free library. A grant's college and department are the submitter's.
@@ -316,13 +316,13 @@ department can also change its name, move it to a different college, or change i
 
 ## 11. Dashboard
 
-A user's grants appear on their dashboard organized into sections:
+A user's grants appear on their dashboard organized into four sections:
 
+- **Saved grants** — drafts still being worked on.
+- **Submitted grants** — grants in review or awaiting approval.
 - **Approved grants** — grants that received an allocated amount after Finish Allocation.
 - **Rejected grants** — grants that were below the cutoff or received no money after
   allocation. Shown so the proposer has a record of past rejections.
-- **Active / pending grants** — drafts and submitted grants still in review or awaiting
-  approval.
 
 Draft grants can be edited; submitted grants are locked with no edit option. Each grant
 shows its current status (see below) so the proposer can see where it sits, for example
@@ -355,7 +355,7 @@ A grant moves through these states:
   - **Rejected** if it fell below the cutoff or received $0.
 
 The proposer sees all current statuses on their dashboard, organized into the approved,
-rejected, and active sections described in section 11.
+rejected, submitted, and saved sections described in section 11.
 
 ---
 
@@ -386,35 +386,42 @@ Listed so the boundary of the current scope is explicit:
 
 Where the current build differs from the expectations above.
 
-- **Signup** — Department is required in code; the plan says optional. Relax validation.
-  The college/department dropdowns are a hardcoded list in `Register.tsx` rather than the
-  admin-managed colleges/departments.
+- **Signup** — College and department are required in code; the plan says optional.
+  Relax validation.
 - **Budget worksheet** — Category is a free-text field; should be a hardware/software
   dropdown.
 - **Acknowledgements** — The submit form gates on the required acknowledgement checkboxes
-  and a free-text signature, but the acknowledgement labels are still placeholders
-  ("Acknowledgement 1", etc.) and the final certification wording is not settled.
+  and a free-text signature, but the acknowledgement labels are placeholders
+  ("Acknowledgement 1", etc.). Real certification copy is not coming, so the
+  placeholders are accepted as final for this project.
 - **Rubric** — Code rejects only rating options whose score exceeds the max; it does not
   force the top option to equal the max or the bottom to be 0, in line with the client's
   "trust the user" stance.
-- **Review consolidation** — Per-reviewer scoring, the notes box, and one review per
-  reviewer all work. The 0-to-100 rating is only computed client-side for display, not
-  stored, and there is no cross-reviewer consolidated/normalized grant-level rating for
-  allocation to key off.
-- **Grant status** — The dashboard now shows department-chair and college review status
-  per grant (PR #35), but the full named composite states ("Under Committee Review",
-  "Department Chair Approved", "Grant Approved") are not yet surfaced as discrete
-  labeled badges. The allocation-driven terminal states (Accepted / Rejected) do not
-  exist yet.
-- **Allocation** — Fully implemented: editable cycle inputs (amount available, leftover,
-  cutoff percentage), the two-table cutoff split, dynamic tier criteria, the allocated
-  amount column, Finish Allocation (locks the cycle and stamps allocated amount, status,
-  and report due date onto each funded grant), and the Send to Accounting CSV export
-  (disabled until the cycle is finalized; the server also rejects the export for an
-  unfinalized cycle). Before finalizing, the page warns when the tiers over-allocate the
-  available amount or leave more than 5% of it unused.
+- **Review list** — Rows show the grant title, submitter email, submission date, and
+  review count rather than the specified principal investigator name and total
+  requested from ARCC.
+- **Self-review** — Nothing prevents a committee member from reviewing their own
+  submitted grant; the requirement's prohibition is unenforced.
+- **Review consolidation** — Per-reviewer scoring, the notes box, one review per
+  reviewer, and the consolidated cross-reviewer rating that allocation keys off all
+  work. Remaining gap: each reviewer's 0-to-100 final rating is only computed for
+  display, never stored with their review as section 6 specifies.
+- **Grant status** — The dashboard shows per-stage badges (department, college, award)
+  rather than the named composite states ("Under Committee Review", "Department Chair
+  Approved", "Grant Approved"). The allocation-driven terminal statuses exist and drive
+  the approved/rejected dashboard sections, but are labeled "Approved (Full)" /
+  "Approved (Partial)" rather than the spec's "Accepted".
+- **Allocation** — Fully implemented: editable cycle inputs (amount available and
+  cutoff percentage; leftover is computed), the live cutoff split into approved /
+  pending / rejected tables, dynamic tier criteria, the allocated amount column, Finish
+  Allocation (locks the cycle and stamps allocated amount, status, and report due date
+  onto each funded grant), and the Send to Accounting CSV export (disabled until the
+  cycle is finalized; the server also rejects the export for an unfinalized cycle).
+  Before finalizing, the page warns when the tiers over-allocate the available amount
+  or leave more than 5% of it unused. Known bug flagged by the client (2026-07-23
+  meeting): a high-rated grant requesting $0 from ARCC is classified Rejected; to be
+  fixed before the final demo.
 - **College & department admin** — The college dean approval workflow is fully
   implemented: dean detection on login, auto-redirect to `/college-grants`, and
-  approve/reject with college-scoped filtering (PR #29). Remaining gaps: delete is
-  missing from both tabs, and the department-chair field is not exposed in the admin
-  department UI (the field exists in the data model but has no write route).
+  approve/reject with college-scoped filtering. Remaining gap: delete is missing from
+  both tabs.
