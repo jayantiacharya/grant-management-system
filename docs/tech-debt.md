@@ -60,22 +60,19 @@ Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setF
 - Status/format helpers duplicated across `Review.tsx` (`formatReviewCount`) and
   `ReviewDetail.tsx` → `utils/format.ts`. Effort: S.
 - Build script `tsc -b` is broken, and `server/` has no eslint config. Effort: S.
-- Test gaps: 8 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
+- Test gaps: 11 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
   has zero tests. Effort: M.
 
 ### 6. Styling: migrate to CSS Modules
 
-The client styles three different ways: seven global stylesheets (`Dashboard.css` is the
-large shared one imported across most pages, plus `App.css`, `index.css`, `Auth.css`,
-`Review.css`, `ArccCommittee.css`, `AllocationPage.css`), inline `style={{...}}` objects
-in `CriteriaForm`, `DashHeader`, `AdminDashboard`, `Dashboard`, `Register`, and a large
-inline `styles` object in `CriteriaManagement.tsx`. Global class names are not scoped, so
-they leak across pages.
+All client styles live in per-page/per-component stylesheets under `client/src/styles/`
+(16 files: `Dashboard.css`, `GrantForm.css`, `PageLayout.css`, `Profile.css`, etc.), and
+the former inline `style={{...}}` objects have been folded into them. Class names are
+still global, so styles can leak between pages that import overlapping sheets.
 
-Adopt CSS Modules (`*.module.css`, scoped class names) as the single styling approach:
-convert the global stylesheets to per-component modules and fold the inline style objects
-into their component's module. Vite supports CSS Modules out of the box. Effort: L
-(touches most pages); migrate incrementally, one page/stylesheet at a time.
+Remaining work: rename the sheets to CSS Modules (`*.module.css`, scoped class names) and
+switch components to scoped imports. Vite supports CSS Modules out of the box. Effort: M
+(mechanical); migrate incrementally, one page/stylesheet at a time.
 
 ---
 

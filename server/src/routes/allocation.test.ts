@@ -243,7 +243,28 @@ describe("POST /api/allocation/finalize", () => {
 });
 
 describe("POST /api/allocation/send-to-accounting", () => {
+  it("409 when the allocation has not been finalized", async () => {
+    const res = await request(app)
+      .post("/api/allocation/send-to-accounting")
+      .set("Authorization", `Bearer ${chairToken}`)
+      .send({
+        criteria: allocationCriteria,
+        cutoffPercentage: 75,
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/finalize/i);
+  });
+
   it("escapes CSV values that could be interpreted as formulas", async () => {
+    allocationFindOne.mockResolvedValueOnce({
+      currentCycleAmount: 50000,
+      cutoffPercentage: 75,
+      criteria: allocationCriteria,
+      finalized: true,
+      finalizedAt: "2026-07-01T00:00:00.000Z",
+    });
+
     grantToArray.mockResolvedValueOnce([
       reviewedGrant({
         title: '=HYPERLINK("http://evil.test","x")',

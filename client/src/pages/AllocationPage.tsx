@@ -343,7 +343,7 @@ export default function AllocationPage() {
   };
 
   const handleSendToAccounting = async () => {
-    if (!token) return;
+    if (!token || !allocationFinalized) return;
 
     setSaving(true);
     setMessage("");
@@ -679,7 +679,12 @@ export default function AllocationPage() {
             <button
               type="button"
               onClick={handleSendToAccounting}
-              disabled={saving}
+              disabled={!allocationFinalized || saving}
+              title={
+                allocationFinalized
+                  ? undefined
+                  : "Finish the allocation before sending to accounting"
+              }
             >
               Send to Accounting
             </button>

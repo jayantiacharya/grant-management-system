@@ -549,6 +549,12 @@ router.post("/send-to-accounting", async (req: AuthRequest, res) => {
     const db = dbo.getDb();
     const settings = await getAllocationSettings(db);
 
+    if (!settings.finalized) {
+      return res.status(409).json({
+        error: "Allocation must be finalized before sending to accounting",
+      });
+    }
+
     const criteria = Array.isArray(req.body.criteria)
       ? req.body.criteria
       : settings.criteria;

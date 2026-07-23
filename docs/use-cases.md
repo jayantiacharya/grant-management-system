@@ -9,7 +9,8 @@ for known gaps between expectations and the current build see its
 
 - **Proposer** — any user. Creates and submits grant applications.
 - **Committee member** — an ARCC committee member. Rates submitted grants.
-- **Committee chair** — a committee member who also manages the grant-cycle allocation.
+- **Committee chair** — a committee member who also manages the grant-cycle allocation
+  and generates the donor report.
 - **Department chair** — approves or rejects grants from their department.
 - **College dean** — approves grants that request money from their college.
 - **Admin** — manages users, the committee, colleges/departments, and the rubric.
@@ -39,6 +40,8 @@ graph LR
     CC --- RV
     CC --- AL(Run allocation cycle)
     CC --- SA(Send to Accounting)
+    CC --- DR(Generate donor report)
+    AD --- DR
 
     DC --- AP(Approve / reject dept grants)
 
@@ -57,7 +60,8 @@ graph LR
 
 1. The proposer registers with email, password, name, and birthday, and may select
    their college and department.
-2. From their profile page they can later update any of these details.
+2. From their profile page they can later update any of these details, plus their
+   account number, which prefills the account number field on new grant applications.
 
 ### Draft and submit a grant
 
@@ -73,10 +77,12 @@ graph LR
 5. If matching funds are available, they check the box; the amount defaults to the
    non-ARCC total from the worksheet and can be edited.
 6. They enter a timeline as free text.
-7. They check the required acknowledgements in the Acknowledgements & Signature section,
+7. They describe how the project enhances the educational experience of Weber State
+   students and how the project will be evaluated; both text areas are required.
+8. They check the required acknowledgements in the Acknowledgements & Signature section,
    which the form requires before a submit is accepted.
-8. They **save** at any point to keep working later, or **submit** when ready.
-9. After submitting, the grant is locked and enters review; it can no longer be edited.
+9. They **save** at any point to keep working later, or **submit** when ready.
+10. After submitting, the grant is locked and enters review; it can no longer be edited.
 
 ### Track grants
 
@@ -125,8 +131,18 @@ The chair does everything a committee member does, plus:
 5. When satisfied, the chair clicks Finish Allocation. This locks the allocation and sets
    each grant's final status (Accepted or Rejected). Accepted grants receive a calculated
    report due date (next June 30 after the allocation date, plus one year).
-6. The chair clicks Send to Accounting, which downloads a spreadsheet (grant title, PI
-   name, amount requested from ARCC) for the accounting office to disburse.
+6. Send to Accounting stays disabled until Finish Allocation completes. Once the cycle is
+   finalized, the chair clicks it to download the accounting spreadsheet (PI, grant name,
+   accounting number, submitter, amounts, final rating, allocated amount, status) for the
+   accounting office to disburse.
+
+### Generate the donor report
+
+1. The chair (or an admin) opens Donor Report from the header navigation.
+2. The charts tab shows money received per college and per department, grant counts per
+   award-amount bucket, and the top 5 grants by amount received.
+3. The all-grants tab lists every funded grant, filterable by college, department, and
+   an amount range, to answer live questions from funders.
 
 ---
 
@@ -291,6 +307,16 @@ Feature: Finish Allocation
     Given Finish Allocation is clicked on 2026-06-23
     And a grant is in the eligible table
     Then that grant's report due date is 2027-06-30
+
+  Scenario: Send to Accounting is disabled before finalization
+    Given the allocation cycle has not been finalized
+    Then the Send to Accounting button is disabled
+    And the server rejects the CSV export for an unfinalized cycle
+
+  Scenario: Send to Accounting works after finalization
+    Given the chair has clicked Finish Allocation
+    When they click Send to Accounting
+    Then the accounting CSV downloads
 ```
 
 ```gherkin
@@ -307,4 +333,27 @@ Feature: Proposer dashboard sections
     When the proposer views their dashboard
     Then the grant appears in the Rejected Grants section
     And the proposer can see it was rejected so they have a record of the application
+```
+
+```gherkin
+Feature: Report due-date reminder banner
+
+  Scenario: Reminder for a report due soon
+    Given an approved grant with no filed report
+    And its report due date is 30 days away
+    When the proposer views their dashboard
+    Then a banner says the report is due in 30 days
+    And a File report link navigates to the Approved Grants page
+
+  Scenario: Reminder for an overdue report
+    Given an approved grant with no filed report
+    And its report due date passed 10 days ago
+    When the proposer views their dashboard
+    Then a banner says the report is overdue by 10 days
+
+  Scenario: No reminder outside the window or after filing
+    Given an approved grant whose report is due more than 90 days away,
+      overdue by more than a year, or already filed
+    When the proposer views their dashboard
+    Then no reminder appears for that grant
 ```
