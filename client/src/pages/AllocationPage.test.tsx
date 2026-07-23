@@ -261,6 +261,56 @@ describe("AllocationPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables Send to Accounting until the allocation is finalized", async () => {
+    render(<AllocationPage />);
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+
+    expect(
+      screen.getByRole("button", { name: /send to accounting/i }),
+    ).toBeDisabled();
+  });
+
+  it("enables Send to Accounting when the cycle is already finalized", async () => {
+    mockGrantsResponse({ finalized: true });
+
+    render(<AllocationPage />);
+
+    await screen.findByText(/this allocation cycle has been finalized/i);
+
+    expect(
+      screen.getByRole("button", { name: /send to accounting/i }),
+    ).toBeEnabled();
+  });
+
+  it("enables Send to Accounting after Finish Allocation succeeds", async () => {
+    mockGrantsResponse({
+      currentCycleAmount: 50000,
+      grants: [
+        apiGrant({ id: "g1", arccAmountRequested: 50000, finalPercent: 95 }),
+      ],
+    });
+
+    const user = userEvent.setup();
+    render(<AllocationPage />);
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+
+    expect(
+      screen.getByRole("button", { name: /send to accounting/i }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", { name: /finish allocation/i }),
+    );
+
+    await screen.findByText(/allocation finalized successfully/i);
+
+    expect(
+      screen.getByRole("button", { name: /send to accounting/i }),
+    ).toBeEnabled();
+  });
+
   it("shows the finalized banner and disables editing when the cycle is already finalized", async () => {
     mockGrantsResponse({ finalized: true });
 
