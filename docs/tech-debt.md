@@ -60,7 +60,7 @@ Login, Register, Profile, CreateCollege, CreateDepartment all repeat `[form,setF
 - Status/format helpers duplicated across `Review.tsx` (`formatReviewCount`) and
   `ReviewDetail.tsx` → `utils/format.ts`. Effort: S.
 - Build script `tsc -b` is broken, and `server/` has no eslint config. Effort: S.
-- Test gaps: 7 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
+- Test gaps: 11 pages + 3 routes untested; `grantValidation.ts` (core submission logic)
   has zero tests. Effort: M.
 
 ### 6. Styling: migrate to CSS Modules
