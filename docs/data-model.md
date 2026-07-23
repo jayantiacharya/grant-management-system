@@ -8,7 +8,7 @@ denormalized in places (it copies names alongside ids) which is normal for Mongo
 erDiagram
     User ||--o{ Grant : "submits (projectDirectorId)"
     User }o--o{ Grant : "reviews (committee, embedded in reviews[])"
-    College ||--o{ Department : "has (collegeId)"
+    College ||--o{ Department : "has (college name string)"
     Department }o--o{ Grant : "chair approves (Department.chair)"
     College }o--o{ Grant : "dean reviews (budgetItems.collegeId)"
     ARCC }o--o{ User : "members + chair (ids)"
@@ -23,7 +23,7 @@ erDiagram
         date birthday
         string department
         string college
-        string accountNumber "employee account/index number; prefills new grant forms"
+        string accountNumber "employee account/index number; set from the profile page, prefills new grant forms"
         string role "admin | user"
         string createdAt
     }
@@ -51,10 +51,12 @@ erDiagram
         array budgetItems "each item carries a collegeId"
         array files
         object irbApprovalFile
-        string status "draft | submitted | accepted | rejected"
+        string status "draft | submitted"
         array reviews "per-reviewer scores + comments"
-        string reviewStatus "pending|approved|denied|null (dept/ARCC approval)"
-        string collegeReviewStatus "approved|rejected|unset (dean)"
+        string departmentReviewStatus "pending|approved|denied (dept/ARCC approval)"
+        date departmentReviewedAt
+        string reviewStatus "pending|null; set at submit, never updated (legacy)"
+        string collegeReviewStatus "pending|approved|denied|N/A (dean)"
         string collegeReviewedBy "dean email"
         date collegeReviewedAt
         date submittedAt
@@ -68,20 +70,14 @@ erDiagram
     College {
         objectId _id PK
         string name
-        string abbreviation
         string dean "User email; gates dean review"
-        date createdAt
-        date updatedAt
     }
 
     Department {
         objectId _id PK
         string name
-        objectId collegeId FK "College._id"
-        string collegeName "denormalized"
+        string college "college name, denormalized string"
         string chair "User email; gates dept-chair review"
-        date createdAt
-        date updatedAt
     }
 
     Criteria {
@@ -118,7 +114,8 @@ _Paste the block into [mermaid.live](https://mermaid.live) to view._
 ## Relationships
 
 - **User 1--\* Grant** — via `Grant.projectDirectorId` (and `submittedEmail` for ownership).
-- **College 1--\* Department** — via `Department.collegeId`.
+- **College 1--\* Department** — via `Department.college`, the college name stored as a
+  denormalized string (no id foreign key).
 - **ARCC _--_ User** — the singleton committee doc references a `chairId` and a `memberIds`
   array, both pointing at `User.id`. ARCC membership is what grants review rights.
 - **Criteria** stands alone, used to score grants during review.
@@ -140,23 +137,23 @@ _Paste the block into [mermaid.live](https://mermaid.live) to view._
   criterion `_id` to the picked rating. One entry per reviewer (upserted on re-submit).
   The 0-to-100 rating is computed client-side for display, not stored on the entry.
 - **Department chair approval** — `Department.chair` holds a user's email; the chair of
-  the submitter's department approves/denies via `Grant.reviewStatus`. No route writes
-  `Department.chair`; it is a read-only gating field, set out-of-band (the admin
-  create/edit pages send it but the `/api/admin` handlers do not persist it yet).
+  the submitter's department approves/denies via `Grant.departmentReviewStatus`. The
+  admin department create/update routes persist `chair` (`createDepartment` /
+  `updateDepartment` in `admin.ts`).
 - **College dean review** — `College.dean` holds a user's email. A dean reviews a grant
   only when a budget item references that college (`budgetItems[].collegeId`) with a
   positive college amount; the outcome lives in `Grant.collegeReviewStatus` (plus
   `collegeReviewedBy` / `collegeReviewedAt`). Like `Department.chair`, `College.dean` is
-  read-only with no write route; it is set out-of-band.
+  persisted by the admin create/update routes.
 
 ## Sources
 
 | Entity          | Defined in                                 |
 | --------------- | ------------------------------------------ |
 | User            | `server/src/routes/auth.ts:73`             |
-| Grant           | `server/src/routes/grantSubmission.ts:120` |
-| College         | `server/src/routes/college.ts:48`          |
-| Department      | `server/src/routes/department.ts:65`       |
+| Grant           | `server/src/routes/grantSubmission.ts:205` |
+| College         | `server/src/routes/admin.ts:77`            |
+| Department      | `server/src/routes/admin.ts:142`           |
 | Criteria        | `server/src/routes/criteria.ts:66`         |
-| ARCC            | `server/src/routes/admin.ts:180`           |
+| ARCC            | `server/src/routes/admin.ts:204`           |
 | AllocationCycle | `server/src/routes/allocation.ts:500`      |
