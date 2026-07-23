@@ -23,12 +23,12 @@ Express reads and writes a single MongoDB database through the raw Node driver.
 
 Pages grouped by the route guard that wraps them. `PublicRoute` redirects signed-in
 users away; `ProtectedRoute` requires a token; `AdminRoute` additionally requires
-`role=admin`.
+`role=admin`; `AdminOrArccChairRoute` admits admins and the ARCC chair (`isArccChair`).
 
 ```mermaid
 flowchart TB
     subgraph Contexts
-        AUTH["AuthContext<br/>user, token, isArcc, isDean, isDeptChair"]
+        AUTH["AuthContext<br/>user, token, isArcc, isArccChair, isDean, isDeptChair"]
         GRANT["GrantContext<br/>shared draft + budget, activeGrantId"]
     end
 
@@ -54,19 +54,20 @@ flowchart TB
         CG[CollegeGrants]
     end
 
-    subgraph Admin ["Admin (ProtectedRoute; Criteria + Allocation are AdminRoute)"]
+    subgraph Admin ["Admin (ProtectedRoute; Criteria + Allocation are AdminRoute; DonorReport is AdminOrArccChairRoute)"]
         ADASH[AdminDashboard]
         COLLEGE[CreateCollege]
         DEPT[CreateDepartment]
         ARCCPG[ArccCommittee]
         CRIT[CriteriaManagement]
         ALLOC[AllocationPage]
+        DONOR[DonorReport]
     end
 ```
 
 Two contexts back these pages, both persisted to `localStorage`: `AuthContext` holds the
-session (`user`, `token`, and the role flags: `isDean` resolved at login, `isArcc` and
-`isDeptChair` fetched once by the provider after login), and
+session (`user`, `token`, and the role flags: `isDean` resolved at login; `isArcc`,
+`isArccChair`, and `isDeptChair` fetched once by the provider after login), and
 `GrantContext` holds the shared grant draft and budget items across `NewGrant`,
 `EditGrant`, and `BudgetWorksheet`. A shared `DashHeader` (brand/home, role-based nav
 links with the current page's link disabled, optional back link, profile, sign out)
@@ -94,6 +95,7 @@ flowchart LR
         CGR["/api/college-grants"]
         ALLOCR["/api/allocation"]
         GRPTR["/api/grant-reports"]
+        DONORR["/api/donor-report"]
     end
 
     subgraph Collections ["MongoDB (linkUpDatabase)"]
@@ -105,13 +107,14 @@ flowchart LR
         CALLOC[("allocationSettings")]
     end
 
-    APP --> AUTHR & GRANTR & ADMINR & CRITR & CGR & ALLOCR & GRPTR
+    APP --> AUTHR & GRANTR & ADMINR & CRITR & CGR & ALLOCR & GRPTR & DONORR
     GRANTR -.- VERIFY & VALID & MULTER
     ADMINR -.- VERIFY
     CRITR -.- VERIFY
     CGR -.- VERIFY
     ALLOCR -.- VERIFY
     GRPTR -.- VERIFY & MULTER
+    DONORR -.- VERIFY
 
     AUTHR --> CUSER
     GRANTR --> CGRANT & CARCC & CUSER
@@ -120,6 +123,7 @@ flowchart LR
     CGR --> CGRANT & CCOLL
     ALLOCR --> CGRANT & CCRIT & CALLOC
     GRPTR --> CGRANT & CARCC
+    DONORR --> CGRANT & CUSER & CARCC
 ```
 
 What each route group handles:
@@ -133,10 +137,14 @@ What each route group handles:
 - **`/api/allocation`** — the allocation cycle, gated to admin (the chair): list grants
   with server-computed final ratings (scores from `grant.reviews[]` over the live rubric
   total, cutoff applied), read / save cycle settings, finalize (writes awards and report
-  due dates onto grants), and the send-to-accounting CSV export.
+  due dates onto grants), and the send-to-accounting CSV export, which returns 409 until
+  the cycle is finalized.
 - **`/api/grant-reports`** — post-award reporting: the proposer's approved grants, report
   detail, submit a report (multipart upload, appends to `grant.reports[]`, owner-only),
   and report file download.
+- **`/api/donor-report`** — funded grants (positive award) enriched with the submitter's
+  college and department, feeding the donor report page; open to the ARCC chair (the
+  committee doc's `chairId`) or an admin. Chart aggregation happens client-side.
 
 `review*` covers `GET /review`, `GET /review/:id`, `GET /review/:id/files/:savedName`,
 `GET /review/department`, `PUT /review/:id` (stores a reviewer's per-criterion scores and
@@ -247,7 +255,9 @@ flowchart TD
         A -->|header nav: Dashboard| D
         A --> GL[Grant Applications list]
         A -->|Allocation card| AL[/admin/allocation/]
+        DRPT[/admin/donor-report/]
     end
+    D -->|header nav, if ARCC chair or admin| DRPT
 ```
 
 The dashboard also shows a report due-date reminder banner for approved grants with an
@@ -276,10 +286,11 @@ or **admin** (`role=admin`). Each role has its own surface:
 - **Admin** `/admin`: management pages plus the all-grants list.
 
 Role detection lives in `AuthContext`: `isDean` is resolved at login, and the provider
-fetches `isArcc` and `isDeptChair` once after login (`GET /api/admin/arcc` and
-`checkDeptChair`), persisting all three flags with the stored user until logout.
-`DashHeader` renders nav links from the flags (Dashboard, Review, Dept Review, College
-Grants, and Admin for `role=admin`), disabling the link for the page currently shown.
+fetches `isArcc`, `isArccChair` (the committee's `chairId`), and `isDeptChair` once
+after login (`GET /api/admin/arcc` and `checkDeptChair`), persisting the flags with the
+stored user until logout. `DashHeader` renders nav links from the flags (Dashboard,
+Review, Dept Review, College Grants, Admin for `role=admin`, and Donor Report for the
+ARCC chair or admin), disabling the link for the page currently shown.
 Dean-only users (dean and nothing else) get no Dashboard link; their dashboard
 redirects to `/college-grants` (`isDeanOnly` in `client/src/utils/roles.ts`).
 
@@ -299,6 +310,8 @@ Only two roles live on `user.role` (`user` or `admin`). The review rights are no
 they are data-driven and checked per request:
 
 - **ARCC member** — membership in the singleton ARCC committee document, `isArccMember()`.
+- **ARCC chair** — the committee document's `chairId`; gates the donor report
+  (`donorReport.ts`) and drives the client's `isArccChair` flag.
 - **Department chair** — a `department` doc whose `chair` equals the user's email,
   `isDeptChair()` / `GET /api/admin/checkDeptChair`.
 - **College dean** — a `college` doc whose `dean` equals the user's email, resolved
@@ -319,6 +332,7 @@ A single user can hold several of these at once.
 | Manage ARCC committee membership                     |  no  |  no  |     no     |  no  |  yes  |
 | Manage review criteria                               |  no  |  no  |     no     |  no  |  yes  |
 | Run the allocation cycle (settings, finalize, CSV)   |  no  |  no  |     no     |  no  |  yes  |
+| View the donor report (funded grants)                |  no  | chair |     no     |  no  |  yes  |
 | Submit post-award reports                            | own  | own  |    own     | own  |  own  |
 
 A department chair sees only grants from their own department; a dean sees only grants

@@ -67,6 +67,10 @@ A proposer fills out a grant application:
   "in August do X, in September do Y"; exact dates or just months are both fine). Its
   purpose is to show the project can be finished and the money spent within one year; a
   reviewer reads it to judge that feasibility.
+- How the project enhances the educational experience of Weber State students, entered
+  in a large required text area.
+- How the project is being evaluated (how success and outcomes will be measured), also
+  a large required text area.
 - Whether matching funds are available from other sources. If yes, a text box captures
   how much. Its default is pulled from the budget worksheet (the total amount not
   requested from ARCC) and can be edited afterward.
@@ -257,7 +261,14 @@ The result is the date by which the PI must submit their final report. Examples:
 
 A **Send to Accounting** button exports a spreadsheet the chair downloads and emails to
 the accounting office. The accounting office performs the actual disbursement; the app
-does not move money. Current spreadsheet columns per row (one row per grant):
+does not move money.
+
+The button starts disabled and only enables after **Finish Allocation** (see 8d):
+finalization means the committee voted and the allocation is final, so nothing may be
+sent to accounting before that point. The server enforces the same rule and refuses the
+export while the cycle is unfinalized.
+
+Current spreadsheet columns per row (one row per grant):
 
 - Principal investigator name
 - Grant name
@@ -273,7 +284,25 @@ Spreadsheet generation must use free tooling only (the export is a plain CSV).
 
 ---
 
-## 9. College & department administration
+## 9. Donor report
+
+The ARCC committee chair (or an admin) generates a donor-facing report showing funders
+(donors and trusts) how their money was spent, replacing the chair's previous PowerPoint.
+It is a second report type, separate from the proposer's post-award report. It covers
+funded grants only and has two tabs:
+
+- **Charts** — money received per college, money received per department, grant count
+  per award-amount bucket ($0-2k, $2-5k, $5-10k, $10k+), and a separate Top 5 grants by
+  amount received.
+- **All grants with filtering** — every funded grant in a table with a college dropdown,
+  a department dropdown, and an amount range (min to max), so the chair can answer live
+  questions from funders.
+
+Charting must use a free library. A grant's college and department are the submitter's.
+
+---
+
+## 10. College & department administration
 
 Colleges and departments are managed under separate tabs, each listing what exists with
 an edit option per row.
@@ -285,7 +314,7 @@ department can also change its name, move it to a different college, or change i
 
 ---
 
-## 10. Dashboard
+## 11. Dashboard
 
 A user's grants appear on their dashboard organized into sections:
 
@@ -306,7 +335,7 @@ N days, with a link to file the report.
 
 ---
 
-## 11. Grant status
+## 12. Grant status
 
 Unlike a typical grant system where a grant holds a single status that moves through one
 linear chain, an ARCC grant can hold **several statuses at once**. The committee can
@@ -326,7 +355,7 @@ A grant moves through these states:
   - **Rejected** if it fell below the cutoff or received $0.
 
 The proposer sees all current statuses on their dashboard, organized into the approved,
-rejected, and active sections described in section 10.
+rejected, and active sections described in section 11.
 
 ---
 
@@ -337,10 +366,11 @@ Listed so the boundary of the current scope is explicit:
 
 - **Post-award final report** — after funding, the PI reports on spending with receipts
   and a breakdown of what was bought.
-- **Reporting and analytics** — historic trend charts (money per department per year)
-  and financial reports for auditing.
+- **Reporting and analytics** — historic multi-year trend charts (money per department
+  per year) and financial reports for auditing. The donor report (section 9) covers the
+  funder-facing charts for the current data; year-over-year history remains out of scope.
 - **Notifications / reminders** — e.g. nudging an approver who has not acted. (The
-  dashboard's report due-date reminder banner is in scope, see section 10; email or
+  dashboard's report due-date reminder banner is in scope, see section 11; email or
   other push notifications are not.)
 - **Automated money distribution** — paying funds into PI accounts directly. The system
   instead exports the accounting spreadsheet (see Allocation) and the accounting office
@@ -379,9 +409,10 @@ Where the current build differs from the expectations above.
 - **Allocation** — Fully implemented: editable cycle inputs (amount available, leftover,
   cutoff percentage), the two-table cutoff split, dynamic tier criteria, the allocated
   amount column, Finish Allocation (locks the cycle and stamps allocated amount, status,
-  and report due date onto each funded grant), and the Send to Accounting CSV export.
-  Before finalizing, the page warns when the tiers over-allocate the available amount or
-  leave more than 5% of it unused.
+  and report due date onto each funded grant), and the Send to Accounting CSV export
+  (disabled until the cycle is finalized; the server also rejects the export for an
+  unfinalized cycle). Before finalizing, the page warns when the tiers over-allocate the
+  available amount or leave more than 5% of it unused.
 - **College & department admin** — The college dean approval workflow is fully
   implemented: dean detection on login, auto-redirect to `/college-grants`, and
   approve/reject with college-scoped filtering (PR #29). Remaining gaps: delete is

@@ -9,7 +9,8 @@ for known gaps between expectations and the current build see its
 
 - **Proposer** — any user. Creates and submits grant applications.
 - **Committee member** — an ARCC committee member. Rates submitted grants.
-- **Committee chair** — a committee member who also manages the grant-cycle allocation.
+- **Committee chair** — a committee member who also manages the grant-cycle allocation
+  and generates the donor report.
 - **Department chair** — approves or rejects grants from their department.
 - **College dean** — approves grants that request money from their college.
 - **Admin** — manages users, the committee, colleges/departments, and the rubric.
@@ -39,6 +40,8 @@ graph LR
     CC --- RV
     CC --- AL(Run allocation cycle)
     CC --- SA(Send to Accounting)
+    CC --- DR(Generate donor report)
+    AD --- DR
 
     DC --- AP(Approve / reject dept grants)
 
@@ -74,10 +77,12 @@ graph LR
 5. If matching funds are available, they check the box; the amount defaults to the
    non-ARCC total from the worksheet and can be edited.
 6. They enter a timeline as free text.
-7. They check the required acknowledgements in the Acknowledgements & Signature section,
+7. They describe how the project enhances the educational experience of Weber State
+   students and how the project will be evaluated; both text areas are required.
+8. They check the required acknowledgements in the Acknowledgements & Signature section,
    which the form requires before a submit is accepted.
-8. They **save** at any point to keep working later, or **submit** when ready.
-9. After submitting, the grant is locked and enters review; it can no longer be edited.
+9. They **save** at any point to keep working later, or **submit** when ready.
+10. After submitting, the grant is locked and enters review; it can no longer be edited.
 
 ### Track grants
 
@@ -126,8 +131,18 @@ The chair does everything a committee member does, plus:
 5. When satisfied, the chair clicks Finish Allocation. This locks the allocation and sets
    each grant's final status (Accepted or Rejected). Accepted grants receive a calculated
    report due date (next June 30 after the allocation date, plus one year).
-6. The chair clicks Send to Accounting, which downloads a spreadsheet (grant title, PI
-   name, amount requested from ARCC) for the accounting office to disburse.
+6. Send to Accounting stays disabled until Finish Allocation completes. Once the cycle is
+   finalized, the chair clicks it to download the accounting spreadsheet (PI, grant name,
+   accounting number, submitter, amounts, final rating, allocated amount, status) for the
+   accounting office to disburse.
+
+### Generate the donor report
+
+1. The chair (or an admin) opens Donor Report from the header navigation.
+2. The charts tab shows money received per college and per department, grant counts per
+   award-amount bucket, and the top 5 grants by amount received.
+3. The all-grants tab lists every funded grant, filterable by college, department, and
+   an amount range, to answer live questions from funders.
 
 ---
 
@@ -292,6 +307,16 @@ Feature: Finish Allocation
     Given Finish Allocation is clicked on 2026-06-23
     And a grant is in the eligible table
     Then that grant's report due date is 2027-06-30
+
+  Scenario: Send to Accounting is disabled before finalization
+    Given the allocation cycle has not been finalized
+    Then the Send to Accounting button is disabled
+    And the server rejects the CSV export for an unfinalized cycle
+
+  Scenario: Send to Accounting works after finalization
+    Given the chair has clicked Finish Allocation
+    When they click Send to Accounting
+    Then the accounting CSV downloads
 ```
 
 ```gherkin

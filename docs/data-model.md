@@ -41,6 +41,8 @@ erDiagram
         string usesSubjects "yes|no"
         string irbApproved "yes|no"
         string timeline "free text"
+        string educationalImpact "required on submit"
+        string evaluationPlan "required on submit"
         boolean hasMatchingFunds
         number matchingFundsTotal
         object acknowledgements "acknowledgement1-4 booleans, all required to submit"
@@ -127,6 +129,9 @@ _Paste the block into [mermaid.live](https://mermaid.live) to view._
   and writes `Grant.allocatedAmount` / `Grant.allocationStatus` / `Grant.reportDueDate`
   (the first June 30 on or after the allocation date, plus one year; `null` for unfunded
   grants) onto each grant.
+- **Donor report** — no storage of its own: the `/api/donor-report` route reads funded
+  grants (`allocatedAmount > 0`) and joins the submitter's `User.college` /
+  `User.department` by email at read time.
 - **Grant.reports\[\]** — embedded post-award reports, appended per submission. Each
   entry is `{ reportText, currentProgress, nextSteps, file, submittedAt }`, where `file`
   is an optional uploaded attachment.
@@ -154,4 +159,4 @@ _Paste the block into [mermaid.live](https://mermaid.live) to view._
 | Department      | `server/src/routes/department.ts:65`       |
 | Criteria        | `server/src/routes/criteria.ts:66`         |
 | ARCC            | `server/src/routes/admin.ts:180`           |
-| AllocationCycle | `server/src/routes/allocation.ts:497`     |
+| AllocationCycle | `server/src/routes/allocation.ts:500`      |
