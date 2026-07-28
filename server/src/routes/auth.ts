@@ -28,11 +28,9 @@ router.route("/register").post(async (req: Request, res: Response) => {
     !confirmPassword ||
     !firstNameT ||
     !lastNameT ||
-    !birthday ||
-    !department ||
-    !college
+    !birthday
   ) {
-    res.status(400).json({ message: "All fields are required" });
+    res.status(400).json({ message: "All required fields must be completed" });
     return;
   }
 
@@ -77,8 +75,8 @@ router.route("/register").post(async (req: Request, res: Response) => {
     firstName: firstNameT,
     lastName: lastNameT,
     birthday: new Date(birthday), // Store as Date object
-    department,
-    college,
+    department: department || "",
+    college: college || "",
     role: "user" as const,
     createdAt: new Date().toISOString(),
   };

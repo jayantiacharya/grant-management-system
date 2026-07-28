@@ -153,13 +153,12 @@ export default function Register() {
           </div>
 
           <div className="field">
-            <label htmlFor="college">College</label>
+            <label htmlFor="college">College (optional)</label>
             <select
               id="college"
               name="college"
               value={form.college}
               onChange={handleChange}
-              required
             >
               <option value="">— Select a college —</option>
               {colleges.map((c) => (
@@ -171,13 +170,12 @@ export default function Register() {
           </div>
 
           <div className="field">
-            <label htmlFor="department">Department</label>
+            <label htmlFor="department">Department (optional)</label>
             <select
               id="department"
               name="department"
               value={form.department}
               onChange={handleChange}
-              required
               disabled={!form.college}
             >
               <option value="">— Select a department —</option>

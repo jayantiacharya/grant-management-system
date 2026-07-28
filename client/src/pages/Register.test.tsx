@@ -190,6 +190,32 @@ describe("Register", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("submits successfully without college or department", async () => {
+    const user = userEvent.setup();
+    render(<Register />);
+    await user.type(screen.getByLabelText(/first name/i), "Jane");
+    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/date of birth/i), "1990-05-20");
+    await user.type(screen.getByLabelText(/email/i), "jane@weber.edu");
+    await user.type(screen.getByLabelText("Password"), "secret1");
+    await user.type(screen.getByLabelText(/confirm password/i), "secret1");
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "http://localhost:5000/api/auth/register",
+        expect.objectContaining({
+          firstName: "Jane",
+          email: "jane@weber.edu",
+          college: "",
+          department: "",
+        }),
+      );
+    });
+    expect(mockLogin).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+  });
+
   it("shows server error message on failed registration", async () => {
     vi.mocked(axios.post).mockRejectedValue({
       response: { data: { message: "Email already in use" } },
