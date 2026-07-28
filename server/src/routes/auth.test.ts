@@ -59,13 +59,11 @@ describe("POST /api/auth/register", () => {
   });
 
   it("201 creates user without college or department", async () => {
+    const { college, department, ...bodyWithoutCollegeOrDepartment } =
+      validRegister;
     const res = await request(app)
       .post("/api/auth/register")
-      .send({
-        ...validRegister,
-        college: "",
-        department: "",
-      });
+      .send(bodyWithoutCollegeOrDepartment);
 
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({

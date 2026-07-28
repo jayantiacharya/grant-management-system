@@ -191,6 +191,20 @@ describe("Register", () => {
   });
 
   it("submits successfully without college or department", async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        token: "tok",
+        user: {
+          id: "1",
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane@weber.edu",
+          role: "user",
+          college: "",
+          department: "",
+        },
+      },
+    });
     const user = userEvent.setup();
     render(<Register />);
     await user.type(screen.getByLabelText(/first name/i), "Jane");

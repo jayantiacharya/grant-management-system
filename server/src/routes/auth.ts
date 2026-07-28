@@ -21,6 +21,9 @@ router.route("/register").post(async (req: Request, res: Response) => {
   const firstNameT = typeof firstName === "string" ? firstName.trim() : "";
   const lastNameT = typeof lastName === "string" ? lastName.trim() : "";
 
+  const departmentT = typeof department === "string" ? department.trim() : "";
+  const collegeT = typeof college === "string" ? college.trim() : "";
+
   // Validate required fields
   if (
     !email ||
@@ -75,8 +78,8 @@ router.route("/register").post(async (req: Request, res: Response) => {
     firstName: firstNameT,
     lastName: lastNameT,
     birthday: new Date(birthday), // Store as Date object
-    department: department || "",
-    college: college || "",
+    department: departmentT,
+    college: collegeT,
     role: "user" as const,
     createdAt: new Date().toISOString(),
   };
@@ -221,7 +224,6 @@ router.route("/update-user").post(async (req: Request, res: Response) => {
 
   const updateData: any = {};
 
-  // Trim names when updating
   if (firstName) {
     const firstNameT = typeof firstName === "string" ? firstName.trim() : "";
     if (firstNameT) updateData.firstName = firstNameT;
@@ -231,8 +233,14 @@ router.route("/update-user").post(async (req: Request, res: Response) => {
     if (lastNameT) updateData.lastName = lastNameT;
   }
   if (email) updateData.email = email.toLowerCase();
-  if (department) updateData.department = department;
-  if (college) updateData.college = college;
+  if (college !== undefined) {
+    updateData.college = typeof college === "string" ? college.trim() : "";
+  }
+
+  if (department !== undefined) {
+    updateData.department =
+      typeof department === "string" ? department.trim() : "";
+  }
   if (accountNumber) updateData.accountNumber = accountNumber.trim();
   if (password) {
     if (password.length < 6) {

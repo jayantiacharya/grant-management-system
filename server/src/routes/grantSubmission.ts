@@ -176,7 +176,25 @@ router.post(
       validation;
 
     let signature = "";
+    const db_connect = dbo.getDb();
+
     if (!isDraft) {
+      const userProfile = await db_connect.collection("user").findOne({
+        email: email.toLowerCase(),
+      });
+      const hasCollege = Boolean(
+        userProfile?.college && String(userProfile.college).trim(),
+      );
+      const hasDepartment = Boolean(
+        userProfile?.department && String(userProfile.department).trim(),
+      );
+
+      if (!hasCollege || !hasDepartment) {
+        return res.status(400).json({
+          message:
+            "You must have both a department and college assigned before submitting a grant.",
+        });
+      }
       const ackValidation = validateAcknowledgements(req.body);
       if (!ackValidation.ok) {
         return res
@@ -185,8 +203,6 @@ router.post(
       }
       signature = ackValidation.signature;
     }
-
-    const db_connect = dbo.getDb();
 
     const resolvedDirectorId = projectDirectorId || userId;
 
