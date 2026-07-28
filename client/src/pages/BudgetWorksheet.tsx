@@ -10,7 +10,7 @@ import DashHeader from "../components/DashHeader";
 import {
   BUDGET_CATEGORIES,
   isValidBudgetCategory,
-  isBudgetItemStarted,
+  isBudgetItemInvalid,
 } from "../constants/budget";
 import "../styles/PageLayout.css";
 import "../styles/GrantForm.css";
@@ -129,7 +129,7 @@ export default function BudgetWorksheet() {
                     }
                     required
                     className={
-                      isBudgetItemStarted(item) && !item.category
+                      isBudgetItemInvalid(item)
                         ? "budget-field-invalid"
                         : undefined
                     }
@@ -148,7 +148,7 @@ export default function BudgetWorksheet() {
                       </option>
                     )}
                   </select>
-                  {isBudgetItemStarted(item) && !item.category && (
+                  {isBudgetItemInvalid(item) && (
                     <span className="budget-inline-error">
                       Please select a category for this budget item.
                     </span>

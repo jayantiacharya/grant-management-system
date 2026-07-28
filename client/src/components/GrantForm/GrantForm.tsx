@@ -13,10 +13,7 @@ import {
   type GrantFormData,
   type BudgetItem,
 } from "../../context/GrantContext";
-import {
-  isValidBudgetCategory,
-  isBudgetItemStarted,
-} from "../../constants/budget";
+import { BUDGET_CATEGORIES, isBudgetItemInvalid } from "../../constants/budget";
 import DashHeader from "../DashHeader";
 
 import "../../styles/PageLayout.css";
@@ -215,13 +212,10 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
     const next: GrantFormErrors = {};
     // Only rows the user actually started are required to have a category,
     // so an untouched default row does not block submission.
-    if (
-      items
-        .filter(isBudgetItemStarted)
-        .some((item) => !isValidBudgetCategory(item.category))
-    ) {
-      next.budgetItems =
-        "Each budget item needs a category of Hardware or Software. Open the Budget Worksheet to set it.";
+    if (items.some(isBudgetItemInvalid)) {
+      next.budgetItems = `Each budget item needs a category of ${BUDGET_CATEGORIES.join(
+        " or ",
+      )}. Open the Budget Worksheet to set it.`;
     }
     if (!data.title.trim()) next.title = "Title is required.";
     if (!data.description.trim()) next.description = "Description is required.";
@@ -701,7 +695,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                 )}
               </div>
 
-              <div>
+              <div className="grant-form-field">
                 <button
                   type="button"
                   className="submit-btn"
