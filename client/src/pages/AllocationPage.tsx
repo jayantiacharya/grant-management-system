@@ -155,13 +155,15 @@ export default function AllocationPage() {
         ...grant,
         allocatedAmount,
         status:
-          grant.reviewCount === 0
-            ? "Pending Review"
-            : allocatedAmount > 0
-              ? allocatedAmount >= grant.arccAmountRequested
-                ? "Approved (Full)"
-                : "Approved (Partial)"
-              : "Rejected",
+          grant.arccAmountRequested === 0
+            ? "Approved (Full)"
+            : grant.reviewCount === 0
+              ? "Pending Review"
+              : allocatedAmount > 0
+                ? allocatedAmount >= grant.arccAmountRequested
+                  ? "Approved (Full)"
+                  : "Approved (Partial)"
+                : "Rejected",
       };
     });
   }, [baseGrants, criteria, cutoffPercentage]);
@@ -183,9 +185,20 @@ export default function AllocationPage() {
   const underDistributed =
     shouldDistributeMostFunds && totalAllocated < currentCycle * 0.95;
 
-  const approvedGrants = calculatedGrants.filter(
-    (grant) => grant.allocatedAmount > 0,
-  );
+  const approvedGrants = calculatedGrants.filter((grant) => {
+    if (grant.allocatedAmount > 0) return true;
+
+    const cutoff = Number(cutoffPercentage || 0);
+    if (
+      Number.isFinite(grant.arccAmountRequested) &&
+      grant.arccAmountRequested === 0 &&
+      grant.finalPercent >= cutoff
+    ) {
+      return true;
+    }
+
+    return false;
+  });
 
   const pendingGrants = calculatedGrants.filter(
     (grant) => grant.status === "Pending Review",

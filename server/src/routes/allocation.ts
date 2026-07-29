@@ -274,6 +274,10 @@ function getAllocationStatus(
   allocatedAmount: number,
   arccAmountRequested: number,
 ) {
+  if (Number.isFinite(arccAmountRequested) && arccAmountRequested === 0) {
+    return "Approved (Full)";
+  }
+
   if (
     isRejectedStatus(grant.departmentReviewStatus) ||
     isRejectedStatus(grant.collegeReviewStatus) ||
