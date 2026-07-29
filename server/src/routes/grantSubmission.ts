@@ -312,7 +312,7 @@ router.get(
 );
 
 router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
-  const { userId } = req.user!;
+  const { userId, email } = req.user!;
 
   try {
     if (
@@ -325,7 +325,10 @@ router.get("/review", verifyToken, async (req: AuthRequest, res: Response) => {
     const db_connect = dbo.getDb();
     const grants = await db_connect
       .collection("grant")
-      .find({ status: { $ne: GRANT_STATUS.DRAFT } })
+      .find({
+        status: { $ne: GRANT_STATUS.DRAFT },
+        submittedEmail: { $ne: email },
+      })
       .sort({ submittedAt: -1 })
       .toArray();
     return res.json(grants);
