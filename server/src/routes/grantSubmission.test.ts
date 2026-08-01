@@ -46,7 +46,11 @@ const validBody = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findOne.mockResolvedValue({ _id: "mongo-id" });
+  findOne.mockResolvedValue({
+    _id: "mongo-id",
+    college: "Engineering",
+    department: "Computer Science",
+  });
   insertOne.mockResolvedValue({ insertedId: "grant-id" });
   updateOne.mockResolvedValue({ matchedCount: 1 });
 });
@@ -97,7 +101,13 @@ describe("POST /api/grants/submit", () => {
   });
 
   it("400 when projectDirectorId does not match a real user", async () => {
-    findOne.mockResolvedValueOnce(null);
+    findOne
+      .mockResolvedValueOnce({
+        _id: "mongo-id",
+        college: "Engineering",
+        department: "Computer Science",
+      })
+      .mockResolvedValueOnce(null);
     const res = await request(app)
       .post("/api/grants/submit")
       .set("Authorization", `Bearer ${validToken}`)

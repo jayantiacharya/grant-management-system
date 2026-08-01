@@ -34,7 +34,11 @@ function trackForCleanup(body: any) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  findOne.mockResolvedValue({ _id: "mongo-id" });
+  findOne.mockResolvedValue({
+    _id: "mongo-id",
+    college: "Engineering",
+    department: "Computer Science",
+  });
   insertOne.mockResolvedValue({ insertedId: "grant-id" });
 });
 

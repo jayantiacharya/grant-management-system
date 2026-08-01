@@ -85,7 +85,10 @@ describe("GET /api/grants/review", () => {
     expect(res.body).toEqual([{ _id: OID, title: "Submitted one" }]);
     const firstCall = findMock.mock.calls[0] as any[];
     const [filter] = firstCall;
-    expect(filter).toEqual({ status: { $ne: "draft" } });
+    expect(filter).toEqual({
+      status: { $ne: "draft" },
+      submittedEmail: { $ne: "reviewer@wsu.edu" },
+    });
   });
 });
 

@@ -51,13 +51,29 @@ describe("POST /api/auth/register", () => {
     ["firstName", "firstName"],
     ["lastName", "lastName"],
     ["birthday", "birthday"],
-    ["department", "department"],
-    ["college", "college"],
   ])("400 when %s is missing", async (_label, field) => {
     const body = { ...validRegister, [field]: "" };
     const res = await request(app).post("/api/auth/register").send(body);
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/all fields are required/i);
+    expect(res.body.message).toMatch(/required/i);
+  });
+
+  it("201 creates user without college or department", async () => {
+    const { college, department, ...bodyWithoutCollegeOrDepartment } =
+      validRegister;
+    const res = await request(app)
+      .post("/api/auth/register")
+      .send(bodyWithoutCollegeOrDepartment);
+
+    expect(res.status).toBe(201);
+    expect(res.body.user).toMatchObject({
+      email: "alice@wsu.edu",
+      firstName: "Alice",
+      lastName: "Smith",
+      role: "user",
+      college: "",
+      department: "",
+    });
   });
 
   it("400 when names are whitespace only (trimmed empty)", async () => {
