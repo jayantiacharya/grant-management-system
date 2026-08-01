@@ -24,8 +24,60 @@ export type GrantFileMeta = {
   path: string;
 };
 
+// Budget item categories are a fixed list. Mirrors client/src/constants/budget.ts;
+// the two need to stay in sync if a category is ever added or removed.
+export const BUDGET_CATEGORIES = ["Hardware", "Software"] as const;
+
+const BUDGET_FUNDING_FIELDS = [
+  "amountRequested",
+  "amountFromARCC",
+  "amountFromCollege",
+  "amountFromDepartment",
+  "amountFromOtherSources",
+] as const;
+
+// budgetItems arrives as an array on JSON requests and as a JSON string on
+// multipart ones, so both routes normalise through here.
+export function parseBudgetItems(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+// Mirrors the client: a row only counts once it has a name or any money in it,
+// so the blank row the form always starts with does not block submission.
+function isBudgetItemStarted(item: any): boolean {
+  const hasName =
+    typeof item?.itemDescription === "string" &&
+    item.itemDescription.trim() !== "";
+  const hasMoney = BUDGET_FUNDING_FIELDS.some(
+    (field) => (parseFloat(item?.[field]) || 0) > 0,
+  );
+  return hasName || hasMoney;
+}
+
+function hasInvalidBudgetCategory(budgetItems: unknown[]): boolean {
+  return budgetItems
+    .filter((item) => isBudgetItemStarted(item))
+    .some(
+      (item: any) =>
+        typeof item?.category !== "string" ||
+        !(BUDGET_CATEGORIES as readonly string[]).includes(
+          item.category.trim(),
+        ),
+    );
+}
+
 type ValidateArgs = {
   body: Record<string, any>;
+  parsedBudgetItems: unknown[];
   uploadedFiles: GrantFileMeta[];
   irbApprovalFile: GrantFileMeta | null;
   // For edits: files already attached to the grant. A submit-via-edit should
@@ -48,6 +100,7 @@ export function validateGrantPayload(
 ): ValidateError | ValidateOk {
   const {
     body,
+    parsedBudgetItems,
     uploadedFiles,
     irbApprovalFile,
     existingFiles = [],
@@ -163,6 +216,15 @@ export function validateGrantPayload(
         ok: false,
         status: 400,
         message: "evaluationPlan is required",
+      };
+    }
+    if (hasInvalidBudgetCategory(parsedBudgetItems)) {
+      return {
+        ok: false,
+        status: 400,
+        message: `each budget item must have a category of ${BUDGET_CATEGORIES.join(
+          " or ",
+        )}`,
       };
     }
   }

@@ -8,15 +8,24 @@ import {
   type GrantStatus,
   type UserOption,
 } from "../../types/grant";
-import { useGrant, type GrantFormData } from "../../context/GrantContext";
+import {
+  useGrant,
+  type GrantFormData,
+  type BudgetItem,
+} from "../../context/GrantContext";
+import { BUDGET_CATEGORIES, isBudgetItemInvalid } from "../../constants/budget";
 import DashHeader from "../DashHeader";
 
 import "../../styles/PageLayout.css";
 import "../../styles/GrantForm.css";
 
-type GrantFormErrors = Partial<
-  Record<keyof GrantFormData | "files" | "irbApprovalFile", string>
->;
+type GrantFormErrorKey =
+  | keyof GrantFormData
+  | "files"
+  | "irbApprovalFile"
+  | "budgetItems";
+
+type GrantFormErrors = { [K in GrantFormErrorKey]?: string };
 
 const MAX_FILES = 3;
 
@@ -198,8 +207,16 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
   const validate = (
     data: GrantFormData,
     selectedFiles: File[],
+    items: BudgetItem[],
   ): GrantFormErrors => {
     const next: GrantFormErrors = {};
+    // Only rows the user actually started are required to have a category,
+    // so an untouched default row does not block submission.
+    if (items.some(isBudgetItemInvalid)) {
+      next.budgetItems = `Each budget item needs a category of ${BUDGET_CATEGORIES.join(
+        " or ",
+      )}. Open the Budget Worksheet to set it.`;
+    }
     if (!data.title.trim()) next.title = "Title is required.";
     if (!data.description.trim()) next.description = "Description is required.";
     if (!data.projectDirectorId)
@@ -270,7 +287,7 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
   const submitGrant = async (status: GrantStatus) => {
     const selectedFiles = Array.from(fileInputRef.current?.files ?? []);
     if (status === GRANT_STATUS.SUBMITTED) {
-      const validationErrors = validate(formData, selectedFiles);
+      const validationErrors = validate(formData, selectedFiles, budgetItems);
       setErrors(validationErrors);
       if (Object.keys(validationErrors).length > 0) return;
     } else {
@@ -678,22 +695,27 @@ export default function GrantForm({ mode, grantId }: GrantFormProps) {
                 )}
               </div>
 
-              <button
-                type="button"
-                className="submit-btn"
-                onClick={() =>
-                  navigate("/budget-worksheet", {
-                    state: {
-                      returnTo:
-                        mode === "new"
-                          ? "/grants/new"
-                          : `/grants/edit/${grantId}`,
-                    },
-                  })
-                }
-              >
-                Open Budget Worksheet
-              </button>
+              <div className="grant-form-field">
+                <button
+                  type="button"
+                  className="submit-btn"
+                  onClick={() =>
+                    navigate("/budget-worksheet", {
+                      state: {
+                        returnTo:
+                          mode === "new"
+                            ? "/grants/new"
+                            : `/grants/edit/${grantId}`,
+                      },
+                    })
+                  }
+                >
+                  Open Budget Worksheet
+                </button>
+                {errors.budgetItems && (
+                  <span className="field-error">{errors.budgetItems}</span>
+                )}
+              </div>
 
               <div>
                 <label>

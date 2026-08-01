@@ -102,6 +102,10 @@
   background: #9ca3af;
   cursor: not-allowed;
 }
+.grant-form-field {
+  display: flex;
+  flex-direction: column;
+}
 
 .edit-btn {
   margin-left: 12px;

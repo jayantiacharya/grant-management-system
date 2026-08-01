@@ -7,6 +7,11 @@ import {
   type BudgetItem,
 } from "../context/GrantContext";
 import DashHeader from "../components/DashHeader";
+import {
+  BUDGET_CATEGORIES,
+  isValidBudgetCategory,
+  isBudgetItemInvalid,
+} from "../constants/budget";
 import "../styles/PageLayout.css";
 import "../styles/GrantForm.css";
 import "../styles/BudgetWorksheet.css";
@@ -113,16 +118,41 @@ export default function BudgetWorksheet() {
                 </div>
 
                 <div className="budget-field">
-                  <label htmlFor={`category-${index}`}>Category</label>
-                  <input
-                    type="text"
+                  <label htmlFor={`category-${index}`}>
+                    Category <span className="budget-required-mark">*</span>
+                  </label>
+                  <select
                     id={`category-${index}`}
                     value={item.category}
                     onChange={(e) =>
                       handleBudgetItemChange(index, "category", e.target.value)
                     }
-                    placeholder="Example: Hardware or Software"
-                  />
+                    required
+                    className={
+                      isBudgetItemInvalid(item)
+                        ? "budget-field-invalid"
+                        : undefined
+                    }
+                  >
+                    <option value="">Select a category</option>
+                    {BUDGET_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    {/* Keeps a legacy free-text value visible on older grants
+                        instead of silently blanking the field. */}
+                    {item.category && !isValidBudgetCategory(item.category) && (
+                      <option value={item.category}>
+                        {item.category} (no longer valid)
+                      </option>
+                    )}
+                  </select>
+                  {isBudgetItemInvalid(item) && (
+                    <span className="budget-inline-error">
+                      Please select a category for this budget item.
+                    </span>
+                  )}
                 </div>
 
                 <div className="budget-grid">

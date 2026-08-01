@@ -8,6 +8,7 @@ import { verifyToken, AuthRequest } from "../middleware/auth.js";
 import {
   GRANT_STATUS,
   GRANT_APPROVAL_STATUS,
+  parseBudgetItems,
   validateGrantPayload,
   validateAcknowledgements,
 } from "./grantValidation.js";
@@ -36,19 +37,6 @@ const upload = multer({
   { name: "files", maxCount: 3 },
   { name: "irbApprovalFile", maxCount: 1 },
 ]);
-
-function parseBudgetItems(raw: unknown): unknown[] {
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw === "string") {
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 async function isDeptChair(userEmail: string): Promise<boolean> {
   const db_connect = dbo.getDb();
@@ -162,8 +150,11 @@ router.post(
         }
       : null;
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const validation = validateGrantPayload({
       body: req.body,
+      parsedBudgetItems,
       uploadedFiles,
       irbApprovalFile,
     });
@@ -215,8 +206,6 @@ router.post(
         message: "projectDirectorId does not match a known user",
       });
     }
-
-    const parsedBudgetItems = parseBudgetItems(budgetItems);
 
     const newGrant = {
       title: req.body.title ?? "",
@@ -684,8 +673,11 @@ router.put(
         }
       : null;
 
+    const parsedBudgetItems = parseBudgetItems(budgetItems);
+
     const validation = validateGrantPayload({
       body: req.body,
+      parsedBudgetItems,
       uploadedFiles,
       irbApprovalFile,
       existingFiles: existing.files ?? [],
@@ -721,8 +713,6 @@ router.put(
         message: "projectDirectorId does not match a known user",
       });
     }
-
-    const parsedBudgetItems = parseBudgetItems(budgetItems);
 
     const update: Record<string, any> = {
       title: req.body.title ?? "",
