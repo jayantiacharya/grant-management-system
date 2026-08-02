@@ -36,6 +36,28 @@ export default function CreateDepartment() {
     setDepartments(data);
   };
 
+  const handleDeleteDepartment = async (id: string, name: string) => {
+    const confirmed = window.confirm(
+      `Delete "${name}"? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setMessage("");
+    try {
+      await axios.post(
+        "http://localhost:5000/api/admin/deleteDepartment",
+        { id },
+        authHeader,
+      );
+      setMessage(`"${name}" deleted successfully.`);
+      fetchDepartments();
+    } catch (error: any) {
+      setMessage(
+        error.response?.data?.message || "Failed to delete department.",
+      );
+    }
+  };
+
   const fetchUsers = async () => {
     const { data } = await axios.get(
       "http://localhost:5000/api/admin/users",
@@ -158,6 +180,19 @@ export default function CreateDepartment() {
                       }}
                     >
                       Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="danger-btn"
+                      onClick={() =>
+                        handleDeleteDepartment(
+                          String(department.id ?? department._id ?? ""),
+                          department.name,
+                        )
+                      }
+                    >
+                      Delete
                     </button>
                   </li>
                 ))}

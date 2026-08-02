@@ -27,6 +27,26 @@ export default function CreateCollege() {
     setColleges(data);
   };
 
+  const handleDeleteCollege = async (id: string, name: string) => {
+    const confirmed = window.confirm(
+      `Delete "${name}"? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setMessage("");
+    try {
+      await axios.post(
+        "http://localhost:5000/api/admin/deleteCollege",
+        { id },
+        authHeader,
+      );
+      setMessage(`"${name}" deleted successfully.`);
+      fetchColleges();
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || "Failed to delete college.");
+    }
+  };
+
   const fetchUsers = async () => {
     const { data } = await axios.get(
       "http://localhost:5000/api/admin/users",
@@ -129,6 +149,19 @@ export default function CreateCollege() {
                       }}
                     >
                       Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="danger-btn"
+                      onClick={() =>
+                        handleDeleteCollege(
+                          String(college.id ?? college._id ?? ""),
+                          college.name,
+                        )
+                      }
+                    >
+                      Delete
                     </button>
                   </li>
                 ))}

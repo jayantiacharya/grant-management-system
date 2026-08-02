@@ -227,6 +227,103 @@ router.route("/updateArcc").post(verifyToken, async (req: AuthRequest, res) => {
   });
 });
 
+router
+  .route("/deleteCollege")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let db_connect = dbo.getDb();
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "College id is required" });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const college = await db_connect
+      .collection("college")
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!college) {
+      return res.status(404).json({ message: "College not found" });
+    }
+
+    const dependentDepartments = await db_connect
+      .collection("department")
+      .countDocuments({ college: college.name });
+
+    if (dependentDepartments > 0) {
+      return res.status(409).json({
+        message: `Cannot delete college: ${dependentDepartments} department(s) are still assigned to it. Reassign or delete those departments first.`,
+      });
+    }
+
+    try {
+      await db_connect
+        .collection("college")
+        .deleteOne({ _id: new ObjectId(id) });
+
+      const userResult = await db_connect
+        .collection("user")
+        .updateMany({ college: college.name }, { $set: { college: "" } });
+
+      res.status(200).json({
+        message: "College deleted successfully",
+        usersUpdated: userResult.modifiedCount,
+      });
+    } catch (err) {
+      console.error("deleteCollege failed:", err);
+      return res.status(500).json({ message: "Failed to delete college" });
+    }
+  });
+
+router
+  .route("/deleteDepartment")
+  .post(verifyToken, async (req: AuthRequest, res) => {
+    if (!requireAdmin(req, res)) return;
+    let db_connect = dbo.getDb();
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "Department id is required" });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const department = await db_connect
+      .collection("department")
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!department) {
+      return res.status(404).json({ message: "Department not found" });
+    }
+
+    try {
+      await db_connect
+        .collection("department")
+        .deleteOne({ _id: new ObjectId(id) });
+
+      const userResult = await db_connect
+        .collection("user")
+        .updateMany(
+          { department: department.name },
+          { $set: { department: "" } },
+        );
+
+      res.status(200).json({
+        message: "Department deleted successfully",
+        usersUpdated: userResult.modifiedCount,
+      });
+    } catch (err) {
+      console.error("deleteDepartment failed:", err);
+      return res.status(500).json({ message: "Failed to delete department" });
+    }
+  });
+
 router.get(
   "/checkDeptChair/",
   verifyToken,
